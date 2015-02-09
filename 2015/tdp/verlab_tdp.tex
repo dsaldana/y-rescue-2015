@@ -1,0 +1,68 @@
+% \documentclass{llncs}
+\documentclass[12pt]{article}
+\usepackage{sbc-template}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{subfigure}
+
+% \newcommand{\teamname}{VeRLab\_Rescue~}
+\newcommand{\teamname}{RoboCop Brothers~}
+
+\hyphenation{av-a-lanches}
+
+\title{\teamname Team Description Paper}
+
+\author{Anderson Tavares, Elerson Rubens, Hector Azpurua,\\ Levi Vasconcelos, Rafael Colares, Ramon Melo\inst{1}}
+
+\address{VeRLab -- Department of Computer Science \\ Universidade Federal de Minas Gerais
+  (UFMG)\\
+  Belo Horizonte -- MG -- Brazil
+  \email{\{anderson,elerson,hector.azpurua,levi-vasconcelos,rcolares,ramonmelo\}@dcc.ufmg.br}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This paper describes the strategy of \teamname team to the Robocup Rescue Simulator Agents competition. The importance of this type of simulation is to test and improve plans of rescue in disaster environments. Our approach relies on field agents capable of individual decision making, relegating the center agents to an informational role. Our main contributions are the scheme for prediction of fire evolution done by fire brigades, the behaviour-based strategy for police forces and the simple auction-based scheme for recruiting in tasks that demand more than one agent.
+\end{abstract}
+
+%%% SECTION: Introduction
+\input{intro.tex}
+
+\section{Units' strategies}
+\label{sec:strategies}
+
+%%%SUBSECTION: Ambulance team
+\input{ambulance.tex}
+
+%%%SUBSECTION: Police force
+\input{police.tex}
+
+%%%SUBSECTION: Fire brigade
+\input{firebrigade.tex}
+
+%%%SUBSECTION: center
+\input{center.tex}
+
+\section{Common issues}
+\label{sec:common}
+% Problemas comuns a todos: temos a compactação de mensagens para a comunicação e o path planning.
+
+%%%SUBSECTION: communication
+\input{communication.tex}
+
+%%%SUBSECTION: path planning
+\input{pathplanning.tex}
+
+%%%SECTION: conclusion
+\input{conclusion.tex}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

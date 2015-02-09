@@ -1,0 +1,46 @@
+\subsection{Communication}
+\label{sec:communication}
+
+\subsubsection{Message construction}
+The goal of communication is to increase the knowledge base of agents and to improve coordination among them. However, in a disaster scenario, communication can be unreliable and bandwidth is limited. To address these problems, our communication strategy is based on a simple protocol. We define three message types for each kind of problem (blockades, burning buildings and buried civilians) the agents may encounter:
+
+\begin{itemize}
+ \item Report: the agent found a problem and reports it to its colleagues. Report messages contain information about the problem so that other agents can update their knowledge bases and reason about the recently discovered problem, that is, deciding to engage or not.
+
+ \item Engage: the agent decided to engage in a problem. Engage messages also contain information about the problem so that other agents can update their knowledge bases even if the problem was reported earlier.
+
+ \item Solved: the agent solved the problem and no further action about it is required. Solved messages do not contain information about the problem status (such as the temperature of a building) since the problem was solved and no further action is needed.
+\end{itemize}
+
+Coordination among agents, i.e., requesting help for more effort-demanding tasks require a special protocol, described in Section \ref{sec:recruiting}.
+
+In order to save radio bandwidth and maximize the amount of data shared between the agents, our communication will use a data compression algorithm. Each agent is responsible for compressing/decompressing the communication data.
+
+\subsubsection{Recruiting protocol}
+\label{sec:recruiting}
+When an agent estimates that it needs help to perform a task, it starts an auction which consists of the following three steps: first, a ``request'' message is sent by the recruiter agent. Agents who receive the ``request'' message and are available to help  send back an ``offer'' message. Receiving the ``offer'' messages allow the recruiter agent to select the colleagues that will help best in the task. A ``commit'' message is sent to the selected colleagues. Figure \ref{fig:auction} illustrates the three-step auction.
+
+\begin{figure}[ht]
+  \centering
+  \subfigure[]{
+    {\includegraphics[width=3cm]{img/request.png}}
+    \label{fig:request}
+  }%
+  \subfigure[]{
+    {\includegraphics[width=3cm]{img/offer.png}}
+    \label{fig:offer}
+  }%
+  \subfigure[]{
+    {\includegraphics[width=3cm]{img/commit.png}}
+    \label{fig:commit}
+  }%
+
+  \caption{Three-step auction: \subref{fig:request} recruiter (circled with dashed line) sends ``request'' messages; \subref{fig:offer} agents who decide to help respond with ``offer'' messages; \subref{fig:commit} recruiter selects colleagues to help and sends ``commit'' messages.}
+
+ \label{fig:auction}
+\end{figure}
+
+It should be noted that messages are always broadcasted in a given channel, that is, all agents can hear all messages in the channel. When it is said that a message is directed to a specific agent, the meaning is that the message is broadcasted in the channel but it has additional information so that non-targets of the message can ignore it.
+
+% Sera implementado um leilão em 3 etapas (anúncio, recebimento de 'ofertas' e recrutamento) para bombeiros pedirem auxílio em tarefas dificeis.
+% Compactação
