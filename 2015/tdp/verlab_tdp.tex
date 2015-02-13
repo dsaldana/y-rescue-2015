@@ -1,6 +1,5 @@
 \documentclass[runningheads,a4paper]{llncs}
 %\documentclass[12pt]{article}
-%\usepackage{llncs}
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
@@ -19,17 +18,29 @@
 
 \title{\teamname Team Description Paper}
 
-\author{Anderson Tavares \and David Saldaña \and Hector Azpúrua \and\\ Jhielson Pimentel \and Omar Pino \and Rafael Colares}%\inst{1}}
+\author{Anderson Tavares \and David Saldaña \and Hector Azpúrua \and\\ Jhielson Pimentel \and Omar Pino \and Rafael Colares}
 
-%\address{VeRLab -- Department of Computer Science \\ Universidade Federal de Minas Gerais
-%  (UFMG)\\
-%  Belo Horizonte -- MG -- Brazil
-%  \email{\{anderson,elerson,hector.azpurua,levi-vasconcelos,rcolares,ramonmelo\}@dcc.ufmg.br}
-%}
+\newcommand{\agentset}{\mathcal{I}}
+\newcommand{\taskset}{\mathcal{J}}
+
+\newcommand{\agtres}[1]{\ensuremath{r_{#1}}}
+\newcommand{\agtcap}[2]{\ensuremath{k_{#1#2}}}
+\newcommand{\rescspt}[2]{\ensuremath{c_{#1#2}}}
+%\newcommand{\egminus}{E-GAP$^-$}
+
+\newcommand{\stimulus}[1]{\ensuremath{s_#1}}
+\newcommand{\respthresh}[2]{\ensuremath{\theta_{#1#2}}}
+\newcommand{\tendency}[2]{\ensuremath{T_{#1#2}}}
+
+\newcommand{\variables}{\ensuremath{\mathcal{X}}}
+\newcommand{\domains}{\ensuremath{\mathcal{D}}}
+\newcommand{\functions}{\ensuremath{\mathcal{F}}}
+%\newcommand{\capability}[2]{\ensuremath{f_{#1#2}}}
 
 \begin{document}
 
 \titlerunning{\teamname TDP}
+\authorrunning{Tavares \and Saldaña \and Azpúrura \and Pimentel \and Pino \and Colares}
 
 \institute{VeRLab -- Departamento de Ciência da Computação \\ Universidade Federal de Minas Gerais \\
 \mailsa \\
@@ -39,13 +50,16 @@
 \maketitle
 
 \begin{abstract}
-This paper describes the strategy of \teamname team to the Robocup Rescue Simulator Agents competition. The importance of this type of simulation is to test and improve plans of rescue in disaster environments. Our approach relies on field agents capable of individual decision making, relegating the center agents to an informational role. Our main contributions are the scheme for prediction of fire evolution done by fire brigades, the behaviour-based strategy for police forces and the simple auction-based scheme for recruiting in tasks that demand more than one agent.
+This paper describes the strategy of \teamname team to the RoboCup Rescue 2015 Agent \& Multi-agent challenge competition. The importance of this type of simulation is to test and improve plans of rescue in disaster environments. 
+For the agent competition, our approach relies on field agents capable of individual decision making, relegating the center agents to an informational role. Our main contributions are the scheme for prediction of fire evolution done by fire brigades, the behaviour-based strategy for police forces and the simple auction-based scheme for recruiting in tasks that demand more than one agent. For the multi-agent competition, we choose to implement eXtreme Ants, an scalable, swarm intelligence based algorithm for task allocation in dynamic environments.
 \end{abstract}
 
 %%% SECTION: Introduction
 \input{intro.tex}
 
-\section{Units' strategies}
+%\section*{Agent challenge competition}
+
+\section{Agent challenge competition}
 \label{sec:strategies}
 
 %%%SUBSECTION: Ambulance team
@@ -60,8 +74,10 @@ This paper describes the strategy of \teamname team to the Robocup Rescue Simula
 %%%SUBSECTION: center
 \input{center.tex}
 
-\section{Common issues}
-\label{sec:common}
+%\subsection{Common issues}
+%\label{sec:common}
+
+
 % Problemas comuns a todos: temos a compactação de mensagens para a comunicação e o path planning.
 
 %%%SUBSECTION: communication
@@ -69,6 +85,9 @@ This paper describes the strategy of \teamname team to the Robocup Rescue Simula
 
 %%%SUBSECTION: path planning
 \input{pathplanning.tex}
+
+%%%SECTION: Multi-agent
+\input{multiagent.tex}
 
 %%%SECTION: conclusion
 \input{conclusion.tex}

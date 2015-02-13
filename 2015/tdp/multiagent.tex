@@ -1,0 +1,71 @@
+\section{Multi-agent competition}
+\label{sec:multi-agent}
+
+In the multi-agent competition, the goal is to develop a DCOP algorithm in RMASBench. We choose to implement eXtreme Ants \citep{Santos&Bazzan2009optmas}. This algorithm follows the extended generalized assignment problem (E-GAP) model of \citep{Scerri+2005} and extends Swarm-GAP \citep{Ferreira+2008ccmms}, a swarm intelligence inspired task allocation algorithm for dynamic scenarios by explicitly employing a recruiting mechanism.
+
+The E-GAP can be formalized as follows: let $\taskset$ be the set of tasks and $\agentset$ the set of agents. Each agent $i \in \agentset$ has $\agtres{i}$ resources to perform tasks. Each task $j \in \taskset$ consumes $\rescspt{i}{j}$ resources of agent $i$, when it performs the task. Each agent $i$ has a capability $\agtcap{i}{j} \in [0,1]$ to perform task $j$. Capability can be regarded as the skill of the agent to perform the task. %A value of $\agtcap{i}{j}$ close to $1$ means that $i$ performs $j$ with high speed or quality.
+
+An allocation matrix $A_{|\agentset| \times |\taskset|}$ has its elements $a_{ij}$ set to $1$ if agent $i$ performs task $j$, and 0 otherwise. In this model, only one agent can perform a given task instance. Thus, a task that would require multiple agents to execute it must be broken down into smaller, inter-related tasks. In the case that all inter-related tasks must be simultaneously allocated, they are related by an AND constraint. Formally, let  $\bowtie \enspace = \{\alpha_1,...,\alpha_p\}$, where $\alpha_k = \{j_{k_1},...,j_{k_q}\}$ deohtes the $k$-th set of AND-related tasks. The partial reward $w_{ij}$ given by the allocation of task $j$ by agent $i$ is defined in Eq. \ref{eq:egap-partial-reward}.
+
+\begin{equation}
+\label{eq:egap-partial-reward}
+w_{ij} = 
+\begin{cases}
+  \agtcap{i}{j} \times a_{ij} ,& \text{if } \forall\alpha_k \in \enspace \bowtie, j \notin \alpha_k\\
+  \agtcap{i}{j} \times a_{ij} ,& \text{if } \exists\alpha_k \in \enspace \bowtie \text{ in which } j \in \alpha_k \wedge \forall j_{k_u} \in \alpha_k, a_{xj_{k_u}} \neq 0 \\
+  0,& \text{otherwise}
+\end{cases}
+\end{equation}
+
+In E-GAP, the total reward $W$ is calculated as the sum of the rewards of the agents along $t$ timesteps. In one timestep, the reward is composed of the partial reward given in Eq. \ref{eq:egap-partial-reward}. A delay cost $d_j^t$ is applied as a penalty for not allocating task $j$ in timestep $t$, as Eq. \ref{eq:egap-total-reward1} illustrates. The calculation of rewards along the timesteps captures the dynamics of the environment. That is, the reward in a given timestep depends on the tasks and agents that exist in that timestep. Equation \ref{eq:egap-total-reward2} determines that agents must allocate tasks within their resource limits and Eq. \ref{eq:egap-total-reward3} determines that a task can be performed by only one agent. %Thus, large tasks must be broken down into smaller tasks that can be performed by a single agent. E-GAP also considers task interdependence, but this aspect will not be investigated in this work. 
+%The goal in E-GAP is to maximize the total reward $W$ given by Eq. \ref{eq:egap-total-reward}. Note that terms which are indexed by the timestep $t$ might vary from one timestep to another. For example, new tasks can arise, the resources of the agents might be reduced, etc.
+%A Eq. \ref{eq:egap-total-reward} possui semelhança com a Eq. \ref{eq:gap-optimal}, 
+\begin{subequations}
+	\begin{equation}
+	\label{eq:egap-total-reward1}
+	W = \sum_t \sum_{i^t \in \agentset^t} \sum_{j^t \in \taskset^t} w_{ij}^t \times a_{ij}^t - 
+	\sum_t \sum_{j^t \in \taskset^t}(1 - a_{ij}^t) \times d_j^t 
+	\end{equation}
+	\\
+	\begin{equation}
+	\label{eq:egap-total-reward2}
+	\text{ subject to:~~~~~~~~}	
+	\forall t \forall i^t \in \agentset^t, \sum_{j^t \in \taskset^t} \rescspt{i}{j}^t \times a_{ij}^t \leq \agtres{i}^t 
+	\end{equation}
+	\begin{equation}
+	\label{eq:egap-total-reward3}
+	\text{and:~~~~~~~~~}
+	\forall t \forall j^t \in \taskset^t, \sum_{i^t \in \agentset^t} a_{ij}^t \leq 1 
+	\end{equation}
+\end{subequations}
+
+
+
+\subsection{E-GAP como DCOP}
+
+A DCOP is a tuple (\variables, \domains, \functions). $\variables = \{x_1,\cdots,x_{|\variables|}\}$ is the set of variables, $\domains = \{D_1,\cdots D_{|\variables|}\}$ is the set of finite and discrete domains, such that each $x_i \in \variables$ takes values in $D_i \in \domains$. Each agent owns a variable and decides which value it will take. \functions~ is the set of functions that define costs of variable assignments. In a DCOP, the goal is to minimize the sum of the costs of functions in \functions. 
+
+The E-GAP can be formulated as a DCOP as follows:
+
+\begin{itemize}
+%  \item Cada variável $x_i \in V$ representa um agente $i \in \agentset$.
+  \item Let $2^\domains$ be the power set of $\taskset$. Domain $D_i$ of variable $x_i$ is the set of elements in $2^\domains$ such that $\forall d \in D_i, \sum_{j \in d} \rescspt{i}{j} \leq \agtres{i}$. This means that $D_i$ is a set composed of sets of tasks that agent $i$ can perform simultaneously.
+  \item A cost function $f_{kl}$, related to variables $x_k$ e $x_l$ is given by Eq. \ref{eq:dcop-constraint-cost}. The cost (to be minimzed) is the dual of the sum of rewards (to be maximized in E-GAP) obtained by agents $k$ and $l$ via Eq. \ref{eq:egap-partial-reward}. Besides, the function prevents that the same task is allocated by two agents.
+
+\begin{equation}
+\label{eq:dcop-constraint-cost}
+f_{kl} = 
+\begin{cases}
+  - \left(\sum_{j \in D_k} w_{kj} + \sum_{j \in D_l} w_{lj}\right) ,& \text{se } a_{kj} \neq a_{lj}\\
+  \infty,& \text{caso contrário}
+\end{cases}
+\end{equation}
+
+%Uma restrição com o custo dado pela Equação \ref{eq:dcop-constraint-cost} é criada para cada par de variáveis em $V$. 
+\end{itemize}
+The constraint graph of this DCOP formulation is complete, as there is a constraint between each pair of variables. The total number of constraints can be calculated as $\frac{|\variables|(|\variables|-1)}{2}$. The number of constraints grows quadratically with the number of agents (as each agent is represented by a variable). The domain of the variables, on the worst case, where all agents can allocate all tasks is $2^{t}$ where $t$ is the number of tasks. That is, the domain grows exponentially with the number of tasks. This complex DCOP model requires approximate algorithms to be solved.
+
+
+Usando a divisão do trabalho em colônias de insetos sociais como inspiração para um algoritmo de coordenação entre agentes, \cite{Ferreira2008} apresenta o Swarm-GAP. Nele, cada tarefa possui um estímulo associado e cada indivíduo possui um limiar de resposta associado a cada tarefa. Este limiar depende da habilidade do agente para realizar a tarefa. A probabilidade de um agente alocar uma tarefa para si depende, portanto, do estímulo e ao seu limiar de resposta associados a esta tarefa. O Swarm-GAP reduz a comunicação entre agentes e o esforço computacional para se calcular a alocação de tarefas e obtém resultados semelhantes ao LA-DCOP. No entanto, a decisão probabilística na alocação de tarefas do Swarm-GAP não auxilia a formação de grupos de agentes para lidar com tarefas interdependentes, que requerem execução simultânea, e isso pode ser crítico em alguns casos.
+
+O algoritmo eXtreme Ants \cite{Santos2009F}, de maneira similar ao Swarm-GAP, é inspirado na divisão do trabalho de insetos sociais. No entanto, para lidar com a questão de formação de grupos de agentes para tarefas interdependentes, o eXtreme Ants apresenta um processo de recrutamento inspirado no recrutamento para transporte cooperativo em colônias de formigas. Comparado ao LA-DCOP, o eXtreme Ants obtém uma recompensa global próxima, com menos comunicação e esforço computacional. Comparado ao Swarm-GAP, o eXtreme Ants consegue melhores recompensas globais, particularmente na presença de tarefas interdependentes.
