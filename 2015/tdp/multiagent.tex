@@ -3,7 +3,7 @@
 
 In the multi-agent competition, the goal is to develop a DCOP algorithm in RMASBench. We choose to implement eXtreme-Ants \citep{Santos&Bazzan2009optmas}. This algorithm follows the extended generalized assignment problem (E-GAP) model of \citep{Scerri+2005} and extends Swarm-GAP \citep{Ferreira+2008ccmms}, a swarm intelligence inspired task allocation algorithm for dynamic scenarios by explicitly employing a recruiting mechanism.
 
-The E-GAP can be formalized as follows: let $\taskset$ be the set of tasks and $\agentset$ the set of agents. Each agent $i \in \agentset$ has $\agtres{i}$ resources to perform tasks. Each task $j \in \taskset$ consumes $\rescspt{i}{j}$ resources of agent $i$, when it performs the task. Each agent $i$ has a capability $\agtcap{i}{j} \in [0,1]$ to perform task $j$. Capability can be regarded as the skill of the agent to perform the task. %A value of $\agtcap{i}{j}$ close to $1$ means that $i$ performs $j$ with high speed or quality.
+The E-GAP can be formalized as follows: let $\taskset$ be the set of tasks and $\agentset$ the set of agents. Each agent $i \in \agentset$ has $\agtres{i}$ resources to perform tasks. Each task $j \in \taskset$ consumes $\consumes{i}{j}$ resources of agent $i$, when it performs the task. Each agent $i$ has a capability $\agtcap{i}{j} \in [0,1]$ to perform task $j$. Capability can be regarded as the skill of the agent to perform the task. %A value of $\agtcap{i}{j}$ close to $1$ means that $i$ performs $j$ with high speed or quality.
 
 An allocation matrix $A_{|\agentset| \times |\taskset|}$ has an element $\allocate{i}{j}$ set to $1$ if agent $i$ performs task $j$, and 0 otherwise. In this model, only one agent can perform a given task instance. Thus, a task that would require multiple agents to execute it must be broken down into smaller, inter-related tasks. In the case that all inter-related tasks must be simultaneously allocated, they are related by an AND constraint. 
 Formally, let  $\allandtasks \enspace = \{\andtasks{1},\cdots,\andtasks{p} \}$, where $\andtasks{k} = \{j_{k_1},\cdots,j_{k_q}\}$ denotes the $k$-th set of AND-constrained tasks. The partial reward $\partialrwd{i}{j}$ given by the allocation of task $j$ by agent $i$ is defined in Eq. \ref{eq:egap-partial-reward}. The first case refers to an unconstrained task, the second case refers to an AND-constrained task that belongs to a set where all other constrained tasks were allocated and the third case refers to an AND-constrained task that belongs to a set where one or more constrained task was not allocated.
@@ -34,7 +34,7 @@ Equation \ref{eq:egap-total-reward2} determines that agents must allocate tasks 
 	\begin{equation}
 	\label{eq:egap-total-reward2}
 	\text{ subject to:~~~~~~~~}	
-	\forall t \forall i^t \in \agentset^t, \sum_{j^t \in \taskset^t} \rescspt{i}{j}^t \times a_{ij}^t \leq \agtres{i}^t 
+	\forall t \forall i^t \in \agentset^t, \sum_{j^t \in \taskset^t} \consumes{i}{j}^t \times a_{ij}^t \leq \agtres{i}^t 
 	\end{equation}
 	\begin{equation}
 	\label{eq:egap-total-reward3}
@@ -91,18 +91,21 @@ To deal with AND-constraints among tasks, eXtreme-Ants uses a process inspired i
 \begin{algorithm}[ht]
 \begin{algorithmic}
 \STATE When set of constrained tasks \andtasks{} is perceived:
-%\STATE When message is received: $token \gets$ \{received token\}
-
-%\FORALL{task $j \in token$} 
-%\STATE{Compute and normalize \tendency{i}{j} for all tasks in token}
-%\IF{$random() < \tendency{i}{j}$ and $\agtres{i} > c_{ij}$ }
-%\STATE{Engage in task $j$}
-%\STATE{$token \gets token \setminus \{j\}$}
-%\STATE{$\agtres{i} \gets \agtres{i} - c_{ij}$}
-%\ENDIF
-%\ENDFOR
-%
-%\STATE Send $token$ to random agent that didn't see the token before
+\STATE{$\beta \gets \emptyset$}
+\IF{ $\agtres{i} \geq \sum_{j \in \andtasks{}} \consumes{i}{j}$}
+	\STATE{Compute and normalize \tendency{i}{j} for all tasks in token}
+	\FORALL{task $j \in \andtasks{}$}
+		\IF{$random() < \tendency{i}{j}$ }
+			\STATE{Accept task $j$; $\beta \gets \beta \cup \{j\}$; $\andtasks{} \gets \andtasks{} \setminus \{j\}$}
+		\ENDIF
+		\IF{All tasks in $\andtasks{}$ were accepted, i.e., $\beta = \andtasks{}$}
+			\STATE{Perform all tasks and set $\agtres{i} \gets \agtres{i} - \sum_{j \in \andtasks{}} \consumes{i}{j}$}
+		%\ELSE
+		%	\STATE{Discard all accepted tasks and set: $\andtasks{} \gets \andtasks{} \cup \beta$}
+	    \ENDIF
+    \ENDFOR 
+\ENDIF
+\STATE{recruit($\andtasks{} \setminus \beta$)}
 \end{algorithmic}
 \caption{Constrained task monitor}
 \label{alg:x-ants-comm}
