@@ -5,11 +5,11 @@
 The goal of communication is to increase the knowledge base of agents and to improve coordination among them. However, in a disaster scenario, communication can be unreliable and bandwidth is limited. To address these problems, our communication strategy is based on a simple protocol. We define three message types for each kind of problem (blockades, burning buildings and buried civilians) the agents may encounter:
 
 \begin{itemize}
- \item Report: the agent found a problem and reports it to its colleagues. Report messages contain information about the problem so that other agents can update their knowledge bases and reason about the recently discovered problem, that is, deciding to engage or not.
+ \item Report: the agent found a problem and reports it along with relevant information to its teammates. % Report messages contain information about the problem so that other agents can update their knowledge bases and reason about the recently discovered problem, that is, deciding to engage or not.
 
  \item Engage: the agent decided to engage in a problem. Engage messages also contain information about the problem so that other agents can update their knowledge bases even if the problem was reported earlier.
 
- \item Solved: the agent solved the problem and no further action about it is required. Solved messages do not contain information about the problem status (such as the temperature of a building) since the problem was solved and no further action is needed.
+ \item Solved: the agent solved the problem and no further action about it is required. %Solved messages do not contain information about the problem status (such as the temperature of a building) since the problem was solved and no further action is needed.
 \end{itemize}
 
 Coordination among agents, i.e., requesting help for more effort-demanding tasks require a special protocol, described in Section \ref{sec:recruiting}.
@@ -18,11 +18,9 @@ In order to save radio bandwidth and maximize the amount of data shared between 
 
 \subsubsection{Recruiting protocol}
 \label{sec:recruiting}
-When an agent estimates that it needs help to perform a task, it starts a recruitment process which consists of the following three steps: first, a \msg{request} message is sent by the recruiter agent to other agents. Agents who receive the \msg{request} message and are available to help  send back an \msg{committed} message. Receiving \msg{committed} messages allows the recruiter agent to select the teammates that will help best in the task. \msg{Engage} messages are sent to the selected teammates and \msg{release} messages are sent to non-selected teammates. This process is a simplification of the recruitment protocol of eXtreme-Ants algorithm (Section \ref{sec:multi-agent}). Figure \ref{fig:auction} illustrates the three-step recruitment process.
+When an agent estimates that it needs help to perform a task, it starts a recruitment process consisting of the following three steps: first, a \msg{request} message is sent by the recruiter agent to other agents. Agents who receive the \msg{request} message and are available to help  send back an \msg{committed} message. Receiving \msg{committed} messages allows the recruiter agent to select the teammates that will help best in the task. \msg{Engage} messages are sent to the selected teammates and \msg{release} messages are sent to non-selected teammates. This process is a simplification of the recruitment protocol of eXtreme-Ants algorithm (Section \ref{sec:multi-agent}). Figure \ref{fig:auction} illustrates the three-step recruitment process.
 
-% THIS IS A SIMPLIFICATION OF X-ANTS
-
-It should be noted that messages are always broadcasted in a given channel, that is, all agents can hear all messages in the channel. When it is said that a message is directed to a specific agent, the meaning is that the message is broadcasted in the channel but it has additional information so that non-targets of the message can ignore it.
+%It should be noted that messages are always broadcasted in a given channel, that is, all agents can hear all messages in the channel. When it is said that a message is directed to a specific agent, the meaning is that the message is broadcasted in the channel but it has additional information so that non-targets of the message can ignore it.
 
 % Sera implementado um leilão em 3 etapas (anúncio, recebimento de 'ofertas' e recrutamento) para bombeiros pedirem auxílio em tarefas dificeis.
 % Compactação
