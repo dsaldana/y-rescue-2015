@@ -30,7 +30,7 @@ Equation \ref{eq:egap-total-reward2} determines that agents must allocate tasks 
 	W = \sum_t \sum_{i^t \in \agentset^t} \sum_{j^t \in \taskset^t} w_{ij}^t \times a_{ij}^t - 
 	\sum_t \sum_{j^t \in \taskset^t}(1 - a_{ij}^t) \times d_j^t 
 	\end{equation}
-	\\
+	
 	\begin{equation}
 	\label{eq:egap-total-reward2}
 	\text{ subject to:~~~~~~~~}	
@@ -71,7 +71,7 @@ Regarding independent, i.e., non-constrained tasks, in eXtreme-Ants, agents indi
 \STATE When message is received: $token \gets$ \{received token\}
 
 \FORALL{task $j \in token$} 
-\STATE{Compute and normalize \tendency{i}{j} for all tasks in token}
+\STATE{Compute and normalize \tendency{i}{j} for all tasks in $token$}
 \IF{$random() < \tendency{i}{j}$ and $\agtres{i} > c_{ij}$ }
 \STATE{Engage in task $j$}
 \STATE{$token \gets token \setminus \{j\}$}
@@ -85,31 +85,59 @@ Regarding independent, i.e., non-constrained tasks, in eXtreme-Ants, agents indi
 \label{alg:x-ants}
 \end{algorithm}
 
-To deal with AND-constraints among tasks, eXtreme-Ants uses a process inspired in the recruitment process for cooperative transport observed among ants. When an agent perceives a set of inter-constrained tasks \andtasks{}, it acts as a scout ant. Firstly it attempts to perform all the constrained tasks. If it fails, then it begins a recruitment process. This process is based on communication. There are five kinds of messages used in the recruitment protocol of eXtreme-Ants. A \textit{request} message is an invitation for an agent to join the recruitment for a task. A \textit{commited} message is sent to inform  that the agent joined the recruitment for a task. A \textit{engage} message informs that the agent was indeed selected to perform the task. A \textit{release} message informs that the agent was not selected to perform the task and must decommit to it. A \textit{timeout} message informs that a request for a task has reached its timeout, and is used to prevent deadlocks. The handling of AND-constrained tasks is formalized in Alg. \ref{alg:x-ants-comm}.
+To deal with AND-constraints among tasks, i.e. groups of tasks that demand simultaneous execution, eXtreme-Ants uses a process inspired in the recruitment process for cooperative transport observed among ants. When an agent perceives a set of inter-constrained tasks, it acts as a scout ant. Firstly it attempts to perform all the constrained tasks. If it fails, then it begins a recruitment process via communication. There are five kinds of messages used in the recruitment protocol of eXtreme-Ants. A \msg{request} message is an invitation for an agent to join the recruitment for a task. A \msg{committed} message is sent to inform  that the agent joined the recruitment for a task. A \msg{engage} message informs that the agent was indeed selected to perform the task. A \msg{release} message informs that the agent was not selected to perform the task and must de-commit to it. A \msg{timeout} message informs that the request has expired. Figure \ref{fig:auction} illustrates the recruitment process, except the timeout mechanism. An agent decides to commit to a task probabilistically, via Eq. \ref{eq:tendency}. 
 
+\begin{figure}[ht]
+  \centering
+  \subfigure[]{
+    {\includegraphics[width=3cm]{img/request.png}}
+    \label{fig:request}
+  }%
+  \subfigure[]{
+    {\includegraphics[width=3cm]{img/offer.png}}
+    \label{fig:offer}
+  }%
+  \subfigure[]{
+    {\includegraphics[width=3cm]{img/commit.png}}
+    \label{fig:commit}
+  }%
 
-\begin{algorithm}[ht]
-\begin{algorithmic}
-\STATE When set of constrained tasks \andtasks{} is perceived:
-\STATE{$\beta \gets \emptyset$}
-\IF{ $\agtres{i} \geq \sum_{j \in \andtasks{}} \consumes{i}{j}$}
-	\STATE{Compute and normalize \tendency{i}{j} for all tasks in token}
-	\FORALL{task $j \in \andtasks{}$}
-		\IF{$random() < \tendency{i}{j}$ }
-			\STATE{Accept task $j$; $\beta \gets \beta \cup \{j\}$; $\andtasks{} \gets \andtasks{} \setminus \{j\}$}
-		\ENDIF
-		\IF{All tasks in $\andtasks{}$ were accepted, i.e., $\beta = \andtasks{}$}
-			\STATE{Perform all tasks and set $\agtres{i} \gets \agtres{i} - \sum_{j \in \andtasks{}} \consumes{i}{j}$}
-		%\ELSE
-		%	\STATE{Discard all accepted tasks and set: $\andtasks{} \gets \andtasks{} \cup \beta$}
-	    \ENDIF
-    \ENDFOR 
-\ENDIF
-\STATE{recruit($\andtasks{} \setminus \beta$)}
-\end{algorithmic}
-\caption{Constrained task monitor}
-\label{alg:x-ants-comm}
-\end{algorithm}
+  \caption{Recruitment process: \subref{fig:request} recruiter (circled with dashed line) sends \msg{request} messages; \subref{fig:offer} agents who decide to help respond with \msg{committed} messages; \subref{fig:commit} recruiter sends \msg{engage} to selected teammates and dismisses non-selected ones with \msg{release} messages.}
+
+ \label{fig:auction}
+\end{figure}
+
+In addition to the steps presented in Fig. \ref{fig:auction}, in eXtreme-Ants, a \msg{request} message is forwarded when the agent who received it decides to not commit to the task. Besides, there is a mechanism to prevent excessive forwarding of \msg{request} messages: when a \msg{request} message is forwarded too many times, it expires. The agent that received an expired \msg{request} message sends a \msg{timeout} message to the scout (recruiter) agent. The scout, upon receipt of \msg{timeout} messages, sends \msg{release} messages to dismiss agents that had previously committed to the task. 
+
+The choice of eXtreme-Ants for the multi-agent competition is due to its performance in terms of team reward, computational effort and exchanged messages compared to other E-GAP-based algorithms. Also, it would be interesting to compare its performance with factor-graph based algorithms, such as max-sum, which is implemented in RMASBench \citep{Kleiner+2013}. For further details of eXtreme-Ants implementation and performance, the reader can refer to \citep{Santos&Bazzan2009optmas}.
+
+%The recruitment process used in the Agent competition (Section \ref{sec:recruiting}) a simplification of the recruitment process of eXtreme-Ants. %Thus, Fig. \ref{fig:auction} also illustrates the recruitment process presented here. 
+%In the agent competition we use a simplified version of
+%A \textit{timeout} message informs that a request for a task has reached its timeout, and is used to prevent deadlocks. The handling of AND-constrained tasks is formalized in Alg. \ref{alg:x-ants-comm}.
+
+%
+%\begin{algorithm}[ht]
+%\begin{algorithmic}
+%\STATE When set of constrained tasks \andtasks{} is perceived:
+%\STATE{$\beta \gets \emptyset$}
+%\IF{ $\agtres{i} \geq \sum_{j \in \andtasks{}} \consumes{i}{j}$}
+%	\STATE{Compute and normalize \tendency{i}{j} for all tasks in token}
+%	\FORALL{task $j \in \andtasks{}$}
+%		\IF{$random() < \tendency{i}{j}$ }
+%			\STATE{Accept task $j$; $\beta \gets \beta \cup \{j\}$; $\andtasks{} \gets \andtasks{} \setminus \{j\}$}
+%		\ENDIF
+%		\IF{All tasks in $\andtasks{}$ were accepted, i.e., $\beta = \andtasks{}$}
+%			\STATE{Perform all tasks and set $\agtres{i} \gets \agtres{i} - \sum_{j \in \andtasks{}} \consumes{i}{j}$}
+%		%\ELSE
+%		%	\STATE{Discard all accepted tasks and set: $\andtasks{} \gets \andtasks{} \cup \beta$}
+%	    \ENDIF
+%    \ENDFOR 
+%\ENDIF
+%\STATE{recruit($\andtasks{} \setminus \beta$)}
+%\end{algorithmic}
+%\caption{Constrained task monitor}
+%\label{alg:x-ants-comm}
+%\end{algorithm}
 
 
 %\subsection{E-GAP as a DCOP}
@@ -141,6 +169,4 @@ To deal with AND-constraints among tasks, eXtreme-Ants uses a process inspired i
 %The constraint graph of this DCOP formulation is complete, as there is a constraint between each pair of variables. The total number of constraints can be calculated as $\frac{|\variables|(|\variables|-1)}{2}$. The number of constraints grows quadratically with the number of agents (as each agent is represented by a variable). The domain of the variables, on the worst case, where all agents can allocate all tasks is $2^{t}$ where $t$ is the number of tasks. That is, the domain grows exponentially with the number of tasks. This complex DCOP model requires approximate algorithms to be solved.
 %
 %
-%Usando a divisão do trabalho em colônias de insetos sociais como inspiração para um algoritmo de coordenação entre agentes, \cite{Ferreira2008} apresenta o Swarm-GAP. Nele, cada tarefa possui um estímulo associado e cada indivíduo possui um limiar de resposta associado a cada tarefa. Este limiar depende da habilidade do agente para realizar a tarefa. A probabilidade de um agente alocar uma tarefa para si depende, portanto, do estímulo e ao seu limiar de resposta associados a esta tarefa. O Swarm-GAP reduz a comunicação entre agentes e o esforço computacional para se calcular a alocação de tarefas e obtém resultados semelhantes ao LA-DCOP. No entanto, a decisão probabilística na alocação de tarefas do Swarm-GAP não auxilia a formação de grupos de agentes para lidar com tarefas interdependentes, que requerem execução simultânea, e isso pode ser crítico em alguns casos.
-%
-%O algoritmo eXtreme Ants \cite{Santos2009F}, de maneira similar ao Swarm-GAP, é inspirado na divisão do trabalho de insetos sociais. No entanto, para lidar com a questão de formação de grupos de agentes para tarefas interdependentes, o eXtreme Ants apresenta um processo de recrutamento inspirado no recrutamento para transporte cooperativo em colônias de formigas. Comparado ao LA-DCOP, o eXtreme Ants obtém uma recompensa global próxima, com menos comunicação e esforço computacional. Comparado ao Swarm-GAP, o eXtreme Ants consegue melhores recompensas globais, particularmente na presença de tarefas interdependentes.
+

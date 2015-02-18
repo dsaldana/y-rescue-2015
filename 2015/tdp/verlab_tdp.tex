@@ -33,6 +33,7 @@
 \newcommand{\andtasks}[1]{\ensuremath{\alpha_{#1}}}
 \newcommand{\allandtasks}{\ensuremath{\bowtie}}
 
+\newcommand{\msg}[1]{\textit{#1}}
 %\newcommand{\egminus}{E-GAP$^-$}
 
 \newcommand{\stimulus}[1]{\ensuremath{s_#1}}
@@ -42,6 +43,8 @@
 \newcommand{\variables}{\ensuremath{\mathcal{X}}}
 \newcommand{\domains}{\ensuremath{\mathcal{D}}}
 \newcommand{\functions}{\ensuremath{\mathcal{F}}}
+
+
 %\newcommand{\capability}[2]{\ensuremath{f_{#1#2}}}
 
 \begin{document}
@@ -57,8 +60,8 @@
 \maketitle
 
 \begin{abstract}
-This paper describes the strategy of \teamname team to the RoboCup Rescue 2015 Agent \& Multi-agent challenge competition. The importance of this type of simulation is to test and improve plans of rescue in disaster environments. 
-For the agent competition, our approach relies on field agents capable of individual decision making, relegating the center agents to an informational role. Our main contributions are the scheme for prediction of fire evolution done by fire brigades, the behaviour-based strategy for police forces and the simple auction-based scheme for recruiting in tasks that demand more than one agent. For the multi-agent competition, we choose to implement eXtreme Ants, an scalable, swarm intelligence based algorithm for task allocation in dynamic environments.
+This paper describes the strategy of \teamname team to the RoboCup Rescue 2015 Agent \& Multi-agent challenge competition. %The importance of this type of simulation is to test and improve plans of rescue in disaster environments. 
+For the agent competition, our approach relies on field agents capable of individual decision making, relegating the center agents to an informational role. Our main contributions are the scheme for prediction of fire evolution done by fire brigades, the behaviour-based strategy for police forces and the simple auction-based scheme for recruiting in tasks that demand more than one agent. For the multi-agent competition, we choose to implement eXtreme Ants, a scalable, swarm intelligence based algorithm for task allocation in dynamic environments.
 \end{abstract}
 
 %%% SECTION: Introduction
@@ -67,7 +70,7 @@ For the agent competition, our approach relies on field agents capable of indivi
 %\section*{Agent challenge competition}
 
 \section{Agent challenge competition}
-\label{sec:strategies}
+\label{sec:agent}
 
 %%%SUBSECTION: Ambulance team
 \input{ambulance.tex}

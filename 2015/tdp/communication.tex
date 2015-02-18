@@ -18,27 +18,9 @@ In order to save radio bandwidth and maximize the amount of data shared between 
 
 \subsubsection{Recruiting protocol}
 \label{sec:recruiting}
-When an agent estimates that it needs help to perform a task, it starts an auction which consists of the following three steps: first, a ``request'' message is sent by the recruiter agent. Agents who receive the ``request'' message and are available to help  send back an ``offer'' message. Receiving the ``offer'' messages allow the recruiter agent to select the colleagues that will help best in the task. A ``commit'' message is sent to the selected colleagues. Figure \ref{fig:auction} illustrates the three-step auction.
+When an agent estimates that it needs help to perform a task, it starts a recruitment process which consists of the following three steps: first, a \msg{request} message is sent by the recruiter agent to other agents. Agents who receive the \msg{request} message and are available to help  send back an \msg{committed} message. Receiving \msg{committed} messages allows the recruiter agent to select the teammates that will help best in the task. \msg{Engage} messages are sent to the selected teammates and \msg{release} messages are sent to non-selected teammates. This process is a simplification of the recruitment protocol of eXtreme-Ants algorithm (Section \ref{sec:multi-agent}). Figure \ref{fig:auction} illustrates the three-step recruitment process.
 
-\begin{figure}[ht]
-  \centering
-  \subfigure[]{
-    {\includegraphics[width=3cm]{img/request.png}}
-    \label{fig:request}
-  }%
-  \subfigure[]{
-    {\includegraphics[width=3cm]{img/offer.png}}
-    \label{fig:offer}
-  }%
-  \subfigure[]{
-    {\includegraphics[width=3cm]{img/commit.png}}
-    \label{fig:commit}
-  }%
-
-  \caption{Three-step auction: \subref{fig:request} recruiter (circled with dashed line) sends ``request'' messages; \subref{fig:offer} agents who decide to help respond with ``offer'' messages; \subref{fig:commit} recruiter selects colleagues to help and sends ``commit'' messages.}
-
- \label{fig:auction}
-\end{figure}
+% THIS IS A SIMPLIFICATION OF X-ANTS
 
 It should be noted that messages are always broadcasted in a given channel, that is, all agents can hear all messages in the channel. When it is said that a message is directed to a specific agent, the meaning is that the message is broadcasted in the channel but it has additional information so that non-targets of the message can ignore it.
 
