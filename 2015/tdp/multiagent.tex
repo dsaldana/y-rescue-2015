@@ -6,42 +6,55 @@ In the multi-agent competition, the goal is to develop a DCOP algorithm in RMASB
 The E-GAP can be formalized as follows: let $\taskset$ be the set of tasks and $\agentset$ the set of agents. Each agent $i \in \agentset$ has $\agtres{i}$ resources to perform tasks. Each task $j \in \taskset$ consumes $\consumes{i}{j}$ resources of agent $i$, when it performs the task. Each agent $i$ has a capability $\agtcap{i}{j} \in [0,1]$ to perform task $j$. Capability can be regarded as the skill of the agent to perform the task. %A value of $\agtcap{i}{j}$ close to $1$ means that $i$ performs $j$ with high speed or quality.
 
 An allocation matrix $A_{|\agentset| \times |\taskset|}$ has an element $\allocate{i}{j}$ set to $1$ if agent $i$ performs task $j$, and 0 otherwise. In this model, only one agent can perform a given task instance. Thus, a task that would require multiple agents to execute it must be broken down into smaller, inter-related tasks. In the case that all inter-related tasks must be simultaneously allocated, they are related by an AND constraint. 
-Formally, let  $\allandtasks \enspace = \{\andtasks{1},\cdots,\andtasks{p} \}$, where $\andtasks{k} = \{j_{k_1},\cdots,j_{k_q}\}$ denotes the $k$-th set of AND-constrained tasks. The partial reward $\partialrwd{i}{j}$ given by the allocation of task $j$ by agent $i$ is defined in Eq. \ref{eq:egap-partial-reward}. The first case refers to an unconstrained task, the second case refers to an AND-constrained task that belongs to a set where all other constrained tasks were allocated and the third case refers to an AND-constrained task that belongs to a set where one or more constrained task was not allocated.
 
-\begin{equation}
-\label{eq:egap-partial-reward}
-\partialrwd{i}{j} = 
-\begin{cases}
-  \agtcap{i}{j} \times \allocate{i}{j} ,& \text{if } \forall\andtasks{k} \in \enspace \allandtasks, j \notin \andtasks{k}\\
-  \agtcap{i}{j} \times \allocate{i}{j} ,& \text{if } \exists\andtasks{k} \in \enspace \allandtasks \text{ with } j \in \andtasks{k} \wedge \sum_{i \in \agentset}\sum_{j_k \in \andtasks{k}} \allocate{i}{j_k} = |\andtasks{k}| %\forall j_{k_u} \in \alpha_k, a_{xj_{k_u}} \neq 0 
-  \\
-  0,& \text{otherwise}
-\end{cases}
-\end{equation}
+%Formally, let  $\allandtasks \enspace = \{\andtasks{1},\cdots,\andtasks{p} \}$, where $\andtasks{k} = \{j_{k_1},\cdots,j_{k_q}\}$ denotes the $k$-th set of AND-constrained tasks. 
+
+%$\partialrwd{i}{j}$
+
+The partial reward given by the allocation of task $j$ by agent $i$ depends on the agent capability to perform this task and the relation of this task with another. 
+
+%The first case refers to an unconstrained task, the second case refers to an AND-constrained task that belongs to a set where all other constrained tasks were allocated and the third case refers to an AND-constrained task that belongs to a set where one or more constrained task was not allocated.
+
+%Eq. \ref{eq:egap-partial-reward}
+
+%\begin{equation}
+%\label{eq:egap-partial-reward}
+%\partialrwd{i}{j} = 
+%\begin{cases}
+%  \agtcap{i}{j} \times \allocate{i}{j} ,& \text{if } \forall\andtasks{k} \in \enspace \allandtasks, j \notin \andtasks{k}\\
+%  \agtcap{i}{j} \times \allocate{i}{j} ,& \text{if } \exists\andtasks{k} \in \enspace \allandtasks \text{ with } j \in \andtasks{k} \wedge \sum_{i \in \agentset}\sum_{j_k \in \andtasks{k}} \allocate{i}{j_k} = |\andtasks{k}| %\forall j_{k_u} \in \alpha_k, a_{xj_{k_u}} \neq 0 
+%  \\
+%  0,& \text{otherwise}
+%\end{cases}
+%\end{equation}
 
 
-In E-GAP, the total reward $W$ is calculated as the sum of the rewards of the agents along discrete timesteps. Thus, all variables are indexed by the timestep $t$. In a given timestep, the reward is the sum of partial rewards calculated via Eq. \ref{eq:egap-partial-reward}. A delay cost $d_j^t$ is applied as a penalty for not allocating task $j$ in timestep $t$, as Eq. \ref{eq:egap-total-reward1} illustrates. %The calculation of rewards along the timesteps captures the dynamics of the environment. That is, the reward in a given timestep depends on the tasks and agents that exist in that timestep. 
-Equation \ref{eq:egap-total-reward2} determines that agents must allocate tasks within their resource limits and Eq. \ref{eq:egap-total-reward3} determines that a task can be performed by only one agent. %Thus, large tasks must be broken down into smaller tasks that can be performed by a single agent. E-GAP also considers task interdependence, but this aspect will not be investigated in this work. 
+In E-GAP, the total reward $W$ is calculated as the sum of the partial rewards of the agents along discrete timesteps. A delay cost is applied as a penalty for not allocating task $j$ in a given timestep $t$. The constraints are that the agents must allocate tasks within their resource limits and that a task can be performed by only one agent.
+
+%Thus, all variables are indexed by the timestep $t$. In a given timestep, the reward is the sum of partial rewards calculated via Eq. \ref{eq:egap-partial-reward}. 
+ %The calculation of rewards along the timesteps captures the dynamics of the environment. That is, the reward in a given timestep depends on the tasks and agents that exist in that timestep. 
+%Equation \ref{eq:egap-total-reward2} determines that agents must allocate tasks within their resource limits and Eq. \ref{eq:egap-total-reward3} determines that a task can be performed by only one agent. %Thus, large tasks must be broken down into smaller tasks that can be performed by a single agent. E-GAP also considers task interdependence, but this aspect will not be investigated in this work. 
 %The goal in E-GAP is to maximize the total reward $W$ given by Eq. \ref{eq:egap-total-reward}. Note that terms which are indexed by the timestep $t$ might vary from one timestep to another. For example, new tasks can arise, the resources of the agents might be reduced, etc.
 %A Eq. \ref{eq:egap-total-reward} possui semelhança com a Eq. \ref{eq:gap-optimal}, 
-\begin{subequations}
-	\begin{equation}
-	\label{eq:egap-total-reward1}
-	W = \sum_t \sum_{i^t \in \agentset^t} \sum_{j^t \in \taskset^t} w_{ij}^t \times a_{ij}^t - 
-	\sum_t \sum_{j^t \in \taskset^t}(1 - a_{ij}^t) \times d_j^t 
-	\end{equation}
-	
-	\begin{equation}
-	\label{eq:egap-total-reward2}
-	\text{ subject to:~~~~~~~~}	
-	\forall t \forall i^t \in \agentset^t, \sum_{j^t \in \taskset^t} \consumes{i}{j}^t \times a_{ij}^t \leq \agtres{i}^t 
-	\end{equation}
-	\begin{equation}
-	\label{eq:egap-total-reward3}
-	\text{and:~~~~~~~~~}
-	\forall t \forall j^t \in \taskset^t, \sum_{i^t \in \agentset^t} a_{ij}^t \leq 1 
-	\end{equation}
-\end{subequations}
+
+%\begin{subequations}
+%	\begin{equation}
+%	\label{eq:egap-total-reward1}
+%	W = \sum_t \sum_{i^t \in \agentset^t} \sum_{j^t \in \taskset^t} w_{ij}^t \times a_{ij}^t - 
+%	\sum_t \sum_{j^t \in \taskset^t}(1 - a_{ij}^t) \times d_j^t 
+%	\end{equation}
+%	
+%	\begin{equation}
+%	\label{eq:egap-total-reward2}
+%	\text{ subject to:~~~~~~~~}	
+%	\forall t \forall i^t \in \agentset^t, \sum_{j^t \in \taskset^t} \consumes{i}{j}^t \times a_{ij}^t \leq \agtres{i}^t 
+%	\end{equation}
+%	\begin{equation}
+%	\label{eq:egap-total-reward3}
+%	\text{and:~~~~~~~~~}
+%	\forall t \forall j^t \in \taskset^t, \sum_{i^t \in \agentset^t} a_{ij}^t \leq 1 
+%	\end{equation}
+%\end{subequations}
 
 Inspired by the division of labor in social insects, eXtreme-Ants is an approximate algorithm for E-GAP. %In swarms, or colonies of social insects, complex behaviors emerge from the aggregation of individual actions of colony members. %One characteristic of swarms is the ability to respond to changes in the environment by adjusting the numbers of members performing each task.
 
@@ -83,20 +96,20 @@ Regarding independent, i.e., non-constrained tasks, in eXtreme-Ants, agents indi
 %\label{alg:x-ants}
 %\end{algorithm}
 
-To deal with AND-constraints among tasks, i.e. groups of tasks that demand simultaneous execution, eXtreme-Ants uses a process inspired in the recruitment process for cooperative transport observed among ants. When an agent perceives a set of inter-constrained tasks, it acts as a scout ant. Firstly it attempts to perform all the constrained tasks. If it fails, then it begins a recruitment process via communication. There are five kinds of messages used in the recruitment protocol of eXtreme-Ants. A \msg{request} message is an invitation for an agent to join the recruitment for a task. A \msg{committed} message is sent to inform  that the agent joined the recruitment for a task. A \msg{engage} message informs that the agent was indeed selected to perform the task. A \msg{release} message informs that the agent was not selected to perform the task and must de-commit to it. A \msg{timeout} message informs that the request has expired. Figure \ref{fig:auction} illustrates the recruitment process, except the timeout mechanism. An agent decides to commit to a task probabilistically, via Eq. \ref{eq:tendency}. 
+To deal with AND-constraints among tasks, i.e. groups of tasks that demand simultaneous execution, eXtreme-Ants uses a process inspired in the recruitment process for cooperative transport observed among ants. When an agent perceives a set of inter-constrained tasks, it acts as a scout ant. Firstly it attempts to perform all the constrained tasks. If it fails, then it begins a recruitment process via communication. There are five kinds of messages used in the recruitment protocol of eXtreme-Ants: \msg{request}, \msg{committed}, \msg{engage}, \msg{release} and \msg{timeout}. Figure \ref{fig:auction} illustrates the recruitment process, except the timeout mechanism. An agent decides to commit to a task probabilistically, via Eq. \ref{eq:tendency}. 
 
 \begin{figure}[ht]
   \centering
   \subfigure[]{
-    {\includegraphics[width=3cm]{img/request.png}}
+    {\includegraphics[width=2.4cm]{img/request.png}}
     \label{fig:request}
   }%
   \subfigure[]{
-    {\includegraphics[width=3cm]{img/offer.png}}
+    {\includegraphics[width=2.4cm]{img/offer.png}}
     \label{fig:offer}
   }%
   \subfigure[]{
-    {\includegraphics[width=3cm]{img/commit.png}}
+    {\includegraphics[width=2.4cm]{img/commit.png}}
     \label{fig:commit}
   }%
 

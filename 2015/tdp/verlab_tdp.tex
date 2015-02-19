@@ -1,4 +1,6 @@
 \documentclass[runningheads,a4paper]{llncs}
+\usepackage[square,sort,comma,numbers]{natbib}
+%\documentclass[runningheads,a4paper]{llncs}
 %\documentclass[12pt]{article}
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
@@ -44,8 +46,28 @@
 \newcommand{\domains}{\ensuremath{\mathcal{D}}}
 \newcommand{\functions}{\ensuremath{\mathcal{F}}}
 
-
-%\newcommand{\capability}[2]{\ensuremath{f_{#1#2}}}
+% Black magic xD
+\makeatletter
+\renewenvironment{thebibliography}[1]
+     {\section*{\bibname}%
+      \@mkboth{\MakeUppercase\bibname}{\MakeUppercase\bibname}%
+      \list{\@biblabel{\@arabic\c@enumiv}}%
+           {\settowidth\labelwidth{\@biblabel{#1}}%
+            \leftmargin\labelwidth
+            \advance\leftmargin\labelsep
+            \@openbib@code
+            \usecounter{enumiv}%
+            \let\p@enumiv\@empty
+            \renewcommand\theenumiv{\@arabic\c@enumiv}}%
+      \sloppy
+      \clubpenalty4000
+      \@clubpenalty \clubpenalty
+      \widowpenalty4000%
+      \sfcode`\.\@m}
+     {\def\@noitemerr
+       {\@latex@warning{Empty `thebibliography' environment}}%
+      \endlist}
+\makeatother
 
 \begin{document}
 
@@ -102,7 +124,8 @@ For the agent competition, our approach relies on field agents capable of indivi
 %%%SECTION: conclusion
 \input{conclusion.tex}
 
-\bibliographystyle{plainnat}
+%\bibliographystyle{splncs03}
+%\bibliographystyle{plainnat}
 \bibliography{references}
 
 \end{document}
