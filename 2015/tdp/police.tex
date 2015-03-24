@@ -6,20 +6,20 @@ To achieve these goals, police force agents use a behaviour-based controller. Ea
 
 \begin{itemize}
 
-\item Sweeper: the ``sweeper'' behaviour will try to clear important paths. These paths includes the vicinity of important map features;
+  \item \behavior{Sweeper}: the \textit{sweeper} behaviour will try to clear important paths. These paths includes the vicinity of important map features;
 
-\item By-demand: the ``by-demand'' behaviour will clear their own vicinity and will constantly listen to the communication channels for ``help messages'';
+  \item \behavior{By-demand}: the \textit{by-demand} behaviour will clear their own vicinity and will constantly listen to the communication channels for help requests;
 
-\item Scout: the ``scout'' behaviour will keep searching inside buildings for survivors.
+  \item \behavior{Scout}: the \textit{scout} behaviour will keep searching inside buildings for survivors.
 
 \end{itemize}
 
 \subsubsection{Task Allocation}
-Initially, the map will be divided into \emph{n} clusters, where \emph{n} is the number of police force team agents. These clusters will be created taking into account the size of the map and the localization of each agent. Agents who are near an important feature of the map will be given the ``sweeper'' behaviour, while agents who are on other areas will be given the ``by-demand'' behaviour. When an agent finishes its tasks, it will then be assigned to the ``scout'' behaviour.
+Initially, the map will be divided into \emph{n} clusters, where \emph{n} is the number of police force team agents. These clusters will be created taking into account the size of the map and the localization of each agent. Agents who are near an important feature of the map will be given the \behavior{sweeper} behaviour, while agents who are on other areas will be given the \behavior{by-demand} behaviour. When an agent finishes its tasks, it will then be assigned to the \behavior{scout} behaviour.
 
-The ``sweeper'' agent task is simple and direct: it will clear its cluster's paths until all paths are clear. It will not listen to any communication channel or stop its task for any reason. The ``by-demand'' agent task is more complicated, as it will be listening to a communication channel and responding  to calls for help. An agent from any other team will be able to broadcast a distress message to the police force team informing that it is trapped and need assistance. This message contains the sender's current task and location. When a ``by-demand'' agent receives a help message and it is the closest to the sender agent, this ``by-demand'' agent will drop its current task and will respond to that message.
+The \behavior{sweeper} agent task is simple and direct: it will clear its cluster's paths until all paths are clear. It will not listen to any communication channel or stop its task for any reason. The \behavior{by-demand} agent task is more complicated, as it will be listening to a communication channel and responding  to calls for help. An agent from any other team will be able to broadcast a distress message to the police force team informing that it is trapped and need assistance. This message contains the sender's current task and location. When a \behavior{by-demand} agent receives a help message and it is the closest to the sender agent, this \behavior{by-demand} agent will drop its current task and will respond to that message.
 
-Both behaviours, ``sweeper'' and ``by-demand'', will keep listening to calls for help from civilians and will keep searching for fire spots, in order to report these events to the proper agent team. Once they finish their tasks, they will be assigned to the ``scout'' behaviour. Agents with this behaviour will wander through the map helping other police force team agents and searching for survivors and fire spots.
+Both behaviours, \behavior{sweeper} and \behavior{by-demand}, will keep listening to calls for help from civilians and will keep searching for fire spots, in order to report these events to the proper agent team. Once they finish their tasks, they will be assigned to the \behavior{scout} behaviour. Agents with this behaviour will wander through the map helping other police force team agents and searching for survivors and fire spots.
 % Inicialmente, existirão apenas fixos e sob demanda. Quando um fixo terminar sua tarefa, ele se torna sob-demanda. Ao longo do tempo, os sob demanda viram batedores.
 % Implementar o Q-learning no agente policia
 % dividi-los em dois times, um fica responsavel por desbloquear caminhos 'vitais' (até refugio ou hidrantes, por ex.) e outro time escuta os canais dos outros agentes para limpar o caminho deles até suas tarefas.
