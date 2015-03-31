@@ -17,7 +17,9 @@ Open another terminal:
  
 $ ./sampleagent.sh
 
-Now close all this and set up our code:
+Start the simulation in the Kernel Gui and watch the sample agents.
+
+Now close all this and set up Y-Rescue code:
  
 - Get Eclipse: https://eclipse.org/downloads/
 - Open Eclipse and create a Java project in <robocup>/2015/agentcompetition/ (where robocup is the root of your Mercurial working copy)
