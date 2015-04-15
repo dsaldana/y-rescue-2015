@@ -1,6 +1,6 @@
 Little tutorial to get the simulator and our code up and running.
 
-Get the simulator and build it (tested with ad 1.9.3 and Java 1.7.0 OpenJDK):
+Get the simulator and build it (tested with ant 1.9.3 and Java 1.7.0 OpenJDK):
 
 $ git clone git://git.code.sf.net/p/roborescue/roborescue roborescue
 $ cd roborescue

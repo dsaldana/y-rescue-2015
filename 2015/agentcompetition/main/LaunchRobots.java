@@ -2,6 +2,10 @@ package main;
 
 import java.io.IOException;
 
+import agent.center.RobotCenter;
+import agent.platoon.Ambulance;
+import agent.platoon.Firefighter;
+import agent.platoon.Policeman;
 //import rescuecore.objects.FireBrigade;
 import rescuecore2.components.ComponentLauncher;
 import rescuecore2.components.TCPComponentLauncher;
@@ -16,10 +20,6 @@ import rescuecore2.log.Logger;
 import rescuecore2.standard.entities.StandardEntityFactory;
 import rescuecore2.standard.entities.StandardPropertyFactory;
 import rescuecore2.standard.messages.StandardMessageFactory;
-import robot.base.RobotCenter;
-import robot.unit.RobotFirebat;
-import robot.unit.RobotMarine;
-import robot.unit.RobotNurse;
 
 /**
  * Robot Launcher. This will launch as many instances of each of the
@@ -94,7 +94,7 @@ public final class LaunchRobots {
 		try {
 			while (fb-- != 0) {
 				Logger.info("Connecting RoboFire " + (i++) + "...");
-				launcher.connect(new RobotFirebat());
+				launcher.connect(new Firefighter());
 				Logger.info("success");
 			}
 		} catch (ComponentConnectionException e) {
@@ -103,7 +103,7 @@ public final class LaunchRobots {
 		try {
 			while (pf-- != 0) {
 				Logger.info("Connecting RoboCop " + (i++) + "...");
-				launcher.connect(new RobotMarine());
+				launcher.connect(new Policeman());
 				Logger.info("success");
 			}
 		} catch (ComponentConnectionException e) {
@@ -112,7 +112,7 @@ public final class LaunchRobots {
 		try {
 			while (at-- != 0) {
 				Logger.info("Connecting RoboMedic " + (i++) + "...");
-				launcher.connect(new RobotNurse());
+				launcher.connect(new Ambulance());
 				Logger.info("success");
 			}
 		} catch (ComponentConnectionException e) {
