@@ -128,6 +128,6 @@ public final class LaunchAgents {
 			Logger.info("failed: " + e.getMessage());
 		}
 		
-		System.out.println("Robots launched.");
+		System.out.println("Y-Rescue agents launched.");
 	}
 }
