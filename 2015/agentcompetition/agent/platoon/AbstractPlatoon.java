@@ -300,10 +300,9 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         	//if entity is a Road, casts it and tests whether it has blockades
         	if(entity instanceof Road){
         		Road r = (Road) entity;
-        		
         		//if road is blocked, adds it to knowledge base or update its entry. 
         		//else, mark it as solved if it was on knowledge base
-                if (!r.getBlockades().isEmpty()) {
+                if ( r.getBlockades()!= null && !r.getBlockades().isEmpty()) {
                     updateBlockedRoad(time, r);
                 }
                 else {
