@@ -1,5 +1,8 @@
 package agent.platoon;
 
+import java.awt.Shape;
+import java.awt.geom.PathIterator;
+import java.awt.geom.Rectangle2D;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
@@ -13,8 +16,8 @@ import rescuecore2.messages.Command;
 import rescuecore2.log.Logger;
 import rescuecore2.misc.Pair;
 import rescuecore2.misc.geometry.GeometryTools2D;
-import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.misc.geometry.Line2D;
+import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.misc.geometry.Vector2D;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.StandardEntity;
@@ -124,44 +127,101 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			// }
 			double dist = Double.MAX_VALUE;
 			if (lastPosition != null) {
-				 dist = GeometryTools2D.getDistance(lastPosition, current_position);
+				dist = GeometryTools2D.getDistance(lastPosition,
+						current_position);
 				System.out.println("distancia percorrida" + dist);
 			}
-			
+
 			// if the position is the same, then clean
 			if (lastPosition != null && dist < 100.0) {
-				// Am I near a blockade?
-				Blockade target = getTargetBlockade();
-				// ----BEGIN Tests if blockade is in range and sends clear
-				// command
-				Logger.info("Clearing blockade " + target);
-				// Communicate the clearing
-				sendSpeak(time, 1, ("Clearing " + target).getBytes());
 
-				List<Line2D> lines = GeometryTools2D
-						.pointsToLines(GeometryTools2D
-								.vertexArrayToPoints(target.getApexes()), true);
+				// // Am I near a blockade?
+				// Blockade target = getTargetBlockade();
+				// // ----BEGIN Tests if blockade is in range and sends clear
 				//
-				double best = Double.MAX_VALUE;
-				Point2D bestPoint = null;
-				// Point2D origin = new Point2D(me().getX(), me().getY());
+				//
+				// List<Line2D> lines = GeometryTools2D
+				// .pointsToLines(GeometryTools2D
+				// .vertexArrayToPoints(target.getApexes()), true);
+				// //
+				// double best = Double.MAX_VALUE;
+				// Point2D bestPoint = null;
+				// // Point2D origin = new Point2D(me().getX(), me().getY());
+				//
+				// for (Line2D next : lines) {
+				// Point2D closest = GeometryTools2D.getClosestPointOnSegment(
+				// next, current_position);
+				// double d = GeometryTools2D.getDistance(current_position,
+				// closest);
+				// if (d < best) {
+				// best = d;
+				// bestPoint = closest;
+				// }
+				// }
+				// Vector2D v = bestPoint.minus(new Point2D(me().getX(), me()
+				// .getY()));
+				// v = v.normalised().scale(1000000);
+				//
+				//
+				// // command
+				// Logger.info("Clearing blockade " + target);
+				// // Communicate the clearing
+				// sendSpeak(time, 1, ("Clearing " + target).getBytes());
+				// sendClear(time, (int) (me().getX() + v.getX()), (int) (me()
+				// .getY() + v.getY()));
 
-				for (Line2D next : lines) {
-					Point2D closest = GeometryTools2D.getClosestPointOnSegment(
-							next, current_position);
-					double d = GeometryTools2D.getDistance(current_position, closest);
-					if (d < best) {
-						best = d;
-						bestPoint = closest;
+				Road r1 = (Road) model.getEntity(path.get(0));
+				Road r2 = (Road) model.getEntity(path.get(1));
+
+				// Bounding rectangle
+				Rectangle2D rec1 = r1.getShape().getBounds2D();
+				Rectangle2D rec2 = r2.getShape().getBounds2D();
+
+				// center points of rectangle 1.
+				Point2D rec1Center = new Point2D(rec1.getCenterX(),
+						rec1.getCenterY());
+
+				Point2D[] ptsR2 = {
+						new Point2D(rec2.getMaxX(), rec2.getMaxY()),
+						new Point2D(rec2.getMinX(), rec2.getMaxY()),
+						new Point2D(rec2.getMaxX(), rec2.getMinY()),
+						new Point2D(rec2.getMinX(), rec2.getMinY()) };
+
+				double[] d1 = {
+						GeometryTools2D.getDistance(rec1Center, ptsR2[0]),
+						GeometryTools2D.getDistance(rec1Center, ptsR2[1]),
+						GeometryTools2D.getDistance(rec1Center, ptsR2[2]),
+						GeometryTools2D.getDistance(rec1Center, ptsR2[3]) };
+
+				double minDistance1 = Double.MAX_VALUE;
+				double minDistance2 = Double.MAX_VALUE;
+				int minDistanceIdx1 = -1;
+				int minDistanceIdx2 = -1;
+				for (int i = 0; i < d1.length; i++) {
+					if (d1[i] < minDistance1) {
+						minDistanceIdx2 = minDistanceIdx1;
+						minDistanceIdx1 = i;
+						minDistance1 = d1[i];
 					}
 				}
-				Vector2D v = bestPoint.minus(new Point2D(me().getX(), me()
-						.getY()));
-				v = v.normalised().scale(1000000);
+				//
+				// if
 
-				sendClear(time, (int) (me().getX() + v.getX()), (int) (me()
-						.getY() + v.getY()));
+				// //rec1.intersects(rec2);
+				// rec1.contains(rec2.getMaxX(), rec2.getMaxY());
 
+				// Am I near a blockade?
+				// Blockade target = getTargetBlockade();
+				double targetx = (ptsR2[minDistanceIdx1].getX() + ptsR2[minDistanceIdx2]
+						.getX()) / 2.0;
+				double targety = (ptsR2[minDistanceIdx1].getY() + ptsR2[minDistanceIdx2]
+						.getY()) / 2.0;
+
+				Logger.info("Clearing blockade: " + targetx + ", " + targety);
+				// Communicate the clearing
+				// TODO speak
+//				sendSpeak(time, 1, ("Clearing " + target).getBytes());
+				sendClear(time, (int) targetx, (int) targety);
 				lastPosition = null;
 				return;
 
