@@ -93,7 +93,7 @@ public final class LaunchAgents {
 		int i = 0;
 		try {
 			while (fb-- != 0) {
-				Logger.info("Connecting RoboFire " + (i++) + "...");
+				Logger.info("Connecting Firefighter " + (i++) + "...");
 				launcher.connect(new Firefighter());
 				Logger.info("success");
 			}
@@ -102,7 +102,7 @@ public final class LaunchAgents {
 		}
 		try {
 			while (pf-- != 0) {
-				Logger.info("Connecting RoboCop " + (i++) + "...");
+				Logger.info("Connecting Policeman " + (i++) + "...");
 				launcher.connect(new Policeman());
 				Logger.info("success");
 			}
@@ -111,7 +111,7 @@ public final class LaunchAgents {
 		}
 		try {
 			while (at-- != 0) {
-				Logger.info("Connecting RoboMedic " + (i++) + "...");
+				Logger.info("Connecting Ambulance " + (i++) + "...");
 				launcher.connect(new Ambulance());
 				Logger.info("success");
 			}
@@ -120,7 +120,7 @@ public final class LaunchAgents {
 		}
 		try {
 			while (true) {
-				Logger.info("Connecting RobotCenter " + (i++) + "...");
+				Logger.info("Connecting Center " + (i++) + "...");
 				launcher.connect(new RobotCenter());
 				Logger.info("success");
 			}

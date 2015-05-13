@@ -28,7 +28,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 
     @Override
     public String toString() {
-        return "RoboMedic " + me().getID();
+        return "Ambulance " + me().getID();
     }
 
     @Override

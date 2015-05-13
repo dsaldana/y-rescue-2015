@@ -34,7 +34,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
 
     @Override
     public String toString() {
-        return "RoboFire " + me().getID();
+        return "Firefighter " + me().getID();
     }
 
     @Override

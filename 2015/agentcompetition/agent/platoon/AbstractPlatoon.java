@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Collections;
 import java.util.Map;
 
+import message.MessageEncoder;
 import message.MessageReceiver;
 import message.MessageType;
 import message.ReceivedMessage;
@@ -79,7 +80,17 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     protected Map<EntityID, BlockedRoad> blockedRoads;
     protected Map<EntityID, WoundedHuman> woundedHumans;
     protected Map<EntityID, BurningBuilding> burningBuildings;
-
+    
+    /**
+     * A list of problems that the agent will send to teammates
+     */
+    protected List<Problem> problemsToReport;
+    /*protected List<BurningBuilding> buildingsToReport;
+    protected List<WoundedHuman> humansToReport;
+    protected List<BlockedRoad> roadsToReport;
+    */
+    
+    
     /**
      * Construct an AbstractRobot.
      */
@@ -87,6 +98,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	blockedRoads = new HashMap<EntityID, BlockedRoad>();
     	woundedHumans = new HashMap<EntityID, WoundedHuman>();
     	burningBuildings = new HashMap<EntityID, BurningBuilding>();
+    	
+    	problemsToReport = new ArrayList<Problem>();
     }
 
     @Override
@@ -125,11 +138,34 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     @Override
     protected void think(int time, ChangeSet changed, Collection<Command> heard) {
     	try{
+    		hear(time, heard);
     		updateKnowledge(time, changed);
     		doThink(time, changed, heard);
+    		sendMessages(time);
     	}
     	catch (Exception e){
     		Logger.warn("System malfunction! (exception occurred)", e.getCause());
+    	}
+    }
+    
+    /**
+     * Processes the messages received
+     * @param time
+     * @param heard
+     */
+    protected void hear(int time, Collection<Command> heard) {
+    	decodeBlockedRoadMessages(heard);
+    	decodeBurningBuildingMessages(heard);
+    	decodeWoundedHumanMessages(heard);
+    }
+    
+    /**
+     * Sends the messages reporting problems the agent has seen in this cycle
+     * @param time
+     */
+    protected void sendMessages(int time){
+    	for(Problem p : problemsToReport){
+    		p.encodeReportMessage(getID());
     	}
     }
     
@@ -203,6 +239,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 		//checks whether I already know this problem or if the incoming problem is more recent
 		if(!blockedRoads.containsKey(b) || b.getUpdateTime() > blockedRoads.get(b).getUpdateTime() ){
 			blockedRoads.put(b.getEntityID(), b);
+			problemsToReport.add(b);
 		}
 	}
 	
@@ -210,6 +247,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 		//checks whether I already know this problem or if the incoming problem is more recent
 		if(!woundedHumans.containsKey(h) || h.getUpdateTime() > woundedHumans.get(h).getUpdateTime() ){
 			woundedHumans.put(h.getEntityID(), h);
+			problemsToReport.add(h);
 		}
 	}
 	
@@ -217,6 +255,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 		//checks whether I already know this problem or if the incoming problem is more recent
 		if(!burningBuildings.containsKey(bb) || bb.getUpdateTime() > burningBuildings.get(bb).getUpdateTime() ){
 			burningBuildings.put(bb.getEntityID(), bb);
+			problemsToReport.add(bb);
 		}
 	}
     
