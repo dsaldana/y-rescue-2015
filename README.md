@@ -8,16 +8,13 @@ Get the simulator and build it (tested with ant 1.9.3 and Java 1.7.0 OpenJDK):
 
 
 `$ git clone git://git.code.sf.net/p/roborescue/roborescue roborescue`
-
 `$ cd roborescue`
-
 `$ ant`
 
 (ant takes a lot of time and generates a ton of warnings)
 
 Test the simulator:
 `$ cd boot`
-
 `$ ./start.sh -c config/ -m ../maps/gml/test/`
 
 Click OK in "Setup kernel options" screen.
