@@ -6,6 +6,7 @@ Little tutorial to get the simulator and our code up and running.
 ### Install the Simulator
 Get the simulator and build it (tested with ant 1.9.3 and Java 1.7.0 OpenJDK):
 
+
 `$ git clone git://git.code.sf.net/p/roborescue/roborescue roborescue`
 
 `$ cd roborescue`
@@ -36,7 +37,7 @@ Now close all this and set up Y-Rescue code:
 - Get Eclipse: https://eclipse.org/downloads/
 - Open Eclipse and create a Java project in `<robocup>/2015/agentcompetition/` (where robocup is the root of your Mercurial working copy)
 - Right click in JRE System Library -> Configure build path -> Add external jars
--- add all .jar in `<RCR>/jars/` (where <RCR> is the path to your simulator package)
+-- add all .jar in `<RCR>/jars/` (where RCR is the path to your simulator package)
 -- Go to "Add external jars" again and add all .jar in `<RCR>/lib/`
 -- Go to "Add library" and select JUnit
 
