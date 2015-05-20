@@ -25,6 +25,7 @@ import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
 import rescuecore2.standard.components.StandardAgent;
 import rescuecore2.standard.entities.Blockade;
+import rescuecore2.standard.entities.Hydrant;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Refuge;
@@ -68,6 +69,16 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
        Cache of refuge IDs.
     */
     protected List<EntityID> refugeIDs;
+    
+    /**
+    Cache of refuge IDs.
+ */
+    protected List<EntityID> hydrantIDs;
+    
+    /**
+    Cache of water source IDs.
+     */
+    protected List<EntityID> waterSourceIDs;
 
     private Map<EntityID, Set<EntityID>> neighbours;
     
@@ -85,10 +96,14 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * A list of problems that the agent will send to teammates
      */
     protected List<Problem> problemsToReport;
+
+	
     /*protected List<BurningBuilding> buildingsToReport;
     protected List<WoundedHuman> humansToReport;
     protected List<BlockedRoad> roadsToReport;
     */
+
+	
     
     
     /**
@@ -108,6 +123,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         buildingIDs = new ArrayList<EntityID>();
         roadIDs = new ArrayList<EntityID>();
         refugeIDs = new ArrayList<EntityID>();
+        hydrantIDs = new ArrayList<EntityID>();
+        waterSourceIDs = new ArrayList<EntityID>();
         for (StandardEntity next : model) {
             if (next instanceof Building) {
                 buildingIDs.add(next.getID());
@@ -118,7 +135,13 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
             if (next instanceof Refuge) {
                 refugeIDs.add(next.getID());
             }
+            if (next instanceof Hydrant) {
+                hydrantIDs.add(next.getID());
+            }
+            
         }
+        waterSourceIDs.addAll(refugeIDs);
+        waterSourceIDs.addAll(hydrantIDs);
         search = new SampleSearch(model);
         neighbours = search.getGraph();
         useSpeak = config.getValue(Constants.COMMUNICATION_MODEL_KEY).equals(SPEAK_COMMUNICATION_MODEL);
@@ -138,14 +161,27 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     @Override
     protected void think(int time, ChangeSet changed, Collection<Command> heard) {
     	try{
-    		hear(time, heard);
+//    		hear(time, heard);
     		updateKnowledge(time, changed);
     		doThink(time, changed, heard);
     		sendMessages(time);
     	}
     	catch (Exception e){
-    		Logger.warn("System malfunction! (exception occurred)", e.getCause());
+    		//Logger.warn("System malfunction! (exception occurred)", e.getCause());
+    		Logger.error("At: " + this.location() + ". System malfunction! (exception occurred)", e);
+    		//e.printStackTrace();
     	}
+    }
+    
+    /**
+     * 
+     * @param path1
+     * @param path2
+     * @return The shortest path 
+     */
+    protected List<EntityID> shortestPath(List<EntityID> path1, List<EntityID> path2)
+    {
+    	return path2;
     }
     
     /**

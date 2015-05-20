@@ -2,24 +2,22 @@ package agent.platoon;
 
 import static rescuecore2.misc.Handy.objectsToIDs;
 
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 
-import rescuecore2.worldmodel.EntityID;
-import rescuecore2.worldmodel.ChangeSet;
-import rescuecore2.messages.Command;
 import rescuecore2.log.Logger;
-
+import rescuecore2.messages.Command;
+import rescuecore2.standard.entities.Building;
+import rescuecore2.standard.entities.FireBrigade;
+import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityURN;
-import rescuecore2.standard.entities.Building;
-import rescuecore2.standard.entities.Refuge;
-import rescuecore2.standard.entities.FireBrigade;
+import rescuecore2.worldmodel.ChangeSet;
+import rescuecore2.worldmodel.EntityID;
 import util.DistanceSorter;
-
 /**
  *  RoboFire agent. Implements a simple scheme to fight fires.
  */
@@ -36,7 +34,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     public String toString() {
         return "Firefighter " + me().getID();
     }
-
+    
     @Override
     protected void postConnect() {
         super.postConnect();
@@ -67,31 +65,45 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         // Are we out of water?
         if (me.isWaterDefined() && me.getWater() == 0) {
             // Head for a refuge
-            List<EntityID> path = search.breadthFirstSearch(me().getPosition(), refugeIDs);
-            if (path != null) {
-                Logger.info("Moving to refuge");
-                sendMove(time, path);
+        	
+            List<EntityID> pathRefuge = search.breadthFirstSearch(me().getPosition(), waterSourceIDs);
+            
+            if (pathRefuge != null) {
+                Logger.info("Moving to water source");
+                sendMove(time, pathRefuge);
                 return;
             }
             else {
                 Logger.debug("Couldn't plan a path to a refuge.");
-                path = randomWalk();
+                pathRefuge = randomWalk();
                 Logger.info("Moving randomly");
-                sendMove(time, path);
+                sendMove(time, pathRefuge);
                 return;
             }
         }
         // Find all buildings that are on fire
         Collection<EntityID> all = getBurningBuildings();
+        
+      //just to see the memory, delete later
+        String str = "Burning Builds Memory ";
+        for (EntityID next : all) {
+        	str += next + " ";
+        }
+        Logger.info(str);
+        
+        
         // Can we extinguish any right now?
         for (EntityID next : all) {
             if (model.getDistance(getID(), next) <= maxDistance) {
-                Logger.info("Extinguishing " + next);
+            	Logger.info("Extinguishing " + next);
                 sendExtinguish(time, next, maxPower);
-                sendSpeak(time, 1, ("Extinguishing " + next).getBytes());
+                //sendSpeak(time, 1, ("Extinguishing " + next).getBytes());
+                //TODO: send engage message!
                 return;
             }
         }
+        
+        
         // Plan a path to a fire
         for (EntityID next : all) {
             List<EntityID> path = planPathToFire(next);

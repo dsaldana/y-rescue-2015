@@ -109,7 +109,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			// if the position is the same, then clean
 			if (lastPosition != null && dist < 100.0) {
 				Road r1 = (Road) model.getEntity(path.get(0));
-				Road r2 = (Road) model.getEntity(path.get(1));
+				Road r2 = (Road) model.getEntity(path.get(1)); //TODO: nem sempre e' um road, ta dando ClassCastException
 
 				clearTowardsIntersection(r1, r2, time);
 				lastPosition = null;
