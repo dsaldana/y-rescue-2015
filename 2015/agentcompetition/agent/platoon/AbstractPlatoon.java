@@ -20,10 +20,12 @@ import problem.WoundedHuman;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
+import rescuecore2.worldmodel.properties.IntArrayProperty;
 import rescuecore2.Constants;
 import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
 import rescuecore2.standard.components.StandardAgent;
+import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Blockade;
 import rescuecore2.standard.entities.Hydrant;
 import rescuecore2.standard.entities.StandardEntity;
@@ -31,8 +33,10 @@ import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.Human;
+import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.kernel.comms.ChannelCommunicationModel;
 import rescuecore2.standard.kernel.comms.StandardCommunicationModel;
+import util.LastVisitSorter;
 import util.SampleSearch;
 
 /**
@@ -44,11 +48,31 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 
     private static final String SAY_COMMUNICATION_MODEL = StandardCommunicationModel.class.getName();
     private static final String SPEAK_COMMUNICATION_MODEL = ChannelCommunicationModel.class.getName();
+    
+    /**
+     * Current timestep
+     */
+    protected int time;
+    
+    /**
+     * Current changeset
+     */
+    protected ChangeSet changed;
+    
+    /**
+     * Current listened communication
+     */
+    protected Collection<Command> heard;
 
     /**
        The search algorithm.
     */
     protected SampleSearch search;
+    
+    /**
+     * Stores my last location
+     */
+    protected EntityID lastLocationID;
 
     /**
        Whether to use AKSpeak messages or not.
@@ -69,6 +93,11 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
        Cache of refuge IDs.
     */
     protected List<EntityID> refugeIDs;
+    
+    /**
+     * Stores when entities were last visited
+     */
+    protected Map<EntityID, Integer> lastVisit;
     
     /**
     Cache of refuge IDs.
@@ -98,14 +127,6 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     protected List<Problem> problemsToReport;
 
 	
-    /*protected List<BurningBuilding> buildingsToReport;
-    protected List<WoundedHuman> humansToReport;
-    protected List<BlockedRoad> roadsToReport;
-    */
-
-	
-    
-    
     /**
      * Construct an AbstractRobot.
      */
@@ -125,6 +146,9 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         refugeIDs = new ArrayList<EntityID>();
         hydrantIDs = new ArrayList<EntityID>();
         waterSourceIDs = new ArrayList<EntityID>();
+        
+        lastVisit = new HashMap<EntityID, Integer>();
+        
         for (StandardEntity next : model) {
             if (next instanceof Building) {
                 buildingIDs.add(next.getID());
@@ -138,8 +162,14 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
             if (next instanceof Hydrant) {
                 hydrantIDs.add(next.getID());
             }
+            if (next instanceof Area){ //Building and Road extends area
+            	//last visit is 'infinite' for unknown places
+            	lastVisit.put(next.getID(), -1);
+            }
             
         }
+        lastLocationID = location().getID(); //initializes last location as the current
+        
         waterSourceIDs.addAll(refugeIDs);
         waterSourceIDs.addAll(hydrantIDs);
         search = new SampleSearch(model);
@@ -161,15 +191,68 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     @Override
     protected void think(int time, ChangeSet changed, Collection<Command> heard) {
     	try{
-//    		hear(time, heard);
+    		this.time = time;
+    		this.changed = changed;
+    		this.heard = heard;
+    		//Logger.info("" + changed);
+    		//Logger.info("" + me().getFullDescription());
+    		//model.getDistance(first, second)
+    		
+    		updateVisitHistory();
+    		
+    		//IntArrayProperty positionHist = (IntArrayProperty)changed.getChangedProperty(getID(), "urn:rescuecore2.standard:property:positionhistory");
+    		//Logger.info("History: " + positionHist + positionHist.getValue());
+    		
+    		hear(time, heard);
     		updateKnowledge(time, changed);
     		doThink(time, changed, heard);
     		sendMessages(time);
+    		
+    		lastLocationID = location().getID();	//updates last location
     	}
     	catch (Exception e){
-    		//Logger.warn("System malfunction! (exception occurred)", e.getCause());
     		Logger.error("At: " + this.location() + ". System malfunction! (exception occurred)", e);
-    		//e.printStackTrace();
+    	}
+    }
+    
+    private void updateVisitHistory(){
+    	
+    	/*
+    	for (EntityID modified : changed.getChangedEntities()){ //changed entities contains more than the ones I have traversed =/
+    		if (model.getEntity(modified) instanceof Area){
+    			lastVisit.put(modified, time);
+				Logger.info("Entity " + modified + " updated @ " + time);
+    		}
+    	}*/
+    	
+    	lastVisit.put(location().getID(), time);	//stores that current location was visited now
+    	
+    	
+    	IntArrayProperty positionHist = (IntArrayProperty) me().getProperty("urn:rescuecore2.standard:property:positionhistory");
+    	int[] positionList = positionHist.getValue();
+    	//Logger.info("Position list: " + positionList);
+    	Logger.info("I'm at: " + location());
+    	Logger.info("Position hist: " + positionHist);
+    	if (!positionHist.isDefined()) {
+    		Logger.info("Empty position list. I'm (possibly stopped) at " + location());
+    		return;
+    	}
+    	
+    	for (int i = 0; i < positionList.length; i++){
+    		int x = positionList[i];
+    		int y = positionList[i+1];
+    		i++;
+    		
+    		Collection<StandardEntity> intersectz = model.getObjectsInRectangle(x, y, x, y);	//obtains the object that intersect with a point where the agent has been
+    		
+    		//Logger.info(String.format("Found %d entities @ (%d,%d)", intersectz.size(), x, y));
+    		
+    		for(StandardEntity entity: intersectz){
+    			if (entity instanceof Area) {
+    				lastVisit.put(entity.getID(), time);
+    				//Logger.info("Entity " + entity.getID() + " updated @ " + time);
+    			}
+    		}
     	}
     }
     
@@ -203,6 +286,18 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	for(Problem p : problemsToReport){
     		p.encodeReportMessage(getID());
     	}
+    }
+    
+    /**
+     * Returns the time of the last visit to an entity 
+     * @param id
+     * @return int
+     */
+    public int lastVisit(EntityID id){
+    	if (! lastVisit.containsKey(id)){
+    		throw new RuntimeException("ID" + id + "does not refers to a Building or Road");
+    	}
+    	return lastVisit.get(id);
     }
     
     protected void decodeBlockedRoadMessages(Collection<Command> heard){
@@ -475,9 +570,12 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
        @return A random walk.
     */
     protected List<EntityID> randomWalk() {
+    	return explore();
+    	/*
         List<EntityID> result = new ArrayList<EntityID>(RANDOM_WALK_LENGTH);
         Set<EntityID> seen = new HashSet<EntityID>();
         EntityID current = ((Human)me()).getPosition();
+        
         for (int i = 0; i < RANDOM_WALK_LENGTH; ++i) {
             result.add(current);
             seen.add(current);
@@ -497,6 +595,71 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
                 break;
             }
         }
+        return result;*/
+    }
+    
+    /**
+     * Attempts to reach unexplored places (a small random walk enhancement)
+     * @return
+     */
+    protected List<EntityID> explore() {
+        List<EntityID> result = new ArrayList<EntityID>(RANDOM_WALK_LENGTH);
+        Set<EntityID> seen = new HashSet<EntityID>();
+        EntityID current = ((Human)me()).getPosition();
+        
+        model.getEntitiesOfType(StandardEntityURN.BUILDING, StandardEntityURN.ROAD);
+        
+        for (int i = 0; i < RANDOM_WALK_LENGTH; ++i) {
+            result.add(current);
+            seen.add(current);
+            List<EntityID> possible = new ArrayList<EntityID>(neighbours.get(current));
+            //Collections.shuffle(possible, random);
+            Collections.sort(possible, new LastVisitSorter(this));	//we want the most recent visit to be the last
+            //Collections.reverse(possible); 
+            
+            /*String str_possible = "[";
+            for (EntityID p : possible) str_possible += p + ":" + lastVisit(p) + ", ";
+            str_possible += "]";
+            
+            Logger.info("" + me() + "possible:" + str_possible);
+            */
+            boolean found = false;
+            for (EntityID next : possible) {
+                StandardEntity e = model.getEntity(next);
+            	
+                //discards entities already in the path and burning buildings
+            	if (seen.contains(next))  {
+                    continue;
+                }
+                //discards the burning building if there are other possibilities
+            	//if all possibilities are burning buildings, agent gets stuck
+                if (possible.size() > 1 && e instanceof Building && ((Building) e).isOnFire()) {
+                	continue;
+                }
+                
+                current = next;
+                found = true;
+                //Logger.info("selected: " + current);
+                break;
+            }
+            if (!found) {
+                // We reached a dead-end.
+                break;
+            }
+        }
+        /*
+        //removes last entity of path if it is a burning building
+        if (result.size() > 0){
+        	StandardEntity last = model.getEntity(result.get(result.size() -1));
+        	
+        	if (last instanceof Building && ((Building) last).isOnFire()) {
+        		Logger.info("Removing entity" + last + " from path because it is a burning building.");
+        		result.remove(result.size() -1);
+        	}
+        	
+        }
+        */
         return result;
     }
 }
+
