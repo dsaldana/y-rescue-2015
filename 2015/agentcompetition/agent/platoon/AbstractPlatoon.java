@@ -385,6 +385,18 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 	private void updateIfNewer(BurningBuilding bb) {
 		//checks whether I already know this problem or if the incoming problem is more recent
 		if(!burningBuildings.containsKey(bb) || bb.getUpdateTime() > burningBuildings.get(bb).getUpdateTime() ){
+			//updates the model too
+			Building b = (Building) model.getEntity(bb.getEntityID());
+			b.setBrokenness(bb.brokenness);
+			b.setFieryness(bb.fieryness);
+			b.setTemperature(bb.temperature);
+			//b.setIgnition(! bb.isSolved());
+			
+			//@TODO: test if properties set this way are 'defined' in the Building class 
+			
+			
+			
+			
 			burningBuildings.put(bb.getEntityID(), bb);
 			problemsToReport.add(bb);
 		}
