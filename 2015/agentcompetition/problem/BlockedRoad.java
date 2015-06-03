@@ -65,7 +65,7 @@ public class BlockedRoad extends Problem{
 
 	@Override
 	public String toString() {
-		return String.format("BlockedRoad: id=%d, repairCost=%d", getEntityID().getValue(), repairCost);
+		return String.format("BlockedRoad: id=%d, repairCost=%d, updTime=%d", getEntityID().getValue(), repairCost, getUpdateTime());
 	}
 	
 }

@@ -9,6 +9,8 @@ import java.util.HashSet;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.log4j.MDC;
+
 import message.MessageEncoder;
 import message.MessageReceiver;
 import message.MessageType;
@@ -108,7 +110,6 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     Cache of water source IDs.
      */
     protected List<EntityID> waterSourceIDs;
-
     private Map<EntityID, Set<EntityID>> neighbours;
     
     /**
@@ -136,6 +137,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	burningBuildings = new HashMap<EntityID, BurningBuilding>();
     	
     	problemsToReport = new ArrayList<Problem>();
+    	
+    	
     }
 
     @Override
@@ -168,6 +171,9 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
             }
             
         }
+        MDC.put("agent", me());
+        MDC.put("location", location());
+        
         lastLocationID = location().getID(); //initializes last location as the current
         
         waterSourceIDs.addAll(refugeIDs);
@@ -194,6 +200,12 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		this.time = time;
     		this.changed = changed;
     		this.heard = heard;
+    		
+    		MDC.put("location", location());
+    		MDC.put("time", time);
+    		
+    		//Logger.info("Time: " + time);
+    		Logger.info(("Heard:" + heard));
     		//Logger.info("" + changed);
     		//Logger.info("" + me().getFullDescription());
     		//model.getDistance(first, second)
@@ -211,28 +223,19 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		lastLocationID = location().getID();	//updates last location
     	}
     	catch (Exception e){
-    		Logger.error("At: " + this.location() + ". System malfunction! (exception occurred)", e);
+    		Logger.error(("System malfunction! (exception occurred)"), e);
     	}
     }
     
     private void updateVisitHistory(){
-    	
-    	/*
-    	for (EntityID modified : changed.getChangedEntities()){ //changed entities contains more than the ones I have traversed =/
-    		if (model.getEntity(modified) instanceof Area){
-    			lastVisit.put(modified, time);
-				Logger.info("Entity " + modified + " updated @ " + time);
-    		}
-    	}*/
     	
     	lastVisit.put(location().getID(), time);	//stores that current location was visited now
     	
     	
     	IntArrayProperty positionHist = (IntArrayProperty) me().getProperty("urn:rescuecore2.standard:property:positionhistory");
     	int[] positionList = positionHist.getValue();
-    	//Logger.info("Position list: " + positionList);
-    	Logger.info("I'm at: " + location());
-    	Logger.info("Position hist: " + positionHist);
+
+    	Logger.debug(("Position hist: " + positionHist));
     	if (!positionHist.isDefined()) {
     		Logger.info("Empty position list. I'm (possibly stopped) at " + location());
     		return;
@@ -283,9 +286,19 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * @param time
      */
     protected void sendMessages(int time){
+		Logger.info(("#burning bldgs:" + burningBuildings.size()));
+		Logger.info(("#wounded humans:" + woundedHumans.size()));
+		Logger.info(("#blocked roads:" + blockedRoads.size()));
+		//Logger.info(("the blk roads:" + blockedRoads.keySet()));
+    	Logger.info("#problemsToReport: " + problemsToReport.size());
     	for(Problem p : problemsToReport){
-    		p.encodeReportMessage(getID());
+    		Logger.info((String.format("%s will communicate problem %s", me(), p)));
+    		byte[] msg = p.encodeReportMessage(getID());
+    		sendSay(time, msg);
+    		sendSpeak(time, 1, msg);	//TODO implementar alocação de canais
     	}
+    	
+    	problemsToReport.clear();
     }
     
     /**
@@ -295,7 +308,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      */
     public int lastVisit(EntityID id){
     	if (! lastVisit.containsKey(id)){
-    		throw new RuntimeException("ID" + id + "does not refers to a Building or Road");
+    		throw new RuntimeException("ID" + id + "does not refer to a Building or Road");
     	}
     	return lastVisit.get(id);
     }
@@ -303,7 +316,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     protected void decodeBlockedRoadMessages(Collection<Command> heard){
     	for(Command next : heard){
     		ReceivedMessage msg = MessageReceiver.decodeMessage(next);
-    		if (msg == null) continue; //skips 'broken' messages
+    		if (msg == null || !(msg.problem instanceof BlockedRoad)) continue; //skips 'broken' and wrong type msgs
     		
     		BlockedRoad b = (BlockedRoad) msg.problem;
     		
@@ -323,7 +336,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     protected void decodeWoundedHumanMessages(Collection<Command> heard){
     	for(Command next : heard){
     		ReceivedMessage msg = MessageReceiver.decodeMessage(next);
-    		if (msg == null) continue; //skips 'broken' messages
+    		if (msg == null || !(msg.problem instanceof WoundedHuman)) continue; //skips 'broken' and wrong type msgs
     		
     		WoundedHuman h = (WoundedHuman) msg.problem;
     		
@@ -343,7 +356,9 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     protected void decodeBurningBuildingMessages(Collection<Command> heard){
     	for(Command next : heard){
     		ReceivedMessage msg = MessageReceiver.decodeMessage(next);
-    		if (msg == null) continue; //skips 'broken' messages
+    		if (msg == null || !(msg.problem instanceof BurningBuilding)) continue; //skips 'broken' and wrong type msgs
+    		
+    		Logger.info((String.format("received msg %s", msg)));
     		
     		BurningBuilding bb = (BurningBuilding) msg.problem;
     		
@@ -370,7 +385,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 		//checks whether I already know this problem or if the incoming problem is more recent
 		if(!blockedRoads.containsKey(b) || b.getUpdateTime() > blockedRoads.get(b).getUpdateTime() ){
 			blockedRoads.put(b.getEntityID(), b);
-			problemsToReport.add(b);
+			//problemsToReport.add(b);
+			Logger.info(String.format("Added %s to problems to report", b));
 		}
 	}
 	
@@ -378,7 +394,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 		//checks whether I already know this problem or if the incoming problem is more recent
 		if(!woundedHumans.containsKey(h) || h.getUpdateTime() > woundedHumans.get(h).getUpdateTime() ){
 			woundedHumans.put(h.getEntityID(), h);
-			problemsToReport.add(h);
+			//problemsToReport.add(h);
+			Logger.info(String.format("Added %s to problems to report", h));
 		}
 	}
 	
@@ -392,13 +409,19 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 			b.setTemperature(bb.temperature);
 			//b.setIgnition(! bb.isSolved());
 			
-			//@TODO: test if properties set this way are 'defined' in the Building class 
-			
-			
-			
+			//sanity check 
+			if (! b.isBuildingAttributesDefined()) {
+				Logger.error((String.format("Building %d attributes not defined!", b.getID().getValue())));
+			}
 			
 			burningBuildings.put(bb.getEntityID(), bb);
-			problemsToReport.add(bb);
+			//problemsToReport.add(bb);
+			Logger.info(String.format("Added %s to problems to report", bb));
+			
+			Logger.info(("Updated info of bldg " + b.getID()));
+		}
+		else {
+			Logger.info(("Discarded info of bldg " + bb.getEntityID() + ". Outdated."));
 		}
 	}
     
@@ -516,7 +539,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 			blocked = new BlockedRoad(r.getID(), calculateRepairCost(r.getBlockades()), time);
 			blockedRoads.put(r.getID(), blocked);
 		}
-		
+		problemsToReport.add(blocked);
 	}
 
 	/**
@@ -534,6 +557,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 			wounded = new WoundedHuman(h.getID(), h.getPosition(), h.getBuriedness(), h.getHP(), h.getDamage(), time);
 			woundedHumans.put(h.getID(), wounded);
 		}
+		problemsToReport.add(wounded);
 	}
 
 	/**
@@ -551,6 +575,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 			burning = new BurningBuilding(b.getID(), b.getBrokenness(), b.getFieryness(), b.getTemperature(), time);
 			burningBuildings.put(b.getID(), burning);
 		}
+		problemsToReport.add(burning);
 	}
 	
 	/**
@@ -673,5 +698,13 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         */
         return result;
     }
+
+	/**
+	 * Just opens location() visibility to public 
+	 * @return
+	 */
+    public StandardEntity getLocation() {
+    	return location();
+	}
 }
 

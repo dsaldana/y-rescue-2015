@@ -84,7 +84,7 @@ public class BurningBuilding extends Problem {
 
 	@Override
 	public String toString() {
-		return String.format("BurningBuilding: id=%d, brk=%d, fir=%d, temp=%d", getEntityID().getValue(), brokenness, fieryness, temperature); 
+		return String.format("BurningBuilding: id=%d, brk=%d, fir=%d, temp=%d, time=%d", getEntityID().getValue(), brokenness, fieryness, temperature, getUpdateTime()); 
 	}
 
 	

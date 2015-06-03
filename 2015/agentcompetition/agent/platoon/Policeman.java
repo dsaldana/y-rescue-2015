@@ -68,12 +68,6 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		 * System.out.println(e.getID()+" "+e.getURN()); }
 		 */
 
-		System.out.println("\nTime: " + time);
-		System.out.println("#burning bldgs:" + burningBuildings.size());
-		System.out.println("#wounded humans:" + woundedHumans.size());
-		System.out.println("#blocked roads:" + blockedRoads.size());
-		System.out.println("the blk roads:" + blockedRoads.keySet());
-
 		// ---- BEGIN Plan a path and moves to a blockade
 		// local position
 		Point2D current_position = new Point2D(me().getX(), me().getY());
