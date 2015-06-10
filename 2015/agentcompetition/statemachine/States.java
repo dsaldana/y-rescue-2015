@@ -13,6 +13,7 @@ public class States {
 	
 	
 	public static class FireFighter {
+		public static final State EXTINGUISHING = new State("EXTINGUISHING");
         public static final State OUT_OF_WATER = new State("OUT_OF_WATER");
 		public static final State REFILLING_WATER = new State("FILLING_WATER");
 		
@@ -24,6 +25,7 @@ public class States {
 		public static final State LOADING = new State("LOADING");
 		public static final State UNLOADING = new State("UNLOADING");
 		public static final State CARRYING_WOUNDED = new State("CARRYING_WOUNDED");
+		public static final State SEARCHING_BUILDINGS = new State("SEARCHING_BUILDINGS");
 		
 		private Ambulance() {}
 	}

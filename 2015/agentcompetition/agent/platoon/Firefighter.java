@@ -20,6 +20,7 @@ import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
 import statemachine.StateMachine;
+import statemachine.States;
 import util.DistanceSorter;
 /**
  *  RoboFire agent. Implements a simple scheme to fight fires.
@@ -65,6 +66,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         FireBrigade me = me();
         // Are we currently filling with water?
         if (me.isWaterDefined() && me.getWater() < maxWater && location() instanceof Refuge) {
+        	stateMachine.setState(States.FireFighter.REFILLING_WATER);
             Logger.info("Filling with water at " + location());
             sendRest(time);
             return;
@@ -72,6 +74,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         // Are we out of water?
         if (me.isWaterDefined() && me.getWater() == 0) {
             // Head for a refuge
+        	stateMachine.setState(States.FireFighter.OUT_OF_WATER);
         	
             List<EntityID> pathRefuge = search.breadthFirstSearch(me().getPosition(), waterSourceIDs);
             
@@ -83,6 +86,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
             else {
                 Logger.debug("Couldn't plan a path to a refuge.");
                 pathRefuge = randomWalk();
+                stateMachine.setState(States.RANDOM_WALK);
                 Logger.info("Moving randomly");
                 sendMove(time, pathRefuge);
                 return;
@@ -102,6 +106,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         // Can we extinguish any right now?
         for (EntityID next : all) {
             if (model.getDistance(getID(), next) <= maxDistance) {
+            	stateMachine.setState(States.FireFighter.EXTINGUISHING);
             	Logger.info("Extinguishing " + next);
                 sendExtinguish(time, next, maxPower);
                 //sendSpeak(time, 1, ("Extinguishing " + next).getBytes());
@@ -115,6 +120,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         for (EntityID next : all) {
             List<EntityID> path = planPathToFire(next);
             if (path != null) {
+            	stateMachine.setState(States.GOING_TO_TARGET);
                 Logger.info("Moving to target");
                 sendMove(time, path);
                 return;
@@ -123,6 +129,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         List<EntityID> path = null;
         Logger.debug("Couldn't plan a path to a fire.");
         path = randomWalk();
+        stateMachine.setState(States.RANDOM_WALK);
         Logger.info("Moving randomly");
         sendMove(time, path);
     }

@@ -13,7 +13,7 @@ public class StateMachine {
 	private State current;
 	
 	public StateMachine(State initial){
-		current = initial;
+		setState(initial);
 	}
 	
 	public void setState(State newState){
