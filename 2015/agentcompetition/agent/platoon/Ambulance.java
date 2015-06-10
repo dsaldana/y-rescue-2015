@@ -11,7 +11,6 @@ import rescuecore2.worldmodel.EntityID;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.messages.Command;
 import rescuecore2.log.Logger;
-
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.entities.AmbulanceTeam;
@@ -28,7 +27,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 
     @Override
     public String toString() {
-        return "Ambulance " + me().getID();
+        return String.format("Ambulance(%s)", me().getID());
     }
 
     @Override

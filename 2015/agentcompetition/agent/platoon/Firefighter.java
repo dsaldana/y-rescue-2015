@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 
+import org.apache.log4j.MDC;
+
 import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
 import rescuecore2.standard.entities.Building;
@@ -17,6 +19,7 @@ import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
+import statemachine.StateMachine;
 import util.DistanceSorter;
 /**
  *  RoboFire agent. Implements a simple scheme to fight fires.
@@ -29,20 +32,23 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     private int maxWater;
     private int maxDistance;
     private int maxPower;
+    
 
     @Override
     public String toString() {
-        return "Firefighter " + me().getID();
+        return String.format("FireFighter(%s)", me().getID());
     }
     
     @Override
     protected void postConnect() {
         super.postConnect();
+        Logger.info("postConnect of FireFighter");
         model.indexClass(StandardEntityURN.BUILDING, StandardEntityURN.REFUGE,StandardEntityURN.HYDRANT,StandardEntityURN.GAS_STATION);
         maxWater = config.getIntValue(MAX_WATER_KEY);
         maxDistance = config.getIntValue(MAX_DISTANCE_KEY);
         maxPower = config.getIntValue(MAX_POWER_KEY);
-        Logger.info("RoboFire connected: max extinguish distance = " + maxDistance + ", max power = " + maxPower + ", max tank = " + maxWater);
+        Logger.info("FireFighter connected: max extinguish distance = " + maxDistance + ", max power = " + maxPower + ", max tank = " + maxWater);
+        
     }
 
     @Override
@@ -54,6 +60,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         for (Command next : heard) {
             Logger.debug("Heard " + next);
         }
+        
        
         FireBrigade me = me();
         // Are we currently filling with water?

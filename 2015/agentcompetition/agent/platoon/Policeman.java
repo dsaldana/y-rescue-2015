@@ -41,7 +41,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 
 	@Override
 	public String toString() {
-		return "Policeman " + me().getID();
+		return String.format("Policeman(%s)", me().getID());
 	}
 
 	@Override
