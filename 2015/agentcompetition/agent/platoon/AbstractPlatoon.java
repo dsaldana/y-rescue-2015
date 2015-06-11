@@ -35,9 +35,12 @@ import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.Human;
+import rescuecore2.standard.entities.StandardEntityConstants;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.kernel.comms.ChannelCommunicationModel;
 import rescuecore2.standard.kernel.comms.StandardCommunicationModel;
+import statemachine.StateMachine;
+import statemachine.States;
 import util.LastVisitSorter;
 import util.SampleSearch;
 
@@ -65,6 +68,11 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * Current listened communication
      */
     protected Collection<Command> heard;
+    
+    /**
+     * Ageent state machine
+     */
+    protected StateMachine stateMachine;
 
     /**
        The search algorithm.
@@ -102,8 +110,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     protected Map<EntityID, Integer> lastVisit;
     
     /**
-    Cache of refuge IDs.
- */
+     * Cache of refuge IDs.
+     */
     protected List<EntityID> hydrantIDs;
     
     /**
@@ -129,7 +137,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 
 	
     /**
-     * Construct an AbstractRobot.
+     * Construct an AbstractPlatoon.
      */
     protected AbstractPlatoon() {
     	blockedRoads = new HashMap<EntityID, BlockedRoad>();
@@ -138,12 +146,15 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	
     	problemsToReport = new ArrayList<Problem>();
     	
+    	stateMachine = new StateMachine(States.RANDOM_WALK);
+    	
     	
     }
 
     @Override
     protected void postConnect() {
         super.postConnect();
+        Logger.info("postConnect of AbstractPlatoon");
         buildingIDs = new ArrayList<EntityID>();
         roadIDs = new ArrayList<EntityID>();
         refugeIDs = new ArrayList<EntityID>();
@@ -171,7 +182,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
             }
             
         }
-        MDC.put("agent", me());
+        MDC.put("agent", this);
         MDC.put("location", location());
         
         lastLocationID = location().getID(); //initializes last location as the current
@@ -670,8 +681,12 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
                 }
                 //discards the burning building if there are other possibilities
             	//if all possibilities are burning buildings, agent gets stuck
-                if (possible.size() > 1 && e instanceof Building && ((Building) e).isOnFire()) {
-                	continue;
+                if (possible.size() > 1 && e instanceof Building){
+                	Building b = (Building) e;
+                	if (b.isOnFire() || b.getFierynessEnum() == StandardEntityConstants.Fieryness.BURNT_OUT ) {
+                		Logger.info(String.format("Ignoring %s, onFire=%s, fieryness=%s", b, b.isOnFire(), b.getFierynessEnum()));
+                		continue;
+                	}
                 }
                 
                 current = next;

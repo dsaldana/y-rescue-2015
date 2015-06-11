@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 
+import org.apache.log4j.MDC;
+
 import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
 import rescuecore2.standard.entities.Building;
@@ -17,6 +19,8 @@ import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
+import statemachine.StateMachine;
+import statemachine.States;
 import util.DistanceSorter;
 /**
  *  RoboFire agent. Implements a simple scheme to fight fires.
@@ -29,20 +33,23 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     private int maxWater;
     private int maxDistance;
     private int maxPower;
+    
 
     @Override
     public String toString() {
-        return "Firefighter " + me().getID();
+        return String.format("FireFighter(%s)", me().getID());
     }
     
     @Override
     protected void postConnect() {
         super.postConnect();
+        Logger.info("postConnect of FireFighter");
         model.indexClass(StandardEntityURN.BUILDING, StandardEntityURN.REFUGE,StandardEntityURN.HYDRANT,StandardEntityURN.GAS_STATION);
         maxWater = config.getIntValue(MAX_WATER_KEY);
         maxDistance = config.getIntValue(MAX_DISTANCE_KEY);
         maxPower = config.getIntValue(MAX_POWER_KEY);
-        Logger.info("RoboFire connected: max extinguish distance = " + maxDistance + ", max power = " + maxPower + ", max tank = " + maxWater);
+        Logger.info("FireFighter connected: max extinguish distance = " + maxDistance + ", max power = " + maxPower + ", max tank = " + maxWater);
+        
     }
 
     @Override
@@ -54,10 +61,12 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         for (Command next : heard) {
             Logger.debug("Heard " + next);
         }
+        
        
         FireBrigade me = me();
         // Are we currently filling with water?
         if (me.isWaterDefined() && me.getWater() < maxWater && location() instanceof Refuge) {
+        	stateMachine.setState(States.FireFighter.REFILLING_WATER);
             Logger.info("Filling with water at " + location());
             sendRest(time);
             return;
@@ -65,6 +74,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         // Are we out of water?
         if (me.isWaterDefined() && me.getWater() == 0) {
             // Head for a refuge
+        	stateMachine.setState(States.FireFighter.OUT_OF_WATER);
         	
             List<EntityID> pathRefuge = search.breadthFirstSearch(me().getPosition(), waterSourceIDs);
             
@@ -76,6 +86,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
             else {
                 Logger.debug("Couldn't plan a path to a refuge.");
                 pathRefuge = randomWalk();
+                stateMachine.setState(States.RANDOM_WALK);
                 Logger.info("Moving randomly");
                 sendMove(time, pathRefuge);
                 return;
@@ -95,6 +106,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         // Can we extinguish any right now?
         for (EntityID next : all) {
             if (model.getDistance(getID(), next) <= maxDistance) {
+            	stateMachine.setState(States.FireFighter.EXTINGUISHING);
             	Logger.info("Extinguishing " + next);
                 sendExtinguish(time, next, maxPower);
                 //sendSpeak(time, 1, ("Extinguishing " + next).getBytes());
@@ -108,6 +120,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         for (EntityID next : all) {
             List<EntityID> path = planPathToFire(next);
             if (path != null) {
+            	stateMachine.setState(States.GOING_TO_TARGET);
                 Logger.info("Moving to target");
                 sendMove(time, path);
                 return;
@@ -116,6 +129,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         List<EntityID> path = null;
         Logger.debug("Couldn't plan a path to a fire.");
         path = randomWalk();
+        stateMachine.setState(States.RANDOM_WALK);
         Logger.info("Moving randomly");
         sendMove(time, path);
     }

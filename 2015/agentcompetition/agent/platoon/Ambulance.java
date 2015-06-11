@@ -26,6 +26,7 @@ import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.Civilian;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.StandardWorldModel;
+import statemachine.States;
 import util.DistanceSorter;
 import util.HPSorter;
 import util.LastVisitSorter;
@@ -49,7 +50,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 
     @Override
     public String toString() {
-        return "Ambulance " + me().getID();
+        return String.format("Ambulance(%s)", me().getID());
     }
 
     @Override
@@ -118,7 +119,8 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             // Am I at a refuge?
             if (location() instanceof Refuge) {
                 // Unload!
-                Logger.info("Unloading");
+            	Logger.info("Unloading");
+            	stateMachine.setState(States.Ambulance.UNLOADING);
                 sendUnload(time);
                 return;
             }
@@ -126,7 +128,8 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
                 // Move to a refuge
                 List<EntityID> path = search.breadthFirstSearch(me().getPosition(), refugeIDs);
                 if (path != null) {
-                    Logger.info("Moving to refuge");
+                	stateMachine.setState(States.Ambulance.CARRYING_WOUNDED);
+                	Logger.info("Moving to refuge");
                     sendMove(time, path);
                     return;
                 }
@@ -193,6 +196,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             	// Targets in the same place might need rescueing or loading
                 if ((next instanceof Civilian) && next.getBuriedness() == 0 && !(location() instanceof Refuge)) {
                     // Load
+                	stateMachine.setState(States.Ambulance.LOADING);
                     Logger.info("Loading " + next);
                     sendLoad(time, next.getID());
                     return;
@@ -202,7 +206,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
                     // Rescue
                 	String humanStatusString = "HP:" + next.getHP() + " burriedness:" + next.getBuriedness() + " Damage:" + next.getDamage() + " Stamina:" + next.getStamina();
                     Logger.info("Rescueing " + next + " " + humanStatusString);
-                    
+                	stateMachine.setState(States.Ambulance.UNBURYING);
                     sendRescue(time, next.getID());
                     return;
                 }
@@ -211,6 +215,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
                 // Try to move to the target
                 List<EntityID> path = search.breadthFirstSearch(me().getPosition(), next.getPosition());
                 if (path != null) {
+                	stateMachine.setState(States.GOING_TO_TARGET);
                     Logger.info("Moving to target");
                     sendMove(time, path);
                     return;
@@ -227,11 +232,13 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         
         List<EntityID> path = search.breadthFirstSearch(me().getPosition(), entityIDList);
         if (path != null) {
-        	Logger.info("Searching buildings");
+        	stateMachine.setState(States.Ambulance.SEARCHING_BUILDINGS);
+            Logger.info("Searching buildings");
             sendMove(time, path);
             return;
         }
         
+        stateMachine.setState(States.RANDOM_WALK);
         Logger.info("Moving randomly");
         sendMove(time, randomWalk());
     }
