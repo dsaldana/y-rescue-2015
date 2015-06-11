@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.apache.log4j.MDC;
 
+import problem.BurningBuilding;
 import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
 import rescuecore2.standard.entities.Building;
@@ -92,7 +93,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
                 return;
             }
         }
-        // Find all buildings that are on fire
+        // get ID of all buildings on fire that i know 
         Collection<EntityID> all = getBurningBuildings();
         
       //just to see the memory, delete later
@@ -105,11 +106,10 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         
         // Can we extinguish any right now?
         for (EntityID next : all) {
-            if (model.getDistance(getID(), next) <= maxDistance) {
+            if (model.getDistance(getID(), next) <= sightRange) {
             	stateMachine.setState(States.FireFighter.EXTINGUISHING);
             	Logger.info("Extinguishing " + next);
                 sendExtinguish(time, next, maxPower);
-                //sendSpeak(time, 1, ("Extinguishing " + next).getBytes());
                 //TODO: send engage message!
                 return;
             }
@@ -121,7 +121,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
             List<EntityID> path = planPathToFire(next);
             if (path != null) {
             	stateMachine.setState(States.GOING_TO_TARGET);
-                Logger.info("Moving to target");
+                Logger.info("Moving to target " + next + " path " + path);
                 sendMove(time, path);
                 return;
             }
@@ -140,15 +140,22 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     }
 
     private Collection<EntityID> getBurningBuildings() {
-        Collection<StandardEntity> e = model.getEntitiesOfType(StandardEntityURN.BUILDING);
+        //Collection<StandardEntity> e = model.getEntitiesOfType(StandardEntityURN.BUILDING);
         List<Building> result = new ArrayList<Building>();
-        for (StandardEntity next : e) {
-            if (next instanceof Building) {
-                Building b = (Building)next;
-                if (b.isOnFire()) {
-                    result.add(b);
-                }
-            }
+        
+        
+        for (BurningBuilding next : burningBuildings.values()) {
+            //if (next instanceof Building) {
+            //    Building b = (Building)next;
+            //    if (b.isOnFire()) {
+            //        result.add(b);
+            //    }
+            //}
+        	
+        	if (! next.isSolved()) {
+        		Building b = (Building) model.getEntity(next.getEntityID());
+        		result.add(b);
+        	}
         }
         // Sort by distance
         Collections.sort(result, new DistanceSorter(location(), model));
@@ -156,8 +163,8 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     }
 
     private List<EntityID> planPathToFire(EntityID target) {
-        // Try to get to anything within maxDistance of the target
-        Collection<StandardEntity> targets = model.getObjectsInRange(target, maxDistance);
+        // Try to get to anything within sightRange of the target
+        Collection<StandardEntity> targets = model.getObjectsInRange(target, sightRange);
         if (targets.isEmpty()) {
             return null;
         }

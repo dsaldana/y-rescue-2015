@@ -6,26 +6,31 @@ package statemachine;
  *
  */
 public class States {
+	/**
+	 * Cannot be instantiated
+	 */
 	private States() {}
 	
-	public static final State RANDOM_WALK = new State("RANDOM_WALK");
-    public static final State GOING_TO_TARGET = new State("GOING_TO_TARGET"); 
+	public static final State BURIED = new State("BURIED");		//buried in building
+	public static final State BLOCKED = new State("BLOCKED");		//surrounded by blockades
+	public static final State RANDOM_WALK = new State("RANDOM_WALK");		//'exploring'
+    public static final State GOING_TO_TARGET = new State("GOING_TO_TARGET"); //target chosen, going for it
 	
 	
 	public static class FireFighter {
-		public static final State EXTINGUISHING = new State("EXTINGUISHING");
-        public static final State OUT_OF_WATER = new State("OUT_OF_WATER");
+		public static final State EXTINGUISHING = new State("EXTINGUISHING");		//throwing water in building
+        public static final State OUT_OF_WATER = new State("OUT_OF_WATER");		
 		public static final State REFILLING_WATER = new State("FILLING_WATER");
 		
 		private FireFighter() {}
 	}
 	
 	public static class Ambulance {
-        public static final State UNBURYING = new State("UNBURYING");
-		public static final State LOADING = new State("LOADING");
-		public static final State UNLOADING = new State("UNLOADING");
-		public static final State CARRYING_WOUNDED = new State("CARRYING_WOUNDED");
-		public static final State SEARCHING_BUILDINGS = new State("SEARCHING_BUILDINGS");
+        public static final State UNBURYING = new State("UNBURYING");		//removing debris from person
+		public static final State LOADING = new State("LOADING");			//getting someone aboard
+		public static final State UNLOADING = new State("UNLOADING");		//getting someone off-board
+		public static final State CARRYING_WOUNDED = new State("CARRYING_WOUNDED");	//transporting a person
+		public static final State SEARCHING_BUILDINGS = new State("SEARCHING_BUILDINGS");		
 		
 		private Ambulance() {}
 	}

@@ -11,6 +11,8 @@ import java.util.Map;
 
 import org.apache.log4j.MDC;
 
+import commands.AgentCommand;
+import commands.AgentCommands;
 import message.MessageEncoder;
 import message.MessageReceiver;
 import message.MessageType;
@@ -54,6 +56,10 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     private static final String SAY_COMMUNICATION_MODEL = StandardCommunicationModel.class.getName();
     private static final String SPEAK_COMMUNICATION_MODEL = ChannelCommunicationModel.class.getName();
     
+    
+    private static final String SIGHT_RANGE_KEY = "perception.los.max-distance";
+    protected int sightRange;
+    
     /**
      * Current timestep
      */
@@ -83,6 +89,11 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * Stores my last location
      */
     protected EntityID lastLocationID;
+    
+    /**
+     * Agent command history
+     */
+    protected Map<Integer, AgentCommand> commandHistory;
 
     /**
        Whether to use AKSpeak messages or not.
@@ -144,6 +155,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	woundedHumans = new HashMap<EntityID, WoundedHuman>();
     	burningBuildings = new HashMap<EntityID, BurningBuilding>();
     	
+    	commandHistory = new HashMap<Integer, AgentCommand>();
+    	
     	problemsToReport = new ArrayList<Problem>();
     	
     	stateMachine = new StateMachine(States.RANDOM_WALK);
@@ -155,6 +168,9 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     protected void postConnect() {
         super.postConnect();
         Logger.info("postConnect of AbstractPlatoon");
+        
+        sightRange = config.getIntValue(SIGHT_RANGE_KEY);
+        
         buildingIDs = new ArrayList<EntityID>();
         roadIDs = new ArrayList<EntityID>();
         refugeIDs = new ArrayList<EntityID>();
@@ -198,6 +214,66 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     
     
     /**
+     * Overrides methods to provide registration of actions
+     */
+    
+    @Override
+    protected void sendRest(int time){
+    	commandHistory.put(time, AgentCommands.REST);
+    	Logger.info("Sending REST command");
+    	super.sendRest(time);
+    }
+    
+    @Override
+    protected void sendMove(int time, List<EntityID> path){
+    	commandHistory.put(time, AgentCommands.MOVE);
+    	Logger.info("Sending MOVE command with: " + path);
+    	super.sendMove(time, path);
+    }
+    
+    @Override
+    protected void sendExtinguish(int time, EntityID target, int water){
+    	commandHistory.put(time, AgentCommands.FireFighter.EXTINGUISH);
+    	Logger.info(String.format("Sending EXTINGUISH command with: %s, %d", target, water));
+    	super.sendExtinguish(time, target, water);
+    }
+    
+    @Override
+    protected void sendRescue(int time, EntityID target){
+    	commandHistory.put(time, AgentCommands.Ambulance.RESCUE);
+    	Logger.debug(String.format("Sending RESCUE command with: %s", target));
+    	super.sendRescue(time, target);;
+    }
+    
+    @Override
+    protected void sendLoad(int time, EntityID target){
+    	commandHistory.put(time, AgentCommands.Ambulance.LOAD);
+    	Logger.debug(String.format("Sending LOAD command with: %s", target));
+    	super.sendLoad(time, target);
+    }
+
+    @Override
+    protected void sendUnload(int time){
+    	commandHistory.put(time, AgentCommands.Ambulance.UNLOAD);
+    	Logger.debug(String.format("Sending UNLOAD command"));
+    	super.sendUnload(time);
+    }
+    
+    @Override
+    protected void sendClear(int time, EntityID target){
+    	commandHistory.put(time, AgentCommands.Policeman.CLEAR);
+    	Logger.debug(String.format("Sending CLEAR command with: %s", target));
+    	super.sendClear(time, target);
+    }
+    
+    @Override
+    protected void sendClear(int time, int destX, int destY){
+    	commandHistory.put(time, AgentCommands.Policeman.CLEAR);
+    	Logger.debug(String.format("Sending EXTINGUISH command with: %d, %d", destX, destY));
+    	super.sendClear(time, destX, destY);
+    }
+	
+    /**
      * Updates the agent knowledge then calls the abstract 
      * method doThink() which should be implemented by each agent class.
      * The doThink call is 'protected' by an exception handling, preventing the agent from dying
@@ -215,11 +291,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		MDC.put("location", location());
     		MDC.put("time", time);
     		
-    		//Logger.info("Time: " + time);
     		Logger.info(("Heard:" + heard));
-    		//Logger.info("" + changed);
-    		//Logger.info("" + me().getFullDescription());
-    		//model.getDistance(first, second)
     		
     		updateVisitHistory();
     		
@@ -334,11 +406,11 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		//if-elses to filter message by type
     		if(msg.msgType == MessageType.REPORT_BLOCKED_ROAD){
     			
-    			updateIfNewer(b);
+    			updateFromMessage(b);
     			//else discards message (incoming problem is older than the one I know
     		}
     		else if(msg.msgType == MessageType.SOLVED_BLOCKED_ROAD){
-    			updateIfNewer(b);
+    			updateFromMessage(b);
     			blockedRoads.get(b).markSolved(next.getTime()); //ensures that problem is marked as solved
     		}
     	}
@@ -354,11 +426,11 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		//if-elses to filter message by type
     		if(msg.msgType == MessageType.REPORT_WOUNDED_HUMAN){
     			
-    			updateIfNewer(h);
+    			updateFromMessage(h);
     			//else discards message (incoming problem is older than the one I know
     		}
     		else if(msg.msgType == MessageType.SOLVED_WOUNDED_HUMAN){
-    			updateIfNewer(h);
+    			updateFromMessage(h);
     			woundedHumans.get(h).markSolved(next.getTime()); //ensures that problem is marked as solved
     		}
     	}
@@ -376,11 +448,11 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		//if-elses to filter message by type
     		if(msg.msgType == MessageType.REPORT_BURNING_BUILDING){
     			
-    			updateIfNewer(bb);
+    			updateFromMessage(bb);
     			//else discards message (incoming problem is older than the one I know
     		}
     		else if(msg.msgType == MessageType.SOLVED_BURNING_BUILDING){
-    			updateIfNewer(bb);
+    			updateFromMessage(bb);
     			burningBuildings.get(bb).markSolved(next.getTime()); //ensures that problem is marked as solved
     		}
     	}
@@ -392,7 +464,12 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 	 * @param b
 	 * @return 
 	 */
-	private void updateIfNewer(BlockedRoad b) {
+	private void updateFromMessage(BlockedRoad b) {
+		if (model.getDistance(me().getID(), b.getEntityID()) < sightRange){
+			Logger.debug(String.format("Road %s data received, but ignored because it's in sight range.", b.getEntityID()));
+			return;
+		}
+		
 		//checks whether I already know this problem or if the incoming problem is more recent
 		if(!blockedRoads.containsKey(b) || b.getUpdateTime() > blockedRoads.get(b).getUpdateTime() ){
 			blockedRoads.put(b.getEntityID(), b);
@@ -401,7 +478,12 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 		}
 	}
 	
-	private void updateIfNewer(WoundedHuman h) {
+	private void updateFromMessage(WoundedHuman h) {
+		if (model.getDistance(me().getID(), h.getEntityID()) < sightRange){
+			Logger.debug(String.format("Human %s data received, but ignored because it's in sight range.", h.getEntityID()));
+			return;
+		}
+		
 		//checks whether I already know this problem or if the incoming problem is more recent
 		if(!woundedHumans.containsKey(h) || h.getUpdateTime() > woundedHumans.get(h).getUpdateTime() ){
 			woundedHumans.put(h.getEntityID(), h);
@@ -410,26 +492,32 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 		}
 	}
 	
-	private void updateIfNewer(BurningBuilding bb) {
+	private void updateFromMessage(BurningBuilding bb) {
+		
+		if (model.getDistance(me().getID(), bb.getEntityID()) < sightRange){
+			Logger.debug(String.format("Building %s data received, but ignored because it's in sight range.", bb.getEntityID()));
+			return;
+		}
+		
 		//checks whether I already know this problem or if the incoming problem is more recent
 		if(!burningBuildings.containsKey(bb) || bb.getUpdateTime() > burningBuildings.get(bb).getUpdateTime() ){
 			//updates the model too
-			Building b = (Building) model.getEntity(bb.getEntityID());
+			/*Building b = (Building) model.getEntity(bb.getEntityID());
 			b.setBrokenness(bb.brokenness);
 			b.setFieryness(bb.fieryness);
 			b.setTemperature(bb.temperature);
-			//b.setIgnition(! bb.isSolved());
+			
 			
 			//sanity check 
 			if (! b.isBuildingAttributesDefined()) {
 				Logger.error((String.format("Building %d attributes not defined!", b.getID().getValue())));
 			}
-			
+			*/
 			burningBuildings.put(bb.getEntityID(), bb);
 			//problemsToReport.add(bb);
 			Logger.info(String.format("Added %s to problems to report", bb));
 			
-			Logger.info(("Updated info of bldg " + b.getID()));
+			//Logger.info(("Updated info of bldg " + b.getID()));
 		}
 		else {
 			Logger.info(("Discarded info of bldg " + bb.getEntityID() + ". Outdated."));
@@ -463,17 +551,22 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         	if(entity instanceof Building){
         		Building b = (Building) entity;
         		
+        		System.out.println("Will check " + b);
+        		Logger.info("" + b.getProperties());
         		//if building is burning, adds it to knowledge base or update its entry. 
         		//else, mark it as solved if it was on knowledge base
                 if (b.isOnFire()) {
                     updateBurningBuilding(time, b);
+                    Logger.info(String.format("%s burning, updating info.", b));
                 }
                 else {
                 	//mark as solved if exists (since it is not on fire)
+                	System.out.println((String.format("%s is not burning anymore.", b)));
                 	if(burningBuildings.containsKey(b.getID())){
                 		BurningBuilding notBurningAnymore = burningBuildings.get(b.getID());
                 		notBurningAnymore.update(b.getBrokenness(), b.getFieryness(), b.getTemperature(), time);
                 		notBurningAnymore.markSolved(time);
+                		Logger.info(String.format("%s registered as not burning anymore.", notBurningAnymore));
                 	}
                 }
         	}
@@ -661,16 +754,9 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
             result.add(current);
             seen.add(current);
             List<EntityID> possible = new ArrayList<EntityID>(neighbours.get(current));
-            //Collections.shuffle(possible, random);
+
             Collections.sort(possible, new LastVisitSorter(this));	//we want the most recent visit to be the last
-            //Collections.reverse(possible); 
             
-            /*String str_possible = "[";
-            for (EntityID p : possible) str_possible += p + ":" + lastVisit(p) + ", ";
-            str_possible += "]";
-            
-            Logger.info("" + me() + "possible:" + str_possible);
-            */
             boolean found = false;
             for (EntityID next : possible) {
                 StandardEntity e = model.getEntity(next);
@@ -699,18 +785,6 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
                 break;
             }
         }
-        /*
-        //removes last entity of path if it is a burning building
-        if (result.size() > 0){
-        	StandardEntity last = model.getEntity(result.get(result.size() -1));
-        	
-        	if (last instanceof Building && ((Building) last).isOnFire()) {
-        		Logger.info("Removing entity" + last + " from path because it is a burning building.");
-        		result.remove(result.size() -1);
-        	}
-        	
-        }
-        */
         return result;
     }
 
