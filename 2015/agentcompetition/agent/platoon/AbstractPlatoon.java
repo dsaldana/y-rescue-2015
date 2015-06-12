@@ -284,6 +284,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     @Override
     protected void think(int time, ChangeSet changed, Collection<Command> heard) {
     	try{
+    		Logger.info(String.format("------- START OF TIMESTEP %d -------", time));
     		this.time = time;
     		this.changed = changed;
     		this.heard = heard;
@@ -291,7 +292,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		MDC.put("location", location());
     		MDC.put("time", time);
     		
-    		Logger.info(("Heard:" + heard));
+    		Logger.info("Heard:" + heard);
     		
     		updateVisitHistory();
     		
@@ -304,6 +305,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		sendMessages(time);
     		
     		lastLocationID = location().getID();	//updates last location
+    		Logger.info(String.format("------- END OF TIMESTEP %d -------\n", time));
     	}
     	catch (Exception e){
     		Logger.error(("System malfunction! (exception occurred)"), e);
@@ -552,7 +554,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         		Building b = (Building) entity;
         		
         		System.out.println("Will check " + b);
-        		Logger.info("" + b.getProperties());
+        		//Logger.info("" + b.getProperties());
         		//if building is burning, adds it to knowledge base or update its entry. 
         		//else, mark it as solved if it was on knowledge base
                 if (b.isOnFire()) {
