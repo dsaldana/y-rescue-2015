@@ -73,7 +73,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
             return;
         }
         // Are we out of water?
-        if (me.isWaterDefined() && me.getWater() == 0) {
+        if (me.isWaterDefined() && me.getWater() < maxPower) {
             // Head for a refuge
         	stateMachine.setState(States.FireFighter.OUT_OF_WATER);
         	
@@ -97,7 +97,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         Collection<EntityID> all = getBurningBuildings();
         
       //just to see the memory, delete later
-        String str = "Burning Builds Memory ";
+        String str = "Burning Buildings Memory ";
         for (EntityID next : all) {
         	str += next + " ";
         }
@@ -113,6 +113,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
                 //TODO: send engage message!
                 return;
             }
+            Logger.info(String.format("Target %s out of sight range. Dist=%d", next, model.getDistance(getID(), next)));
         }
         
         
@@ -163,11 +164,13 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     }
 
     private List<EntityID> planPathToFire(EntityID target) {
+    	//TODO melhorar isso, fazendo os bombeiros irem ate 'perto' do alvo
+    	/*
         // Try to get to anything within sightRange of the target
         Collection<StandardEntity> targets = model.getObjectsInRange(target, sightRange);
         if (targets.isEmpty()) {
             return null;
-        }
-        return search.breadthFirstSearch(me().getPosition(), objectsToIDs(targets));
+        }*/
+        return search.breadthFirstSearch(me().getPosition(), target);
     }
 }
