@@ -6,6 +6,7 @@ import problem.BlockedRoad;
 import problem.BurningBuilding;
 import problem.Problem;
 import problem.WoundedHuman;
+import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
 import rescuecore2.standard.entities.StandardEntityConstants.Fieryness;
 import rescuecore2.standard.messages.AKSay;
@@ -25,8 +26,11 @@ public class MessageReceiver {
         else if (cmd instanceof AKSay) msg = byteToString(((AKSay) cmd).getContent()); //voice
         else if (cmd instanceof AKTell) msg = byteToString(((AKTell) cmd).getContent()); //also voice
         
-        if (msg == "") return null;
+        //TODO: tratar 'Ouch' e 'Help' pois eles dao dicas de onde esta o ferido
+        if (msg.equals("") || msg.equals("Ouch") ||  msg.equals("Help")) return null;
         //decode the parts of the Message
+        
+        Logger.info("Decoding: " + '"' + msg + '"');
         
         String[] parts = msg.split(",");
         

@@ -26,6 +26,7 @@ import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.Blockade;
 import rescuecore2.standard.entities.PoliceForce;
 import rescuecore2.standard.entities.Area;
+import statemachine.States;
 
 /**
  * RoboCop agent. Implements the reinforcement learning scheme
@@ -41,7 +42,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 
 	@Override
 	public String toString() {
-		return "RoboCop " + me().getID();
+		return String.format("Policeman(%s)", me().getID());
 	}
 
 	@Override
@@ -68,12 +69,6 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		 * System.out.println(e.getID()+" "+e.getURN()); }
 		 */
 
-		System.out.println("\nTime: " + time);
-		System.out.println("#burning bldgs:" + burningBuildings.size());
-		System.out.println("#wounded humans:" + woundedHumans.size());
-		System.out.println("#blocked roads:" + blockedRoads.size());
-		System.out.println("the blk roads:" + blockedRoads.keySet());
-
 		// ---- BEGIN Plan a path and moves to a blockade
 		// local position
 		Point2D current_position = new Point2D(me().getX(), me().getY());
@@ -95,7 +90,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 
 			// if location is refuge, then target accomplished
 			if (location() instanceof Refuge) {
-				System.out.println("MISION ACCOMPLISHED");
+				System.out.println("MISSION ACCOMPLISHED");
 				return;
 			}
 
@@ -109,7 +104,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			// if the position is the same, then clean
 			if (lastPosition != null && dist < 100.0) {
 				Road r1 = (Road) model.getEntity(path.get(0));
-				Road r2 = (Road) model.getEntity(path.get(1));
+				Road r2 = (Road) model.getEntity(path.get(1)); //TODO: nem sempre e' um road, ta dando ClassCastException
 
 				clearTowardsIntersection(r1, r2, time);
 				lastPosition = null;
@@ -121,6 +116,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			lastPosition = current_position;
 
 			// Moving
+			stateMachine.setState(States.GOING_TO_TARGET);
 			Logger.info("Moving to target");
 			sendMove(time, path, b.getX(), b.getY());
 			Logger.debug("Path: " + path + ", coords: " + b.getX() + ", "
@@ -173,6 +169,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		double targety = (ptsR2[minDistanceIdx1].getY() + ptsR2[minDistanceIdx2]
 				.getY()) / 2.0;
 
+		stateMachine.setState(States.Policeman.CLEARING);
 		Logger.info("Clearing blockade: " + targetx + ", " + targety);
 		// Communicate the clearing
 		// TODO speak

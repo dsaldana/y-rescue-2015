@@ -101,7 +101,7 @@ public class WoundedHuman extends Problem {
 
 	@Override
 	public String toString() {
-		return String.format("WoundedHuman: id=%d, pos=%d, bur=%d, dmg=%d, hp=%d", getEntityID(), position, buriedness, damage, health);
+		return String.format("WoundedHuman: id=%s, pos=%s, bur=%d, dmg=%d, hp=%d, time=%d", getEntityID(), position, buriedness, damage, health, getUpdateTime());
 	}
 
 	
