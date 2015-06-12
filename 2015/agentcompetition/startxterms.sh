@@ -12,7 +12,7 @@ function launchagents {
 	i=0
 	while [ $i -lt $2 ]; do
 		echo "launching $1 #$i"
-		xterm -geometry 120x32 -T $1 -e "java -Xms1G -Xmx2G -classpath $classpath main.LaunchAgent firefighter 2>&1" &
+		xterm -geometry 120x32 -T $1 -e "java -Xms1G -Xmx2G -classpath $classpath main.LaunchAgent $1 2>&1" &
 		PIDS="$PIDS $!"
 		i=$[$i + 1]
 	done
