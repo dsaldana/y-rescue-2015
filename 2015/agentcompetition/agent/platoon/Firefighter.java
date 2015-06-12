@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.log4j.MDC;
 
@@ -171,6 +172,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         if (targets.isEmpty()) {
             return null;
         }*/
-        return search.breadthFirstSearch(me().getPosition(), target);
+    	Set<EntityID> neighs = search.getGraph().get(target);
+        return search.breadthFirstSearch(me().getPosition(), neighs);
     }
 }
