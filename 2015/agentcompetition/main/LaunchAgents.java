@@ -2,6 +2,8 @@ package main;
 
 import java.io.IOException;
 
+import commands.AgentCommands.FireFighter;
+
 import agent.center.RobotCenter;
 import agent.platoon.Ambulance;
 import agent.platoon.Firefighter;
@@ -75,7 +77,7 @@ public final class LaunchAgents {
 			// CHECKSTYLE:ON:ModifiedControlVariable
 			ComponentLauncher launcher = new TCPComponentLauncher(host, port,
 					config);
-			connect(launcher, fb, pf, at, config);
+			connectAgents(launcher, fb, pf, at, config);
 		} catch (IOException e) {
 			Logger.error("Error connecting agents", e);
 		} catch (ConfigException e) {
@@ -87,33 +89,34 @@ public final class LaunchAgents {
 		}
 	}
 
-	private static void connect(ComponentLauncher launcher, int fb, int pf,
+	private static void connectAgents(ComponentLauncher launcher, int fb, int pf,
 			int at, Config config) throws InterruptedException,
 			ConnectionException {
 		int i = 0;
 		try {
 			while (fb-- != 0) {
-				Logger.info("Connecting Firefighter " + (i++) + "...");
-				launcher.connect(new Firefighter());
-				Logger.info("success");
+				//Logger.info("Connecting Firefighter " + (i++) + "...");
+				//launcher.connect(new Firefighter());
+				LaunchAgent.connect(Firefighter.class, launcher, config);
+				//Logger.info("success");
 			}
 		} catch (ComponentConnectionException e) {
 			Logger.info("failed: " + e.getMessage());
 		}
 		try {
 			while (pf-- != 0) {
-				Logger.info("Connecting Policeman " + (i++) + "...");
-				launcher.connect(new Policeman());
-				Logger.info("success");
+				//Logger.info("Connecting Policeman " + (i++) + "...");
+				LaunchAgent.connect(Policeman.class, launcher, config);
+				//Logger.info("success");
 			}
 		} catch (ComponentConnectionException e) {
 			Logger.info("failed: " + e.getMessage());
 		}
 		try {
 			while (at-- != 0) {
-				Logger.info("Connecting Ambulance " + (i++) + "...");
-				launcher.connect(new Ambulance());
-				Logger.info("success");
+				//Logger.info("Connecting Ambulance " + (i++) + "...");
+				LaunchAgent.connect(Ambulance.class, launcher, config);
+				//Logger.info("success");
 			}
 		} catch (ComponentConnectionException e) {
 			Logger.info("failed: " + e.getMessage());
