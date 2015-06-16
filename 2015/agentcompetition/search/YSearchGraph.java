@@ -1,9 +1,15 @@
 package search;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.jgrapht.UndirectedGraph;
+import org.jgrapht.alg.DijkstraShortestPath;
 import org.jgrapht.graph.SimpleWeightedGraph;
 
 import rescuecore2.log.Logger;
@@ -12,6 +18,7 @@ import rescuecore2.standard.entities.Edge;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.entities.StandardWorldModel;
+import rescuecore2.worldmodel.EntityID;
 
 
 public class YSearchGraph {
@@ -59,6 +66,29 @@ public class YSearchGraph {
 			}
 		}
 		
+	}
+	
+	public List<EntityID> shortestPath(EntityID start, EntityID... goals){
+		return shortestPath(start, Arrays.asList(goals)); 
+	}
+	
+	public List<EntityID> shortestPath(EntityID start, Collection<EntityID> goals){
+		//call 'dijkstra' for each goal?
+		return null;
+	}
+	
+	public List<EntityID> shortestPath(YNode start, YNode goal){
+		DijkstraShortestPath<YNode, YEdge> pathFinder = new DijkstraShortestPath<YNode, YEdge>(theGraph, start, goal);
+		List<YEdge> path = pathFinder.getPathEdgeList();
+		
+		if (path == null) return null;
+		
+		List<EntityID> idPath = new LinkedList<EntityID>();
+		Map<Area, Boolean> inserted = new HashMap<Area, Boolean>();
+
+		//TODO get edge parent areas
+		
+		return idPath;
 	}
 	
 	public String dumpNodes(){
