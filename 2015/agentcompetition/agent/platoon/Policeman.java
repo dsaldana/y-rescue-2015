@@ -69,63 +69,89 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		 * System.out.println(e.getID()+" "+e.getURN()); }
 		 */
 
-		// ---- BEGIN Plan a path and moves to a blockade
-		// local position
-		Point2D current_position = new Point2D(me().getX(), me().getY());
+		int targetEntity = 253;
+				
+		// ---- BEGIN Plan a path and moves to a blockade		
+		// /////// Plan to go to some area or building
+		EntityID target = new EntityID(targetEntity);
+		List<EntityID> path = computePath(target);
 
-		
-		List<EntityID> path = search.breadthFirstSearch(me().getPosition(),
-				refugeIDs);
-
-		// Plan to refugee
-		// ---- BEGIN Plan a path and moves to a blockade
-		// List<EntityID> path = search.breadthFirstSearch(me().getID(),
-		// closestRefuge);
 		if (time < 3) {
 			return;
 		}
-		if (path != null) {
 
-			Refuge b = (Refuge) model.getEntity(path.get(path.size() - 1));
-
-			// if location is refuge, then target accomplished
-			if (location() instanceof Refuge) {
-				System.out.println("MISSION ACCOMPLISHED");
-				return;
-			}
-
-			double dist = Double.MAX_VALUE;
-			if (lastPosition != null) {
-				dist = GeometryTools2D.getDistance(lastPosition,
-						current_position);
-				System.out.println("distancia percorrida" + dist);
-			}
-
-			// if the position is the same, then clean
-			if (lastPosition != null && dist < 100.0) {
-				Road r1 = (Road) model.getEntity(path.get(0));
-				Road r2 = (Road) model.getEntity(path.get(1)); //TODO: nem sempre e' um road, ta dando ClassCastException
-
-				clearTowardsIntersection(r1, r2, time);
-				lastPosition = null;
-				return;
-
-				// ---- END Tests if blockade is in range and sends clear
-			}
-
-			lastPosition = current_position;
-
-			// Moving
-			stateMachine.setState(States.GOING_TO_TARGET);
-			Logger.info("Moving to target");
-			sendMove(time, path, b.getX(), b.getY());
-			Logger.debug("Path: " + path + ", coords: " + b.getX() + ", "
-					+ b.getY());
+		// FIXME if location is refuge, then target accomplished
+		if (location().getID().getValue() == target.getValue()) {
+			System.out.println("MISSION ACCOMPLISHED");
+			
+			//Collection<StandardEntity> roads = model.getEntitiesOfType(StandardEntityURN.ROAD);
+			
 			return;
+		}
+
+		if (path != null && path.size() > 0) {
+			clearPath(path);
 		}
 	}
 
-	private void clearTowardsIntersection(Road r1, Road r2, int time) {
+	private List<EntityID> computePath(EntityID entityId) {
+		ArrayList<EntityID> destinies = new ArrayList<EntityID>();
+		destinies.add(entityId);
+		return computePath(destinies);
+	}
+
+	/**
+	 * Compute the shortest path to some IDs.
+	 * 
+	 * @param refugeIDs
+	 * @return
+	 */
+	private List<EntityID> computePath(List<EntityID> refugeIDs) {
+		return search.breadthFirstSearch(me().getPosition(), refugeIDs);
+	}
+
+	private void clearPath(List<EntityID> path) {
+
+		// ---- BEGIN Plan a path and moves to a blockade
+		// List<EntityID> path = search.breadthFirstSearch(me().getID(),
+		// closestRefuge);
+
+		// local position
+		Point2D current_position = new Point2D(me().getX(), me().getY());
+
+		Area b = (Area) model.getEntity(path.get(path.size() - 1));
+
+		double dist = Double.MAX_VALUE;
+		if (lastPosition != null) {
+			dist = GeometryTools2D.getDistance(lastPosition, current_position);
+			System.out.println("distancia percorrida" + dist);
+		}
+
+		// if the position is the same, then clean
+		if (lastPosition != null && dist < 100.0) {
+			Area r1 = (Area) location();
+			Area r2 = (Area) model.getEntity(path.get(0));
+
+			clearTowardsIntersection(r1, r2, time);
+			lastPosition = null;
+			return;
+
+			// ---- END Tests if blockade is in range and sends clear
+		}
+
+		lastPosition = current_position;
+
+		// Moving
+		stateMachine.setState(States.GOING_TO_TARGET);
+		Logger.info("Moving to target");
+		sendMove(time, path, b.getX(), b.getY());
+		Logger.debug("Path: " + path + ", coords: " + b.getX() + ", "
+				+ b.getY());
+		return;
+
+	}
+
+	private void clearTowardsIntersection(Area r1, Area r2, int time) {
 		/**
 		 * Compute the intersection between the two roads and clear in direction
 		 * to the intersection.
