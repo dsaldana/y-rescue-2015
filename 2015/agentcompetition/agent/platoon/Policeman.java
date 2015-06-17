@@ -19,6 +19,7 @@ import rescuecore2.misc.geometry.GeometryTools2D;
 import rescuecore2.misc.geometry.Line2D;
 import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.misc.geometry.Vector2D;
+import rescuecore2.standard.entities.Edge;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityURN;
@@ -64,10 +65,9 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			Logger.debug("Heard " + next);
 		}
 
-		int targetEntity = 253;
-		
-				
-		// ---- BEGIN Plan a path and moves to a blockade		
+		int targetEntity = 254;
+
+		// ---- BEGIN Plan a path and moves to a blockade
 		// /////// Plan to go to some area or building
 		EntityID target = new EntityID(targetEntity);
 		List<EntityID> path = computePath(target);
@@ -79,9 +79,10 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		// FIXME if location is refuge, then target accomplished
 		if (location().getID().getValue() == target.getValue()) {
 			System.out.println("MISSION ACCOMPLISHED");
-			
-			//Collection<StandardEntity> roads = model.getEntitiesOfType(StandardEntityURN.ROAD);
-			
+
+			// Collection<StandardEntity> roads =
+			// model.getEntitiesOfType(StandardEntityURN.ROAD);
+
 			return;
 		}
 
@@ -128,9 +129,11 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			Area r1 = (Area) location();
 			Area r2 = (Area) model.getEntity(path.get(0));
 
-			clearTowardsIntersection(r1, r2, time);
+			boolean cleared = clearTowardsIntersection2(r1, r2, time);
 			lastPosition = null;
-			return;
+			
+			if (cleared)
+				return;
 
 			// ---- END Tests if blockade is in range and sends clear
 		}
@@ -144,6 +147,46 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		Logger.debug("Path: " + path + ", coords: " + b.getX() + ", "
 				+ b.getY());
 		return;
+
+	}
+
+	private boolean clearTowardsIntersection2(Area r1, Area r2, int time) {
+		Point2D intersection = intersectionPoint(r1, r2);
+
+		// / get all the blockades
+		Area location = (Area) location();
+		List<EntityID> blockades = location.getBlockades();
+		int x = me().getX();
+		int y = me().getY();
+		// line from position to the intersection.
+		Line2D linearPath = new Line2D(new Point2D(x, y), intersection);
+
+		// boolean cleared = false;
+		for (EntityID next : blockades) {
+			Blockade b1 = (Blockade) model.getEntity(next);
+			double d = findDistanceTo(b1, x, y);
+
+			boolean intersects = isLineShapeIntersecting(linearPath,
+					b1.getShape());
+
+			if (intersects && Math.random() > 0.5) {
+				// FXIME use the clear range
+				// if (d < 0.1 * clearRange && intersects) {
+				Logger.info("Clearing blockade: " + intersection.getX() + ", "
+						+ intersection.getY());
+				// Communicate the clearing
+				// TODO speak
+				// sendSpeak(time, 1, ("Clearing " + target).getBytes());
+				sendClear(time, (int) intersection.getX(),
+						(int) intersection.getY());
+				// cleared = true;
+				return true;
+				// break;
+
+			}
+
+		}
+		return false;
 
 	}
 
@@ -198,6 +241,40 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		// sendSpeak(time, 1, ("Clearing " + target).getBytes());
 		sendClear(time, (int) targetx, (int) targety);
 
+	}
+
+	private boolean isLineShapeIntersecting(Line2D linearPath, Shape shape) {
+		int LINE_DIVISIONS = 10;
+		Vector2D lineDir = linearPath.getDirection();
+
+		double length = lineDir.getLength();
+		double dl = 1.0 / LINE_DIVISIONS;
+
+		for (int i = 0; i < LINE_DIVISIONS; i++) {
+			double t = i * dl;
+			Point2D middlePoint = linearPath.getPoint(t);
+			if (shape.contains(middlePoint.getX(), middlePoint.getY())) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private Point2D intersectionPoint(Area r1, Area r2) {
+		List<Edge> edges1 = r1.getEdges();
+		List<Edge> edges2 = r2.getEdges();
+
+		for (Edge edge1 : edges1) {
+			if (edge1.getNeighbour() == null) {
+				continue;
+			}
+			if (edge1.getNeighbour().equals(r2.getID())) {
+				return edge1.getLine().getPoint(0.5);
+			}
+
+		}
+		return null;
 	}
 
 	@Override
