@@ -10,6 +10,8 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.apache.log4j.MDC;
+import org.jgrapht.UndirectedGraph;
+import org.jgrapht.graph.SimpleWeightedGraph;
 
 import commands.AgentCommand;
 import commands.AgentCommands;
@@ -41,6 +43,9 @@ import rescuecore2.standard.entities.StandardEntityConstants;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.kernel.comms.ChannelCommunicationModel;
 import rescuecore2.standard.kernel.comms.StandardCommunicationModel;
+import search.YEdge;
+import search.YNode;
+import search.YSearchGraph;
 import statemachine.StateMachine;
 import statemachine.States;
 import util.LastVisitSorter;
@@ -59,6 +64,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     
     private static final String SIGHT_RANGE_KEY = "perception.los.max-distance";
     protected int sightRange;
+    
     
     /**
      * Current timestep
@@ -84,6 +90,11 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
        The search algorithm.
     */
     protected SampleSearch search;
+    
+    /**
+     * The new awesome search graph
+     */
+    protected YSearchGraph searchGraph;
     
     /**
      * Stores my last location
@@ -205,7 +216,15 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         
         waterSourceIDs.addAll(refugeIDs);
         waterSourceIDs.addAll(hydrantIDs);
+        
         search = new SampleSearch(model);
+        
+        searchGraph = new YSearchGraph(model);
+        
+
+        //Logger.info("\n"+searchGraph.dumpNodes());
+		
+        
         neighbours = search.getGraph();
         useSpeak = config.getValue(Constants.COMMUNICATION_MODEL_KEY).equals(SPEAK_COMMUNICATION_MODEL);
         Logger.debug("Communcation model: " + config.getValue(Constants.COMMUNICATION_MODEL_KEY));
