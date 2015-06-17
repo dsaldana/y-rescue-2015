@@ -19,6 +19,7 @@ import rescuecore2.misc.geometry.GeometryTools2D;
 import rescuecore2.misc.geometry.Line2D;
 import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.misc.geometry.Vector2D;
+import rescuecore2.standard.entities.Edge;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityURN;
@@ -63,69 +64,133 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		for (Command next : heard) {
 			Logger.debug("Heard " + next);
 		}
-		/*
-		 * System.out.println("\nChanged entities:"); for(EntityID id :
-		 * changed.getChangedEntities()){ Entity e = model.getEntity(id);
-		 * System.out.println(e.getID()+" "+e.getURN()); }
-		 */
+
+		int targetEntity = 254;
 
 		// ---- BEGIN Plan a path and moves to a blockade
-		// local position
-		Point2D current_position = new Point2D(me().getX(), me().getY());
+		// /////// Plan to go to some area or building
+		EntityID target = new EntityID(targetEntity);
+		List<EntityID> path = computePath(target);
 
-		
-		List<EntityID> path = search.breadthFirstSearch(me().getPosition(),
-				refugeIDs);
-
-		// Plan to refugee
-		// ---- BEGIN Plan a path and moves to a blockade
-		// List<EntityID> path = search.breadthFirstSearch(me().getID(),
-		// closestRefuge);
 		if (time < 3) {
 			return;
 		}
-		if (path != null) {
 
-			Refuge b = (Refuge) model.getEntity(path.get(path.size() - 1));
+		// FIXME if location is refuge, then target accomplished
+		if (location().getID().getValue() == target.getValue()) {
+			System.out.println("MISSION ACCOMPLISHED");
 
-			// if location is refuge, then target accomplished
-			if (location() instanceof Refuge) {
-				System.out.println("MISSION ACCOMPLISHED");
-				return;
-			}
+			// Collection<StandardEntity> roads =
+			// model.getEntitiesOfType(StandardEntityURN.ROAD);
 
-			double dist = Double.MAX_VALUE;
-			if (lastPosition != null) {
-				dist = GeometryTools2D.getDistance(lastPosition,
-						current_position);
-				System.out.println("distancia percorrida" + dist);
-			}
-
-			// if the position is the same, then clean
-			if (lastPosition != null && dist < 100.0) {
-				Road r1 = (Road) model.getEntity(path.get(0));
-				Road r2 = (Road) model.getEntity(path.get(1)); //TODO: nem sempre e' um road, ta dando ClassCastException
-
-				clearTowardsIntersection(r1, r2, time);
-				lastPosition = null;
-				return;
-
-				// ---- END Tests if blockade is in range and sends clear
-			}
-
-			lastPosition = current_position;
-
-			// Moving
-			stateMachine.setState(States.GOING_TO_TARGET);
-			Logger.info("Moving to target");
-			sendMove(time, path, b.getX(), b.getY());
-			Logger.debug("Path: " + path + ", coords: " + b.getX() + ", "
-					+ b.getY());
 			return;
+		}
+
+		if (path != null && path.size() > 0) {
+			clearPath(path);
 		}
 	}
 
-	private void clearTowardsIntersection(Road r1, Road r2, int time) {
+	private List<EntityID> computePath(EntityID entityId) {
+		ArrayList<EntityID> destinies = new ArrayList<EntityID>();
+		destinies.add(entityId);
+		return computePath(destinies);
+	}
+
+	/**
+	 * Compute the shortest path to some IDs.
+	 * 
+	 * @param refugeIDs
+	 * @return
+	 */
+	private List<EntityID> computePath(List<EntityID> refugeIDs) {
+		return search.breadthFirstSearch(me().getPosition(), refugeIDs);
+	}
+
+	private void clearPath(List<EntityID> path) {
+
+		// ---- BEGIN Plan a path and moves to a blockade
+		// List<EntityID> path = search.breadthFirstSearch(me().getID(),
+		// closestRefuge);
+
+		// local position
+		Point2D current_position = new Point2D(me().getX(), me().getY());
+
+		Area b = (Area) model.getEntity(path.get(path.size() - 1));
+
+		double dist = Double.MAX_VALUE;
+		if (lastPosition != null) {
+			dist = GeometryTools2D.getDistance(lastPosition, current_position);
+			System.out.println("distancia percorrida" + dist);
+		}
+
+		// if the position is the same, then clean
+		if (lastPosition != null && dist < 100.0) {
+			Area r1 = (Area) location();
+			Area r2 = (Area) model.getEntity(path.get(0));
+
+			boolean cleared = clearTowardsIntersection2(r1, r2, time);
+			lastPosition = null;
+			
+			if (cleared)
+				return;
+
+			// ---- END Tests if blockade is in range and sends clear
+		}
+
+		lastPosition = current_position;
+
+		// Moving
+		stateMachine.setState(States.GOING_TO_TARGET);
+		Logger.info("Moving to target");
+		sendMove(time, path, b.getX(), b.getY());
+		Logger.debug("Path: " + path + ", coords: " + b.getX() + ", "
+				+ b.getY());
+		return;
+
+	}
+
+	private boolean clearTowardsIntersection2(Area r1, Area r2, int time) {
+		Point2D intersection = intersectionPoint(r1, r2);
+
+		// / get all the blockades
+		Area location = (Area) location();
+		List<EntityID> blockades = location.getBlockades();
+		int x = me().getX();
+		int y = me().getY();
+		// line from position to the intersection.
+		Line2D linearPath = new Line2D(new Point2D(x, y), intersection);
+
+		// boolean cleared = false;
+		for (EntityID next : blockades) {
+			Blockade b1 = (Blockade) model.getEntity(next);
+			double d = findDistanceTo(b1, x, y);
+
+			boolean intersects = isLineShapeIntersecting(linearPath,
+					b1.getShape());
+
+			if (intersects && Math.random() > 0.5) {
+				// FXIME use the clear range
+				// if (d < 0.1 * clearRange && intersects) {
+				Logger.info("Clearing blockade: " + intersection.getX() + ", "
+						+ intersection.getY());
+				// Communicate the clearing
+				// TODO speak
+				// sendSpeak(time, 1, ("Clearing " + target).getBytes());
+				sendClear(time, (int) intersection.getX(),
+						(int) intersection.getY());
+				// cleared = true;
+				return true;
+				// break;
+
+			}
+
+		}
+		return false;
+
+	}
+
+	private void clearTowardsIntersection(Area r1, Area r2, int time) {
 		/**
 		 * Compute the intersection between the two roads and clear in direction
 		 * to the intersection.
@@ -176,6 +241,40 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		// sendSpeak(time, 1, ("Clearing " + target).getBytes());
 		sendClear(time, (int) targetx, (int) targety);
 
+	}
+
+	private boolean isLineShapeIntersecting(Line2D linearPath, Shape shape) {
+		int LINE_DIVISIONS = 10;
+		Vector2D lineDir = linearPath.getDirection();
+
+		double length = lineDir.getLength();
+		double dl = 1.0 / LINE_DIVISIONS;
+
+		for (int i = 0; i < LINE_DIVISIONS; i++) {
+			double t = i * dl;
+			Point2D middlePoint = linearPath.getPoint(t);
+			if (shape.contains(middlePoint.getX(), middlePoint.getY())) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private Point2D intersectionPoint(Area r1, Area r2) {
+		List<Edge> edges1 = r1.getEdges();
+		List<Edge> edges2 = r2.getEdges();
+
+		for (Edge edge1 : edges1) {
+			if (edge1.getNeighbour() == null) {
+				continue;
+			}
+			if (edge1.getNeighbour().equals(r2.getID())) {
+				return edge1.getLine().getPoint(0.5);
+			}
+
+		}
+		return null;
 	}
 
 	@Override
