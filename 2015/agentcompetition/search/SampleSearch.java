@@ -1,4 +1,4 @@
-package util;
+package search;
 
 import rescuecore2.worldmodel.EntityID;
 import rescuecore2.worldmodel.Entity;

@@ -17,13 +17,17 @@ public class YEdge extends DefaultWeightedEdge {
 	
 	private YNode endPoint1;
 	private YNode endPoint2;
-	Area parent;
+	private Area parent;
 	
 	public YEdge(YNode end1, YNode end2){
 		setEndPoint1(end1);
 		setEndPoint2(end2);
 		
-		//TODO infer parent Area
+		parent = endPoint1.areaInCommonWith(endPoint2);
+		
+		if (parent == null) {
+			throw new IllegalArgumentException(String.format("%s and %s don't have an Area in common to be connected via YEdge"));
+		}
 		
 	}
 	
@@ -40,7 +44,7 @@ public class YEdge extends DefaultWeightedEdge {
 	
 	@Override
 	public int hashCode(){
-		return endPoint1.hashCode() + endPoint2.hashCode();
+		return String.format("%s%s", endPoint1.hashCode(), endPoint2.hashCode()).hashCode();
 	}
 	
 	@Override
@@ -75,6 +79,10 @@ public class YEdge extends DefaultWeightedEdge {
 		return Math.hypot(getEndPoint1().getX() - getEndPoint2().getX(), getEndPoint1().getY() - getEndPoint2().getY());
 	}
 	
+	Area getParentArea() {
+		return parent;
+	}
+
 	/**
 	 * Returns the smallest edge on the frontier of two areas
 	 * @param areas

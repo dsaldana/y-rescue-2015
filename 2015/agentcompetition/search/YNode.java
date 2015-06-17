@@ -46,12 +46,27 @@ public class YNode {
 	 * @return
 	 */
 	public boolean isInSameAreaOf(YNode other){
-		return (
-			parentAreas.first().equals(other.getParentAreas().first()) ||
-			parentAreas.first().equals(other.getParentAreas().second()) ||
-			parentAreas.second().equals(other.getParentAreas().first()) ||
-			parentAreas.second().equals(other.getParentAreas().second())
-		);
+		return areaInCommonWith(other) != null;
+	}
+	
+	/**
+	 * Returns the parent area that the YNodes have in common
+	 * @param other
+	 * @return
+	 */
+	public Area areaInCommonWith(YNode other){
+		if (parentAreas.first().equals(other.getParentAreas().first()) ||
+				parentAreas.first().equals(other.getParentAreas().second())) {
+			return parentAreas.first();
+		}
+		
+		if (parentAreas.second().equals(other.getParentAreas().first()) ||
+				parentAreas.second().equals(other.getParentAreas().second())) {
+			
+			return parentAreas.second();
+		}
+				
+		return null;
 	}
 
 	@Override
@@ -72,12 +87,20 @@ public class YNode {
 	
 	@Override
 	public int hashCode(){
-		return x + y;
+		return String.format("%d%d", x, y).hashCode();
 	}
 	
 	@Override
 	public String toString(){
 		return String.format("YNode %s @ (%d,%d)", label, x, y);
 				
+	}
+
+	/**
+	 * Retruns x, y as an ordered pair
+	 * @return
+	 */
+	public Pair<Integer, Integer> getCoords() {
+		return new Pair<Integer, Integer>(x, y);
 	}
 }

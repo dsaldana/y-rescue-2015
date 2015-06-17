@@ -43,13 +43,13 @@ import rescuecore2.standard.entities.StandardEntityConstants;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.kernel.comms.ChannelCommunicationModel;
 import rescuecore2.standard.kernel.comms.StandardCommunicationModel;
+import search.SampleSearch;
 import search.YEdge;
 import search.YNode;
 import search.YSearchGraph;
 import statemachine.StateMachine;
 import statemachine.States;
 import util.LastVisitSorter;
-import util.SampleSearch;
 
 /**
    Abstract base class for sample agents.

@@ -1,5 +1,6 @@
 package search;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,6 +14,7 @@ import org.jgrapht.alg.DijkstraShortestPath;
 import org.jgrapht.graph.SimpleWeightedGraph;
 
 import rescuecore2.log.Logger;
+import rescuecore2.misc.Pair;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Edge;
 import rescuecore2.standard.entities.StandardEntity;
@@ -25,13 +27,26 @@ public class YSearchGraph {
 	
 	private SimpleWeightedGraph<YNode, YEdge> theGraph; 
 	
+	/**
+	 * Maps Areas to their child YNodes 
+	 */
+	Map<EntityID, List<YNode>> childYNodes;
+	
+	/**
+	 * Maps Areas to their respective centroids
+	 */
+	Map<EntityID, YNode> centroids;
+	
 	public YSearchGraph(StandardWorldModel worldModel){
 		
 		theGraph = new SimpleWeightedGraph<YNode, YEdge>(YEdge.class);
+		Map<EntityID, List<YNode>> childYNodes = new HashMap<>();
 		
 		//traverses all areas, adding nodes in midpoint of geometric edge frontiers
 		for(StandardEntity e : worldModel.getEntitiesOfType(StandardEntityURN.ROAD, StandardEntityURN.BUILDING)){
 			Area a = (Area) e;
+			
+			childYNodes.put(a.getID(), new ArrayList<YNode>());
 
 			//traverses all edges, creating nodes in midpoint of frontiers
 			for (Edge edge : a.getEdges()){
@@ -50,10 +65,20 @@ public class YSearchGraph {
 				if (theGraph.containsVertex(node)){
 					continue;	//skips if this node was already added
 				}
-				theGraph.addVertex(node);
+				
+				//adds the node to the graph and to the list of child of the current area
+				addVertex(a, node);
 				Logger.info(String.format("Added node %s on %s", node, frontier));
 			}
+			
+			//adds a node in the centroid of the Area
+			Pair<Integer, Integer> aPos = a.getLocation(worldModel);
+			YNode centroid = new YNode(aPos.first(), aPos.second(), a, a);		//single parent, thus 'a' appears twice
+			addVertex(a, centroid);
+			centroids.put(a.getID(), centroid);
+			Logger.info(String.format("Added centroid %s of %s", centroid, a));
 		}
+		
 		//nodes were added, now go for the graph edges
 		for (YNode head : theGraph.vertexSet()){
 			for (YNode tail : theGraph.vertexSet()){
@@ -64,31 +89,73 @@ public class YSearchGraph {
 					theGraph.setEdgeWeight(yedge, yedge.getWeight());
 				}
 			}
-		}
-		
+		}//finished adding YEdges
+	}
+
+	/**
+	 * Adds a YNode to the graph and as a child of the given area
+	 * @param a
+	 * @param node
+	 */
+	private void addVertex(Area a, YNode node) {
+		theGraph.addVertex(node);
+		childYNodes.get(a.getID()).add(node);
 	}
 	
-	public List<EntityID> shortestPath(EntityID start, EntityID... goals){
+	public List<YNode> getChildren(Area a){
+		return childYNodes.get(a.getID());
+	}
+	
+	public SearchResult shortestPath(EntityID start, EntityID... goals){
 		return shortestPath(start, Arrays.asList(goals)); 
 	}
 	
-	public List<EntityID> shortestPath(EntityID start, Collection<EntityID> goals){
-		//call 'dijkstra' for each goal?
-		return null;
+	public SearchResult shortestPath(EntityID start, Collection<EntityID> goals){
+		
+		SearchResult best = null;
+		
+		YNode yStart = centroids.get(start);
+		
+		//calculates paths with area centroid as reference points
+		for(EntityID goal : goals){
+			YNode yGoal = centroids.get(goal);
+			//DijkstraShortestPath<YNode, YEdge> pathFinder = new DijkstraShortestPath<YNode, YEdge>(theGraph, yStart, yGoal);
+			
+			SearchResult current = shortestPath(yStart, yGoal);
+			
+			if (best == null) best = current;
+			else if (current != null && current.getPathCost() < best.getPathCost()){
+				best = current;
+			}
+		}
+		
+		return best;
 	}
 	
-	public List<EntityID> shortestPath(YNode start, YNode goal){
+	public SearchResult shortestPath(YNode start, YNode goal){
 		DijkstraShortestPath<YNode, YEdge> pathFinder = new DijkstraShortestPath<YNode, YEdge>(theGraph, start, goal);
+		
+		return new YSearchResult(pathFinder.getPath());
+		
+		/*
 		List<YEdge> path = pathFinder.getPathEdgeList();
+		
 		
 		if (path == null) return null;
 		
 		List<EntityID> idPath = new LinkedList<EntityID>();
-		Map<Area, Boolean> inserted = new HashMap<Area, Boolean>();
+		Map<EntityID, Boolean> inserted = new HashMap<EntityID, Boolean>();
 
-		//TODO get edge parent areas
+		//traverses each YEdge of path, building a list of EntityIDs without duplicates 
+		for (YEdge yedge : path){
+			if (! inserted.containsKey(yedge.getParentArea().getID())){
+				inserted.put(yedge.getParentArea().getID(), true);
+				idPath.add(yedge.getParentArea().getID());
+			}
+		}
 		
 		return idPath;
+		*/
 	}
 	
 	public String dumpNodes(){
