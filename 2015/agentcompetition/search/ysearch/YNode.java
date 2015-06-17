@@ -1,4 +1,4 @@
-package search;
+package search.ysearch;
 
 import rescuecore2.misc.Pair;
 import rescuecore2.standard.entities.Area;

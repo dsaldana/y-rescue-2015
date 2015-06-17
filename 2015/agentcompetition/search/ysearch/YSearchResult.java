@@ -1,4 +1,4 @@
-package search;
+package search.ysearch;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -9,6 +9,7 @@ import org.jgrapht.GraphPath;
 
 import rescuecore2.misc.Pair;
 import rescuecore2.worldmodel.EntityID;
+import search.SearchResult;
 
 public class YSearchResult implements SearchResult {
 

@@ -1,4 +1,4 @@
-package search;
+package search.sample;
 
 import java.util.List;
 
@@ -6,6 +6,7 @@ import rescuecore2.misc.Pair;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.EntityID;
+import search.SearchResult;
 
 public class BreadthSearchResult implements SearchResult {
 

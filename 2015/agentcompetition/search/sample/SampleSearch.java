@@ -1,4 +1,4 @@
-package search;
+package search.sample;
 
 import rescuecore2.worldmodel.EntityID;
 import rescuecore2.worldmodel.Entity;
@@ -13,20 +13,29 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Collection;
 
+import agent.platoon.AbstractPlatoon;
+import agent.platoon.Firefighter;
+import rescuecore2.standard.entities.Human;
+import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.standard.entities.Area;
+import search.SearchResult;
+import search.SearchStrategy;
 
 /**
    A sample search class that uses a connection graph to look up neighbours.
  */
-public final class SampleSearch {
+public final class SampleSearch implements SearchStrategy{
     private Map<EntityID, Set<EntityID>> graph;
-
+    private StandardWorldModel world;
+    
     /**
        Construct a new SampleSearch.
        @param world The world model to construct the neighbourhood graph from.
     */
     public SampleSearch(StandardWorldModel world) {
+    	this.world = world;
+    	
         Map<EntityID, Set<EntityID>> neighbours = new LazyMap<EntityID, Set<EntityID>>() {
             @Override
             public Set<EntityID> createValue() {
@@ -135,4 +144,29 @@ public final class SampleSearch {
     private boolean isGoal(EntityID e, Collection<EntityID> test) {
         return test.contains(e);
     }
+
+
+	@Override
+	public SearchResult shortestPath(Human origin, EntityID... goals) {
+		return shortestPath(origin.getPosition(), goals);
+	}
+
+
+	@Override
+	public SearchResult shortestPath(Human origin, Collection<EntityID> goals) {
+		
+		return shortestPath(origin.getPosition(), goals);
+	}
+
+
+	@Override
+	public SearchResult shortestPath(EntityID start, EntityID... goals) {
+		return shortestPath(start, Arrays.asList(goals));
+	}
+
+
+	@Override
+	public SearchResult shortestPath(EntityID start, Collection<EntityID> goals) {
+		return new BreadthSearchResult(breadthFirstSearch(start, goals), world);
+	}
 }
