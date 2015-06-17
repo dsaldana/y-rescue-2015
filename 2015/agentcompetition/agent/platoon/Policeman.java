@@ -63,13 +63,9 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		for (Command next : heard) {
 			Logger.debug("Heard " + next);
 		}
-		/*
-		 * System.out.println("\nChanged entities:"); for(EntityID id :
-		 * changed.getChangedEntities()){ Entity e = model.getEntity(id);
-		 * System.out.println(e.getID()+" "+e.getURN()); }
-		 */
 
 		int targetEntity = 253;
+		
 				
 		// ---- BEGIN Plan a path and moves to a blockade		
 		// /////// Plan to go to some area or building
