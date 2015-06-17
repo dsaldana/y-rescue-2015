@@ -24,7 +24,7 @@ import rescuecore2.worldmodel.EntityID;
 import search.SearchResult;
 
 
-public class YSearchGraph {
+public class YGraphWrapper {
 	
 	private SimpleWeightedGraph<YNode, YEdge> theGraph; 
 	
@@ -36,9 +36,9 @@ public class YSearchGraph {
 	/**
 	 * Maps Areas to their respective centroids
 	 */
-	Map<EntityID, YNode> centroids;
+	private Map<EntityID, YNode> centroids;
 	
-	public YSearchGraph(StandardWorldModel worldModel){
+	public YGraphWrapper(StandardWorldModel worldModel){
 		
 		theGraph = new SimpleWeightedGraph<YNode, YEdge>(YEdge.class);
 		Map<EntityID, List<YNode>> childYNodes = new HashMap<>();
@@ -92,6 +92,10 @@ public class YSearchGraph {
 			}
 		}//finished adding YEdges
 	}
+	
+	public SimpleWeightedGraph<YNode, YEdge> getGraph() {
+		return theGraph;
+	}
 
 	/**
 	 * Adds a YNode to the graph and as a child of the given area
@@ -103,61 +107,68 @@ public class YSearchGraph {
 		childYNodes.get(a.getID()).add(node);
 	}
 	
+	/**
+	 * Expands the graph with the given node by
+	 * adding edges to all vertices in its parent area (must be a single one)
+	 * @param node
+	 */
+	public void expand(YNode node){
+		
+		//node must have a single parent, throws exception otherwise
+		if(node.getParentAreas().first() != node.getParentAreas().second()){
+			throw new IllegalArgumentException(
+				String.format(
+					"%s has different parents: %s and %s", node, 
+					node.getParentAreas().first(), node.getParentAreas().second()
+				)
+			);
+		}
+		
+		//adds the vertex and creates edges between all ynodes in parent area
+		Area parentArea = node.getParentAreas().first();
+		addVertex(parentArea, node);
+		for (YNode neighbor : childYNodes.get(parentArea)){
+			YEdge e = new YEdge(node, neighbor);
+			theGraph.addEdge(node, neighbor, e);
+			theGraph.setEdgeWeight(e, e.getWeight());
+		}
+		
+	}
+	
+	/**
+	 * Removes the node from the graph and all edges that touch it
+	 * @param node
+	 */
+	public void unexpand(YNode node){
+		theGraph.removeVertex(node);	//this call already removes touching edges
+	}
+	
+	public void removeVertex(YNode node){
+		if (theGraph.removeVertex(node)){
+			//performs necessary cleaning
+			childYNodes.get(node.getParentAreas().first()).remove(node);
+			childYNodes.get(node.getParentAreas().second()).remove(node);
+			
+			//TODO will perform checking if node is centroid?
+		}
+		else {
+			Logger.warn("Attempted to remove non-existent node " + node);
+		}
+	}
+	
+	public Map<EntityID, YNode> getCentroids() {
+		return centroids;
+	}
+
+	void setCentroids(Map<EntityID, YNode> centroids) {
+		this.centroids = centroids;
+	}
+
 	public List<YNode> getChildren(Area a){
 		return childYNodes.get(a.getID());
 	}
 	
-	public SearchResult shortestPath(EntityID start, EntityID... goals){
-		return shortestPath(start, Arrays.asList(goals)); 
-	}
 	
-	public SearchResult shortestPath(EntityID start, Collection<EntityID> goals){
-		
-		SearchResult best = null;
-		
-		YNode yStart = centroids.get(start);
-		
-		//calculates paths with area centroid as reference points
-		for(EntityID goal : goals){
-			YNode yGoal = centroids.get(goal);
-			//DijkstraShortestPath<YNode, YEdge> pathFinder = new DijkstraShortestPath<YNode, YEdge>(theGraph, yStart, yGoal);
-			
-			SearchResult current = shortestPath(yStart, yGoal);
-			
-			if (best == null) best = current;
-			else if (current != null && current.getPathCost() < best.getPathCost()){
-				best = current;
-			}
-		}
-		
-		return best;
-	}
-	
-	public SearchResult shortestPath(YNode start, YNode goal){
-		DijkstraShortestPath<YNode, YEdge> pathFinder = new DijkstraShortestPath<YNode, YEdge>(theGraph, start, goal);
-		
-		return new YSearchResult(pathFinder.getPath());
-		
-		/*
-		List<YEdge> path = pathFinder.getPathEdgeList();
-		
-		
-		if (path == null) return null;
-		
-		List<EntityID> idPath = new LinkedList<EntityID>();
-		Map<EntityID, Boolean> inserted = new HashMap<EntityID, Boolean>();
-
-		//traverses each YEdge of path, building a list of EntityIDs without duplicates 
-		for (YEdge yedge : path){
-			if (! inserted.containsKey(yedge.getParentArea().getID())){
-				inserted.put(yedge.getParentArea().getID(), true);
-				idPath.add(yedge.getParentArea().getID());
-			}
-		}
-		
-		return idPath;
-		*/
-	}
 	
 	public String dumpNodes(){
 		String s = "";
@@ -206,4 +217,5 @@ public class YSearchGraph {
 		throw new NoSuchElementException(String.format("No frontier of %s was found in %s", a, edges));
 		//return null;
 	}
+
 }

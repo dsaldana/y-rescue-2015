@@ -10,12 +10,9 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.apache.log4j.MDC;
-import org.jgrapht.UndirectedGraph;
-import org.jgrapht.graph.SimpleWeightedGraph;
 
 import commands.AgentCommand;
 import commands.AgentCommands;
-import message.MessageEncoder;
 import message.MessageReceiver;
 import message.MessageType;
 import message.ReceivedMessage;
@@ -43,10 +40,9 @@ import rescuecore2.standard.entities.StandardEntityConstants;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.kernel.comms.ChannelCommunicationModel;
 import rescuecore2.standard.kernel.comms.StandardCommunicationModel;
+import search.SearchStrategy;
 import search.sample.SampleSearch;
-import search.ysearch.YEdge;
-import search.ysearch.YNode;
-import search.ysearch.YSearchGraph;
+import search.ysearch.YGraphWrapper;
 import statemachine.StateMachine;
 import statemachine.States;
 import util.LastVisitSorter;
@@ -87,6 +83,11 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     protected StateMachine stateMachine;
 
     /**
+     * The search strategy
+     */
+    protected SearchStrategy searchStrategy;
+    
+    /**
        The search algorithm.
     */
     protected SampleSearch search;
@@ -94,7 +95,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     /**
      * The new awesome search graph
      */
-    protected YSearchGraph searchGraph;
+    protected YGraphWrapper searchGraph;
     
     /**
      * Stores my last location
@@ -219,7 +220,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         
         search = new SampleSearch(model);
         
-        searchGraph = new YSearchGraph(model);
+        searchGraph = new YGraphWrapper(model);
         
 
         //Logger.info("\n"+searchGraph.dumpNodes());
