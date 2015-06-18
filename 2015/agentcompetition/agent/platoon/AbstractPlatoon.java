@@ -40,9 +40,11 @@ import rescuecore2.standard.entities.StandardEntityConstants;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.kernel.comms.ChannelCommunicationModel;
 import rescuecore2.standard.kernel.comms.StandardCommunicationModel;
+import search.NeighborhoodGraph;
 import search.SearchStrategy;
 import search.sample.SampleSearch;
 import search.ysearch.YGraphWrapper;
+import search.ysearch.YSearch;
 import statemachine.StateMachine;
 import statemachine.States;
 import util.LastVisitSorter;
@@ -90,7 +92,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     /**
        The search algorithm.
     */
-    protected SampleSearch search;
+    //protected SampleSearch search;
     
     /**
      * The new awesome search graph
@@ -141,7 +143,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     Cache of water source IDs.
      */
     protected List<EntityID> waterSourceIDs;
-    private Map<EntityID, Set<EntityID>> neighbours;
+    protected Map<EntityID, Set<EntityID>> neighbours;
     
     /**
      * The following attributes are Maps<problem,boolean>.
@@ -218,15 +220,22 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         waterSourceIDs.addAll(refugeIDs);
         waterSourceIDs.addAll(hydrantIDs);
         
-        search = new SampleSearch(model);
+        //search = new SampleSearch(model);
+        //searchGraph = new YGraphWrapper(model);
+        neighbours = NeighborhoodGraph.buildNeighborhoodGraph(model);
         
-        searchGraph = new YGraphWrapper(model);
-        
-
+        try {
+        	searchStrategy = new YSearch(model);
+        	Logger.info("Using YSearch strategy");
+        }
+        catch (Exception e) {
+        	//falls back to safe, simpler SampleSearch
+        	Logger.error("Could not create YSearch instance.", e);
+        	searchStrategy = new SampleSearch(neighbours);
+        	Logger.info("Using fail-safe SampleSearch");
+        }
         //Logger.info("\n"+searchGraph.dumpNodes());
-		
         
-        neighbours = search.getGraph();
         useSpeak = config.getValue(Constants.COMMUNICATION_MODEL_KEY).equals(SPEAK_COMMUNICATION_MODEL);
         Logger.debug("Communcation model: " + config.getValue(Constants.COMMUNICATION_MODEL_KEY));
         Logger.debug(useSpeak ? "Using speak model" : "Using say model");

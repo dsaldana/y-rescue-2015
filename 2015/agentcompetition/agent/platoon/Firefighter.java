@@ -78,7 +78,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
             // Head for a refuge
         	stateMachine.setState(States.FireFighter.OUT_OF_WATER);
         	
-            List<EntityID> pathRefuge = search.breadthFirstSearch(me().getPosition(), waterSourceIDs);
+            List<EntityID> pathRefuge = searchStrategy.shortestPath(me().getPosition(), waterSourceIDs).getPath();
             
             if (pathRefuge != null) {
                 Logger.info("Moving to water source");
@@ -172,7 +172,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         if (targets.isEmpty()) {
             return null;
         }*/
-    	Set<EntityID> neighs = search.getGraph().get(target);
-        return search.breadthFirstSearch(me().getPosition(), neighs);
+    	Set<EntityID> neighs = neighbours.get(target);
+        return searchStrategy.shortestPath(me().getPosition(), neighs).getPath();
     }
 }

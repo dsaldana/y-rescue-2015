@@ -104,7 +104,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 	 * @return
 	 */
 	private List<EntityID> computePath(List<EntityID> refugeIDs) {
-		return search.breadthFirstSearch(me().getPosition(), refugeIDs);
+		return searchStrategy.shortestPath(me().getPosition(), refugeIDs).getPath();
 	}
 
 	private void clearPath(List<EntityID> path) {

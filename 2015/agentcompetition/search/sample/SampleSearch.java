@@ -1,24 +1,18 @@
 package search.sample;
 
 import rescuecore2.worldmodel.EntityID;
-import rescuecore2.worldmodel.Entity;
-import rescuecore2.misc.collections.LazyMap;
 
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Arrays;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Collection;
 
-import agent.platoon.AbstractPlatoon;
-import agent.platoon.Firefighter;
 import rescuecore2.standard.entities.Human;
-import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardWorldModel;
-import rescuecore2.standard.entities.Area;
+import search.NeighborhoodGraph;
 import search.SearchResult;
 import search.SearchStrategy;
 
@@ -35,20 +29,8 @@ public final class SampleSearch implements SearchStrategy{
     */
     public SampleSearch(StandardWorldModel world) {
     	this.world = world;
-    	
-        Map<EntityID, Set<EntityID>> neighbours = new LazyMap<EntityID, Set<EntityID>>() {
-            @Override
-            public Set<EntityID> createValue() {
-                return new HashSet<EntityID>();
-            }
-        };
-        for (Entity next : world) {
-            if (next instanceof Area) {
-                Collection<EntityID> areaNeighbours = ((Area)next).getNeighbours();
-                neighbours.get(next.getID()).addAll(areaNeighbours);
-            }
-        }
-        setGraph(neighbours);
+        
+        setGraph(NeighborhoodGraph.buildNeighborhoodGraph(world));
     }
 
 

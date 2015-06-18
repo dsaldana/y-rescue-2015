@@ -19,8 +19,14 @@ public class YSearch implements SearchStrategy {
 	YGraphWrapper graphWrapper;
 	StandardWorldModel world;
 	
+	/*
 	public YSearch(YGraphWrapper theGraphWrapper, StandardWorldModel theWorld){
 		graphWrapper = theGraphWrapper;
+		world = theWorld;
+	}*/
+	
+	public YSearch(StandardWorldModel theWorld){
+		graphWrapper = new YGraphWrapper(theWorld);
 		world = theWorld;
 	}
 
@@ -31,7 +37,7 @@ public class YSearch implements SearchStrategy {
 
 	@Override
 	public SearchResult shortestPath(Human origin, Collection<EntityID> goals) {
-		// TODO expand graph and retract it later
+
 		Area originArea = (Area) world.getEntity(origin.getPosition());
 		YNode start = new YNode(
 			origin.getX(), origin.getY(), originArea, originArea
@@ -39,7 +45,7 @@ public class YSearch implements SearchStrategy {
 		
 		//temporarily expands graph, performs the search and un-expand it
 		graphWrapper.expand(start);
-		SearchResult result = shortestPath(start, goals);
+		SearchResult result = shortestPath(start, getListOfCentroids(goals));
 		graphWrapper.unexpand(start);
 		
 		return result;
@@ -52,6 +58,12 @@ public class YSearch implements SearchStrategy {
 	
 	@Override
 	public SearchResult shortestPath(EntityID start, Collection<EntityID> goals){
+		//uses the centroids of the areas to perform the search
+		return shortestPath(graphWrapper.getCentroids().get(start), getListOfCentroids(goals));
+	}
+
+	/*
+	public SearchResult shortestPath(EntityID start, Collection<EntityID> goals){
 		
 		YNode yStart = graphWrapper.getCentroids().get(start);
 		List<YNode> yGoals = new LinkedList<>();
@@ -63,8 +75,14 @@ public class YSearch implements SearchStrategy {
 		}
 		
 		return shortestPath(yStart, yGoals);
-	}
+	}*/
 	
+	/**
+	 * Returns the shortest path among the paths to all nodes
+	 * @param start
+	 * @param goals
+	 * @return
+	 */
 	public SearchResult shortestPath(YNode start, Collection<YNode> goals){
 		
 		SearchResult best = null;
@@ -83,6 +101,12 @@ public class YSearch implements SearchStrategy {
 		return best;
 	}
 	
+	/**
+	 * Finds the shortest path via Dijkstra
+	 * @param start
+	 * @param goal
+	 * @return
+	 */
 	public SearchResult shortestPath(YNode start, YNode goal){
 		DijkstraShortestPath<YNode, YEdge> pathFinder = new DijkstraShortestPath<YNode, YEdge>(graphWrapper.getGraph(), start, goal);
 		
@@ -107,6 +131,22 @@ public class YSearch implements SearchStrategy {
 		
 		return idPath;
 		*/
+	}
+	
+	/**
+	 * Returns a list of centroids (YNodes) of the given Areas
+	 * @param areaIDs
+	 * @return
+	 */
+	private List<YNode> getListOfCentroids(Collection<EntityID> areaIDs) {
+		List<YNode> yGoals = new LinkedList<>();
+		
+		
+		//will calculate paths with area centroid as reference points
+		for(EntityID goal : areaIDs){
+			yGoals.add(graphWrapper.getCentroids().get(goal));
+		}
+		return yGoals;
 	}
 
 }

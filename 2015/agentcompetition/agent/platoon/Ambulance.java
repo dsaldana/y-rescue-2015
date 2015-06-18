@@ -126,7 +126,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             }
             else {
                 // Move to a refuge
-                List<EntityID> path = search.breadthFirstSearch(me().getPosition(), refugeIDs);
+                List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), refugeIDs).getPath();
                 if (path != null) {
                 	stateMachine.setState(States.Ambulance.CARRYING_WOUNDED);
                 	Logger.info("Moving to refuge");
@@ -154,7 +154,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         
         if (me().getDamage() >= 10){
         	Logger.debug("Receiving damage");
-        	List<EntityID> path = search.breadthFirstSearch(me().getPosition(), refugeIDs);
+        	List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), refugeIDs).getPath();
             if (path != null) {
                 Logger.info("Moving to refuge");
                 sendMove(time, path);
@@ -166,7 +166,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         
         if(unexploredBuildings.size() > assignedBuildingNumber * 0.1){
         	Logger.info("Not enough exploration yet...");
-        	List<EntityID> path = search.breadthFirstSearch(me().getPosition(), unexploredBuildings);
+        	List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), unexploredBuildings).getPath();
             if (path != null) {
             	Logger.info("Searching buildings -50%");
                 sendMove(time, path);
@@ -213,7 +213,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             }
             else {
                 // Try to move to the target
-                List<EntityID> path = search.breadthFirstSearch(me().getPosition(), next.getPosition());
+                List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), next.getPosition()).getPath();
                 if (path != null) {
                 	stateMachine.setState(States.GOING_TO_TARGET);
                     Logger.info("Moving to target");
@@ -230,7 +230,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         }
         Collections.shuffle(entityIDList);
         
-        List<EntityID> path = search.breadthFirstSearch(me().getPosition(), entityIDList);
+        List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), entityIDList).getPath();
         if (path != null) {
         	stateMachine.setState(States.Ambulance.SEARCHING_BUILDINGS);
             Logger.info("Searching buildings");
