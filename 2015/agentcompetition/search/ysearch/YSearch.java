@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.jgrapht.alg.DijkstraShortestPath;
 
+import rescuecore2.log.Logger;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.StandardWorldModel;
@@ -58,6 +59,7 @@ public class YSearch implements SearchStrategy {
 	
 	@Override
 	public SearchResult shortestPath(EntityID start, Collection<EntityID> goals){
+		Logger.info(String.format("Planning path from %s to %s", start, goals));
 		//uses the centroids of the areas to perform the search
 		return shortestPath(graphWrapper.getCentroids().get(start), getListOfCentroids(goals));
 	}
@@ -84,7 +86,7 @@ public class YSearch implements SearchStrategy {
 	 * @return
 	 */
 	public SearchResult shortestPath(YNode start, Collection<YNode> goals){
-		
+		Logger.info(String.format("Planning path from %s to %s", start, goals));
 		SearchResult best = null;
 		
 		//calculates paths with area centroid as reference points
@@ -108,6 +110,7 @@ public class YSearch implements SearchStrategy {
 	 * @return
 	 */
 	public SearchResult shortestPath(YNode start, YNode goal){
+		Logger.info(String.format("Planning path from %s to %s", start, goal));
 		DijkstraShortestPath<YNode, YEdge> pathFinder = new DijkstraShortestPath<YNode, YEdge>(graphWrapper.getGraph(), start, goal);
 		
 		return new YSearchResult(pathFinder.getPath());
@@ -144,6 +147,9 @@ public class YSearch implements SearchStrategy {
 		
 		//will calculate paths with area centroid as reference points
 		for(EntityID goal : areaIDs){
+			if(!graphWrapper.getCentroids().containsKey(goal)){
+				throw new IllegalArgumentException(String.format("Area ID %s not found while looking for its centroid", goal));
+			}
 			yGoals.add(graphWrapper.getCentroids().get(goal));
 		}
 		return yGoals;
