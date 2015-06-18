@@ -38,8 +38,7 @@ Now close all this and set up Y-Rescue code:
 - Get Eclipse: https://eclipse.org/downloads/
 - Open Eclipse and create a Java project in `<robocup>/2015/agentcompetition/` (where robocup is the root of your Mercurial working copy)
 - Right click in JRE System Library -> Configure build path -> Add external jars
--- add all .jar in `<RCR>/jars/` (where RCR is the path to your simulator package)
--- Go to "Add external jars" again and add all .jar in `<RCR>/lib/`
+-- add all .jar in `lib`
 -- Go to "Add library" and select JUnit
 
 Now you should be able to run our code. 
