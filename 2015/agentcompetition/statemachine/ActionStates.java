@@ -5,11 +5,11 @@ package statemachine;
  * @author anderson
  *
  */
-public class States {
+public class ActionStates {
 	/**
 	 * Cannot be instantiated
 	 */
-	private States() {}
+	private ActionStates() {}
 	
 	public static final State BURIED = new State("BURIED");		//buried in building
 	public static final State BLOCKED = new State("BLOCKED");		//surrounded by blockades

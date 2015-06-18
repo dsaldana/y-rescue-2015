@@ -27,7 +27,7 @@ import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.Blockade;
 import rescuecore2.standard.entities.PoliceForce;
 import rescuecore2.standard.entities.Area;
-import statemachine.States;
+import statemachine.ActionStates;
 
 /**
  * RoboCop agent. Implements the reinforcement learning scheme
@@ -141,7 +141,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		lastPosition = current_position;
 
 		// Moving
-		stateMachine.setState(States.GOING_TO_TARGET);
+		stateMachine.setState(ActionStates.GOING_TO_TARGET);
 		Logger.info("Moving to target");
 		sendMove(time, path, b.getX(), b.getY());
 		Logger.debug("Path: " + path + ", coords: " + b.getX() + ", "
@@ -234,7 +234,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		double targety = (ptsR2[minDistanceIdx1].getY() + ptsR2[minDistanceIdx2]
 				.getY()) / 2.0;
 
-		stateMachine.setState(States.Policeman.CLEARING);
+		stateMachine.setState(ActionStates.Policeman.CLEARING);
 		Logger.info("Clearing blockade: " + targetx + ", " + targety);
 		// Communicate the clearing
 		// TODO speak

@@ -46,7 +46,7 @@ import search.sample.SampleSearch;
 import search.ysearch.YGraphWrapper;
 import search.ysearch.YSearch;
 import statemachine.StateMachine;
-import statemachine.States;
+import statemachine.ActionStates;
 import util.LastVisitSorter;
 
 /**
@@ -173,7 +173,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	
     	problemsToReport = new ArrayList<Problem>();
     	
-    	stateMachine = new StateMachine(States.RANDOM_WALK);
+    	stateMachine = new StateMachine(ActionStates.RANDOM_WALK);
     	
     	
     }
