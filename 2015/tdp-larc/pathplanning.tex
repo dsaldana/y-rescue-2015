@@ -1,0 +1,6 @@
+\subsection{Path planning}
+\label{sec:path}
+
+Path planning is divided in static and dynamic path planning. Static path planning occurs at the pre-processing stage, where we calculate the shortest path between all pairs of map nodes. This is done by repeated application of Dijkstra's algorithm. Static path planning generates a table with origin-destination pairs and the route between them. During simulation, agents perform a lookup on this table and save processing time to know the shortest path between two map nodes.
+
+Dynamic path planning occurs when a blockade is detected in a road. When this happens, A* algorithm is executed to calculate the new shortest path between the agent's origin and destination ignoring the blocked road. The new route is updated in the agent's origin-destinations table and a message is sent to other agents to warn them about the blockade. Upon receipt of this kind of message, agents mark the routes containing the blocked road as invalid on their origin-destination table. When the blockade is cleared by police forces, a new message is sent so that the agents can trust their origin-destination table on the entries containing the cleared road again.

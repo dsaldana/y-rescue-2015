@@ -1,0 +1,137 @@
+\documentclass[a4paper, 10pt, conference]{ieeeconf}      % Use this line for a4 paper
+
+\IEEEoverridecommandlockouts                              % This command is only needed if 
+                                                          % you want to use the \thanks command
+
+\overrideIEEEmargins                                      % Needed to meet printer requirements.
+
+%\usepackage[square,sort,comma,numbers]{natbib}
+%\documentclass[runningheads,a4paper]{llncs}
+%\documentclass[12pt]{article}
+%\usepackage[english]{babel}
+%\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+%\usepackage{natbib}
+\usepackage{subfigure}
+\usepackage{url}
+
+\newcommand{\teamname}{Y-Rescue~}
+
+\hyphenation{av-a-lanches}
+
+\title{\teamname Team Description Paper}
+
+\author{Anderson Tavares$^{1}$ \and David Saldaña \and Hector Azpúrua \and\\ Jhielson Pimentel \and Omar Pino \and Rafael Colares \and \\
+Douglas Macharet \and Luiz Chaimowicz 
+}
+
+%\thanks{$^{1}$VeRLab -- Departamento de Ciência da Computação \\ Universidade Federal de Minas Gerais \\ Brazil
+%%{\tt\small anderson@dcc.ufmg.br}
+%}
+
+\newcommand{\agentset}{\mathcal{I}}
+\newcommand{\taskset}{\mathcal{J}}
+
+\newcommand{\agtres}[1]{\ensuremath{r_{#1}}}
+\newcommand{\agtcap}[2]{\ensuremath{k_{#1#2}}}
+\newcommand{\consumes}[2]{\ensuremath{c_{#1#2}}}
+\newcommand{\allocate}[2]{\ensuremath{a_{#1#2}}}
+\newcommand{\partialrwd}[2]{\ensuremath{w_{#1#2}}}
+\newcommand{\andtasks}[1]{\ensuremath{\alpha_{#1}}}
+\newcommand{\allandtasks}{\ensuremath{\bowtie}}
+
+\newcommand{\msg}[1]{\textit{#1}}
+\newcommand{\behavior}[1]{\textit{#1}}
+%\newcommand{\egminus}{E-GAP$^-$}
+
+\newcommand{\stimulus}[1]{\ensuremath{s_#1}}
+\newcommand{\respthresh}[2]{\ensuremath{\theta_{#1#2}}}
+\newcommand{\tendency}[2]{\ensuremath{T_{#1#2}}}
+
+\newcommand{\variables}{\ensuremath{\mathcal{X}}}
+\newcommand{\domains}{\ensuremath{\mathcal{D}}}
+\newcommand{\functions}{\ensuremath{\mathcal{F}}}
+
+% Black magic xD
+%\makeatletter
+%\renewenvironment{thebibliography}[1]
+%     {\section*{\bibname}%
+%      \@mkboth{\MakeUppercase\bibname}{\MakeUppercase\bibname}%
+%      \list{\@biblabel{\@arabic\c@enumiv}}%
+%           {\settowidth\labelwidth{\@biblabel{#1}}%
+%            \leftmargin\labelwidth
+%            \advance\leftmargin\labelsep
+%            \@openbib@code
+%            \usecounter{enumiv}%
+%            \let\p@enumiv\@empty
+%            \renewcommand\theenumiv{\@arabic\c@enumiv}}%
+%      \sloppy
+%      \clubpenalty4000
+%      \@clubpenalty \clubpenalty
+%      \widowpenalty4000%
+%      \sfcode`\.\@m}
+%     {\def\@noitemerr
+%       {\@latex@warning{Empty `thebibliography' environment}}%
+%      \endlist}
+%\makeatother
+
+\begin{document}
+
+
+\maketitle
+
+\begin{abstract}
+This paper describes the strategy of \teamname team to the RoboCup Rescue 2015 Agent \& Multi-agent challenge competition. %The importance of this type of simulation is to test and improve plans of rescue in disaster environments. 
+For the agent competition, our approach relies on field agents capable of individual decision making, relegating the center agents to an informational role. Our main contributions are the scheme for prediction of fire evolution done by fire brigades, the behaviour-based strategy for police forces and the simple recruiting mechanism in tasks that demand more than one agent. For the multi-agent competition, we choose to implement eXtreme Ants, a scalable, swarm intelligence based algorithm for task allocation in dynamic environments.
+\end{abstract}
+
+%%% SECTION: Introduction
+\input{intro.tex}
+
+%\section*{Agent challenge competition}
+
+\section{Agent challenge competition}
+\label{sec:agent}
+
+%%%SUBSECTION: Ambulance team
+\input{ambulance.tex}
+
+%%%SUBSECTION: Police force
+\input{police.tex}
+
+%%%SUBSECTION: Fire brigade
+\input{firebrigade.tex}
+
+%%%SUBSECTION: center
+\input{center.tex}
+
+%\subsection{Common issues}
+%\label{sec:common}
+
+
+% Problemas comuns a todos: temos a compactação de mensagens para a comunicação e o path planning.
+
+%%%SUBSECTION: communication
+\input{communication.tex}
+
+%%%SUBSECTION: path planning
+\input{pathplanning.tex}
+
+%%%SECTION: Multi-agent
+\input{multiagent.tex}
+
+%%%SECTION: conclusion
+\input{conclusion.tex}
+
+\section*{Acknowledgment}
+\label{sec:ack}
+Authors would like to thank FAPEMIG for supporting the team through its ``Santos Dummont'' program and to CAPES and CNPq for the researchers' fellowships.
+
+\bibliographystyle{splncs03}
+%\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
