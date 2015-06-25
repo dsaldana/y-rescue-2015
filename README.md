@@ -29,7 +29,6 @@ Open another terminal:
 Start the simulation in the Kernel Gui and watch the sample agents.
 
 To start the simulator without unnecessary windows.
-Replace the file in the simulator: boot/start.sh by patch/start.sh
 
 
 ### Set up Y-Rescue code
@@ -38,7 +37,7 @@ Now close all this and set up Y-Rescue code:
 - Get Eclipse: https://eclipse.org/downloads/
 - Open Eclipse and create a Java project in `<robocup>/2015/agentcompetition/` (where robocup is the root of your Mercurial working copy)
 - Right click in JRE System Library -> Configure build path -> Add external jars
--- add all .jar in `lib`
+-- add all .jar in `lib` (do not add a lost .txt file in `lib` altogether)
 -- Go to "Add library" and select JUnit
 
 Now you should be able to run our code. 

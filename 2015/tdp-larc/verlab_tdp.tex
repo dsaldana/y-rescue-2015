@@ -6,6 +6,7 @@
 \overrideIEEEmargins                                      % Needed to meet printer requirements.
 
 %\usepackage[square,sort,comma,numbers]{natbib}
+%\usepackage[style=numeric-comp]{biblatex}
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
@@ -15,6 +16,7 @@
 \usepackage{subfigure}
 \usepackage{url}
 
+%\bibliography{references}
 
 \newcommand{\teamname}{Y-Rescue~}
 
@@ -87,8 +89,8 @@
 \maketitle
 
 \begin{abstract}
-This paper describes the strategy of \teamname team to the RoboCup Rescue 2015 Agent \& Multi-agent challenge competition. %The importance of this type of simulation is to test and improve plans of rescue in disaster environments. 
-For the agent competition, our approach relies on field agents capable of individual decision making, relegating the center agents to an informational role. Our main contributions are the scheme for prediction of fire evolution done by fire brigades, the behaviour-based strategy for police forces and the simple recruiting mechanism in tasks that demand more than one agent. For the multi-agent competition, we choose to implement eXtreme Ants, a scalable, swarm intelligence based algorithm for task allocation in dynamic environments.
+This paper describes the strategy of \teamname team to the LARC RoboCup Rescue 2015 Agent competition. %The importance of this type of simulation is to test and improve plans of rescue in disaster environments. 
+In our approach, center agents are relegated to an informational role whereas field agents are capable of individual decision making. Our main contributions are the path planning via Dijkstra's algorithm in an augmented neighborhood graph, the clearing technique adopted by the police forces and the exploration scheme adopted by the ambulance team. Items such as prediction of fire evolution done by fire brigades, the behaviour-based strategy for police forces and the simple recruiting mechanism in tasks that demand more than one agent are similar to the ones used in Hefei's 2015 RoboCup Rescue Agent competition.
 \end{abstract}
 
 %%% SECTION: Introduction
