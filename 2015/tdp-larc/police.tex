@@ -1,4 +1,4 @@
-\subsection{Police Force}
+\section{Police Force}
 \label{sec:police}
 This team has two main goals: to clear obstructed paths and to scout unvisited areas of the map. The first goal can be divided into three jobs with different priorities, in order: i) clear obstructed paths of important buildings, ii) clear paths that are obstructing other agents, iii) clear random obstructed paths. The second goal is to continuously search the map for survivors and fire spots.
 
@@ -14,7 +14,7 @@ To achieve these goals, police force agents use a behaviour-based controller. Ea
 
 \end{itemize}
 
-\subsubsection{Task Allocation}
+\subsection{Task Allocation}
 Initially, the map will be divided into \emph{n} clusters, where \emph{n} is the number of police force team agents. These clusters will be created taking into account the size of the map and the localization of each agent. Agents who are near an important feature of the map will be given the \behavior{sweeper} behaviour, while agents who are on other areas will be given the \behavior{by-demand} behaviour. When an agent finishes its tasks, it will then be assigned to the \behavior{scout} behaviour.
 
 The \behavior{sweeper} agent task is simple and direct: it will clear its cluster's paths until all paths are clear. It will not listen to any communication channel or stop its task for any reason. The \behavior{by-demand} agent task is more complicated, as it will be listening to a communication channel and responding  to calls for help. An agent from any other team will be able to broadcast a distress message to the police force team informing that it is trapped and need assistance. This message contains the sender's current task and location. When a \behavior{by-demand} agent receives a help message and it is the closest to the sender agent, this \behavior{by-demand} agent will drop its current task and will respond to that message.
@@ -24,4 +24,4 @@ Both behaviours, \behavior{sweeper} and \behavior{by-demand}, will keep listenin
 % Implementar o Q-learning no agente policia
 % dividi-los em dois times, um fica responsavel por desbloquear caminhos 'vitais' (até refugio ou hidrantes, por ex.) e outro time escuta os canais dos outros agentes para limpar o caminho deles até suas tarefas.
 
-%\subsubsection{Task Allocation}
+%\subsection{Task Allocation}
