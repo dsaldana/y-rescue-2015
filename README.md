@@ -46,7 +46,7 @@ Open the terminal, go to `<RCR>/boot` and run the simulator:
 
 `$ ./start.sh -c config/ -m ../maps/gml/test/`
 
-- In the project, select `main/LaunchRobots.java`, click the Eclipse "Run" button and wait for connection to establish.
+- In the project, select `main/LaunchAgents.java`, click the Eclipse "Run" button and wait for connection to establish.
 - Start the simulator kernel and watch the simulation. Agents' initial implementation outputs some info in the terminal.
 
 
