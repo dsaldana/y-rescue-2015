@@ -2,6 +2,7 @@ package yworld;
 
 import java.util.Map;
 
+import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.EntityID;
 import rescuecore2.worldmodel.WorldModel;
 
@@ -24,10 +25,10 @@ public class YFireSimulator {
     public static float WEIGHT_GRID = 0.2f;
     public static float AIR_CELL_HEAT_CAPACITY = 1f;
 
-    WorldModel<?> world;
+    StandardWorldModel world;
     Map<EntityID, YBuilding> yBuildings;
     
-    public YFireSimulator(WorldModel<?> world, Map<EntityID, YBuilding> yBuildings){
+    public YFireSimulator(StandardWorldModel world, Map<EntityID, YBuilding> yBuildings){
     	this.world = world;
     	this.yBuildings = yBuildings;
     }
@@ -44,8 +45,20 @@ public class YFireSimulator {
     }
 
 	private void burnNeighborhood() {
-		// TODO Auto-generated method stub
+		for (YBuilding yb : yBuildings.values()){
+			//TODO callibrate influence range
+			yb.heatFromNeighborhood(world, 20000, yBuildings); //20000 corresponds to 20 meters
+		}
 		
+	}
+	
+	/**
+	 * Returns the YBuilding, given its ID
+	 * @param id
+	 * @return
+	 */
+	public YBuilding getYBuilding(EntityID id){
+		return yBuildings.get(id);
 	}
 
 	private void cool() {

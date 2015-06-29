@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.log4j.MDC;
@@ -24,6 +26,8 @@ import rescuecore2.worldmodel.EntityID;
 import statemachine.StateMachine;
 import statemachine.ActionStates;
 import util.DistanceSorter;
+import yworld.YBuilding;
+import yworld.YFireSimulator;
 /**
  *  RoboFire agent. Implements a simple scheme to fight fires.
  */
@@ -38,6 +42,9 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     private int maxDistance;	//max distance that water reaches
     private int maxPower;		//max amount of water launched by timestep
     private int refugeRefillRate, hydrantRefillRate;	//refill rates
+    
+    private YFireSimulator fireSimulator;
+    private Map<EntityID, YBuilding> yBuildings;
     
 
     @Override
@@ -65,6 +72,21 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     		+ "max power = %d, max tank = %d, refugeRefill = %d, "
     		+ "hydrantRefill = %d", maxDistance, maxPower, maxWater, refugeRefillRate, hydrantRefillRate
     	));
+        
+        // ---- constructs its 'small' fire simulator ----
+        Logger.info("Creating own fire simulator...");
+
+        //first, creates an YBuilding for each Building and populates the map
+        yBuildings = new HashMap<EntityID, YBuilding>();
+        for(StandardEntity s : model.getEntitiesOfType(StandardEntityURN.BUILDING)){
+        	YBuilding y = new YBuilding((Building)s);
+        	yBuildings.put(s.getID(), y);
+        }
+        
+        //second, creates the fire simulator
+        fireSimulator = new YFireSimulator(model, yBuildings);
+        
+        Logger.info("Fire simulator created.");
         
     }
 

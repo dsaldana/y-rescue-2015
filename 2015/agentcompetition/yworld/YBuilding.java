@@ -1,12 +1,23 @@
 package yworld;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.Random;
 
 import org.uncommons.maths.number.NumberGenerator;
 import org.uncommons.maths.random.GaussianGenerator;
 
+import firesimulator.simulator.Simulator;
+import firesimulator.world.Wall;
+import firesimulator.world.World;
 import rescuecore2.log.Logger;
 import rescuecore2.standard.entities.Building;
+import rescuecore2.standard.entities.StandardEntity;
+import rescuecore2.standard.entities.StandardWorldModel;
+import rescuecore2.worldmodel.EntityID;
 
 /**
  * Contains building properties that allow the estimation of 
@@ -14,6 +25,9 @@ import rescuecore2.standard.entities.Building;
  * TODO implement some form of parameter learning
  */
 public class YBuilding {
+	
+	private static final double STEFAN_BOLTZMANN_CONSTANT = 0.000000056704;
+	
 	//some coefficients (values taken from maps/Kobe2013/config/resq-fire.cfg)
 	public static float woodCapacity = 1.1f;//4;
     public static float steelCapacity = 1.0f;//4;
@@ -34,6 +48,7 @@ public class YBuilding {
 	//some properties
 	float energy, capacity, initialFuel, fuel; //fieryness, brokenness, energy;
 	int water, fieryness;
+	double totalWallArea;
 	
 	NumberGenerator<Double> burnRate;
 	
@@ -47,6 +62,7 @@ public class YBuilding {
 	Building referenced;
 	
 	int lastSeen;	//the timestep this building was last seen by the agent
+	
 	
 	public YBuilding(Building theBuilding){
 		referenced = theBuilding;
@@ -69,6 +85,8 @@ public class YBuilding {
 		capacity = volume * getThermoCapacity();
         fuel = initialFuel = (float)(getFuelDensity() * volume);
         fuzzyFuel = false;
+        
+        totalWallArea = calculateWallArea();
 	}
 	
 	/**
@@ -113,6 +131,81 @@ public class YBuilding {
 		
 	}
 	
+	public double getRadiationEnergy() {
+        double t=getPredictedTemperature() + 293; // Assume ambient temperature is 293 Kelvin.
+        double radEn = (t * t * t * t) * totalWallArea * YFireSimulator.RADIATION_COEFFICENT * STEFAN_BOLTZMANN_CONSTANT;
+        
+        if (radEn > energy) {
+            radEn = energy;
+        }
+        return radEn;
+    }
+	
+	private double calculateWallArea(){
+        double totalWallArea=0;
+        
+        //walls = new LinkedList();
+        int[] apexes = referenced.getApexList();
+        
+        int fx=apexes[0];
+        int fy=apexes[1];
+        int lx=fx;
+        int ly=fy;
+        
+        for(int n = 2; n<apexes.length; n++){
+            int tx=apexes[n];
+            int ty=apexes[++n];
+            //Wall w=new Wall(lx,ly,tx,ty,this);
+            //if(w.validate()){
+            totalWallArea += 3 * 1000 * Math.hypot(fx - lx, fy - ly); //3 = floor height, 1000 = unit conversion
+            //}
+            //else {
+            //    LOG.warn("Ignoring odd wall at building "+getID());
+            //}
+            lx=tx;
+            ly=ty;
+        }
+        return totalWallArea/1000000d;
+    }
+
+	/**
+	 * Gains energy from nearby buildings
+	 * @param world
+	 * @param influenceRange
+	 * @param yBuildings
+	 */
+	public void heatFromNeighborhood(StandardWorldModel world, int influenceRange, Map<EntityID, YBuilding> yBuildings){
+		//Note: non-inflammable buildings also heat
+		
+		/*for(Iterator i=world.getBuildings().iterator();i.hasNext();){
+        Building b=(Building)i.next();
+        exchangeWithAir(b);
+	    }*/
+	    
+	    Collection<StandardEntity> neighbors = world.getObjectsInRange(this.referenced.getID(), influenceRange);
+	    
+	    //estimates an exponential decay of energy transfer according to distance
+	    //TODO might be necessary to normalize distances
+	    //TODO calibrate decay factor 
+	    
+	    for (StandardEntity n : neighbors){
+	    	if (n instanceof Building){
+	    		Logger.info("Neighbor " + n.getID() + " at distance " + world.getDistance(referenced.getID(), n.getID()));
+	    		
+	    		double factor = Math.pow(Math.E, -2 * world.getDistance(referenced.getID(), n.getID()));
+	    		
+	    		YBuilding y = yBuildings.get(n.getID());
+	    		double radEn = Math.min(y.getRadiationEnergy(), y.getEnergy());
+	    		
+	    		addEnergy(factor * radEn);
+	    	}
+	    }
+	}
+	
+	private double getEnergy() {
+		return energy;
+	}
+
 	/**
 	 * Processes the effect of water in the building. 
 	 * Same code of firesimulator.simulator.Simulator 
@@ -124,10 +217,10 @@ public class YBuilding {
 		double lWATER_COEFFICIENT=(fieryness > 0 && fieryness < 4 ? waterCoeff : waterCoeff * gamma);
         boolean cond = false;
         if(water > 0){
-            double oldEnergy = energy;
+            /*double oldEnergy = energy;
             double oldTemp = getPredictedTemperature();
-            double oldWater = water;
-            double dE= getPredictedTemperature() * capacity;
+            double oldWater = water;*/
+            double dE = getPredictedTemperature() * capacity;
             if (dE <= 0) {
                 //                LOG.debug("Building already at or below ambient temperature");
                 return;
