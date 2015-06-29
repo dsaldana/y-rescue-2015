@@ -1,1 +1,1 @@
-See the file README.MD
+See the file ../../README.md
