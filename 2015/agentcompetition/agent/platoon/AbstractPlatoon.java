@@ -243,6 +243,26 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     
     
     /**
+     * Reads a value from config. In case of error, returns the default value
+     * @param key
+     * @param defaultValue
+     * @return 
+     */
+    protected int readConfigIntValue(String key, int defaultValue){
+    	int value = defaultValue;
+    	
+    	try{
+    		value = config.getIntValue(key);
+    	}
+    	catch (Exception e){
+    		Logger.error(String.format("Cannot read config key %s. Will return default: %d", key, value), e);
+    		Logger.info("Check the keys: " + config.getAllKeys());
+    	}
+    	
+    	return value;
+    }
+    
+    /**
      * Overrides methods to provide registration of actions
      */
     
