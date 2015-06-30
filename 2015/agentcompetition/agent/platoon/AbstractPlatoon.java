@@ -2,6 +2,7 @@ package agent.platoon;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
@@ -78,6 +79,12 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * Current listened communication
      */
     protected Collection<Command> heard;
+    
+    //the platoon agents of each type
+    protected Collection<StandardEntity> firefighters, policemen, ambulances;
+    
+    //the center agents of each type
+    protected Collection<StandardEntity> fireStations, policeOffices, hospitals;
     
     /**
      * Ageent state machine
@@ -193,6 +200,16 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         
         lastVisit = new HashMap<EntityID, Integer>();
         
+        
+        firefighters = getEntitiesOfType(StandardEntityURN.FIRE_BRIGADE);
+        fireStations = getEntitiesOfType(StandardEntityURN.FIRE_STATION);
+        
+        ambulances = getEntitiesOfType(StandardEntityURN.AMBULANCE_TEAM);
+        hospitals = getEntitiesOfType(StandardEntityURN.AMBULANCE_CENTRE);
+        
+        policemen = getEntitiesOfType(StandardEntityURN.POLICE_FORCE);
+        policeOffices = getEntitiesOfType(StandardEntityURN.POLICE_OFFICE);
+        
         for (StandardEntity next : model) {
             if (next instanceof Building) {
                 buildingIDs.add(next.getID());
@@ -236,11 +253,39 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         }
         //Logger.info("\n"+searchGraph.dumpNodes());
         
+        Logger.info(String.format(
+    		"I can count %d firefighters, %d ambulances and %d policemen", 
+    		firefighters.size(), ambulances.size(), policemen.size()
+    	));
+        
+        Logger.info(String.format(
+    		"I can count %d fire stations, %d hospitals and %d police offices", 
+    		fireStations.size(), hospitals.size(), policeOffices.size()
+    	));
+        
+        
         useSpeak = config.getValue(Constants.COMMUNICATION_MODEL_KEY).equals(SPEAK_COMMUNICATION_MODEL);
         Logger.debug("Communcation model: " + config.getValue(Constants.COMMUNICATION_MODEL_KEY));
         Logger.debug(useSpeak ? "Using speak model" : "Using say model");
     }
     
+    /**
+     * Performs save retrieval of entities
+     * @param urn
+     * @return
+     */
+    protected Collection<StandardEntity> getEntitiesOfType(StandardEntityURN urn){
+    	try{
+    		return model.getEntitiesOfType(urn);
+        	//Logger.info("I can count "+firefighters+" firefighters");
+        }
+        catch (Exception e){
+        	//prints error message and returns empty list
+        	Logger.error("Cannot retrieve list of " + urn, e);
+        	return new LinkedList<StandardEntity>();
+        }
+    	
+    }
     
     /**
      * Reads a value from config. In case of error, returns the default value
