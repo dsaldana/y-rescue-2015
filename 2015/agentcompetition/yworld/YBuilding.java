@@ -16,6 +16,7 @@ import firesimulator.world.World;
 import rescuecore2.log.Logger;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.StandardEntity;
+import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.EntityID;
 
@@ -108,6 +109,14 @@ public class YBuilding {
 	 */
 	public void burnStep(){
 		if (getPredictedTemperature() >= getIgnitionPoint() && fuel > 0) {
+			
+			if (getPredictedTemperature() >= getIgnitionPoint() && fuel > 0 && isInflammable() ){
+				//ignites
+				energy = (float) (capacity * getIgnitionPoint() * 1.5);
+				
+				//onFire = true;
+			}
+			
             float consumed = getConsum();
             if(consumed > fuel) {
                 consumed = fuel;
@@ -129,6 +138,16 @@ public class YBuilding {
             b.setPrevBurned(0f);
         }*/
 		
+	}
+	
+	private boolean isInflammable(){
+		return ! (
+			referenced.getStandardURN() == StandardEntityURN.AMBULANCE_CENTRE ||
+			referenced.getStandardURN() == StandardEntityURN.POLICE_OFFICE ||
+			referenced.getStandardURN() == StandardEntityURN.FIRE_STATION ||
+			referenced.getStandardURN() == StandardEntityURN.REFUGE ||
+			referenced.getStandardURN() == StandardEntityURN.HYDRANT
+		);
 	}
 	
 	public double getRadiationEnergy() {
@@ -195,6 +214,10 @@ public class YBuilding {
 	    		double factor = Math.pow(Math.E, -2 * world.getDistance(referenced.getID(), n.getID()));
 	    		
 	    		YBuilding y = yBuildings.get(n.getID());
+	    		if (y == null){
+	    			Logger.error(String.format("Cannot recover YBuilding of id %s neighbor of %s", n.getID(), referenced.getID()));
+	    			continue;
+	    		}
 	    		double radEn = Math.min(y.getRadiationEnergy(), y.getEnergy());
 	    		
 	    		addEnergy(factor * radEn);
@@ -393,6 +416,11 @@ public class YBuilding {
         default:
             return concreteCapacity;
         }
+    }
+    
+    @Override
+    public String toString(){
+    	return "YBuilding of "+ referenced;
     }
 	
 

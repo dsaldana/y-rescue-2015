@@ -77,6 +77,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         Logger.info("Creating own fire simulator...");
 
         //first, creates an YBuilding for each Building and populates the map
+        //TODO: refuge is not listed as YBuilding
         yBuildings = new HashMap<EntityID, YBuilding>();
         for(StandardEntity s : model.getEntitiesOfType(StandardEntityURN.BUILDING)){
         	YBuilding y = new YBuilding((Building)s);
@@ -101,7 +102,24 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
             Logger.debug("Heard " + next);
         }*/
         
-       
+        //calculates next step of fire simulation
+        fireSimulator.step();
+        
+        //updates YBuilding data from observation (overrides predicted data)
+        for (EntityID id : changed.getChangedEntities()){
+        	YBuilding yb = yBuildings.get(id);
+        	
+        	if (yb != null){	//this means that ID refers to a building
+        		Building b = (Building) model.getEntity(id); 
+        		if (b == null){
+        			Logger.error("While updating YBuildings: cannot retrieve Building with ID="+id);
+        			continue;
+        		}
+        		yb.updateFromObservation(time, b.getTemperature(), b.getFieryness());
+        		Logger.info("Updating " + yb + " from observation.");
+        	}
+        }
+        
         FireBrigade me = me();
         // Are we currently filling with water?
         if (me.isWaterDefined() && me.getWater() < maxWater && location() instanceof Refuge) {
