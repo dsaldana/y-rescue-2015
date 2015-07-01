@@ -70,7 +70,7 @@ public class YGraphWrapper {
 				
 				//adds the node to the graph and to the list of child of the current area
 				addVertex(a, node);
-				Logger.info(String.format("Added node %s on %s", node, frontier));
+				Logger.debug(String.format("Added node %s on %s", node, frontier));
 			}
 			
 			//adds a node in the centroid of the Area
@@ -78,7 +78,7 @@ public class YGraphWrapper {
 			YNode centroid = new YNode(aPos.first(), aPos.second(), a, a);		//single parent, thus 'a' appears twice
 			addVertex(a, centroid);
 			centroids.put(a.getID(), centroid);
-			Logger.info(String.format("Added centroid %s of %s", centroid, a));
+			Logger.debug(String.format("Added centroid %s of %s", centroid, a));
 		}
 		
 		//nodes were added, now go for the graph edges

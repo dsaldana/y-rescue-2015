@@ -244,6 +244,11 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         try {
         	searchStrategy = new YSearch(model);
         	Logger.info("Using YSearch strategy");
+        	//searchStrategy = new SampleSearch(neighbours);
+        	
+        	Logger.info("TEST!");
+        	Logger.info("Dij:" + searchStrategy.shortestPath(new EntityID(297), new EntityID(273)).getPath());
+        	Logger.info("BFS:" + new SampleSearch(neighbours).shortestPath(new EntityID(297), new EntityID(273)).getPath());
         }
         catch (Exception e) {
         	//falls back to safe, simpler SampleSearch

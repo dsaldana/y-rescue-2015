@@ -24,7 +24,7 @@ public class YSearchResult implements SearchResult {
 	 * Returns the path as required by the simulator's sendMove
 	 */
 	public List<EntityID> getPath() {
-		if (path == null) return null;
+		if (path == null || path.getEdgeList().size() == 0) return null;
 		
 		List<EntityID> idPath = new LinkedList<EntityID>();
 		Map<EntityID, Boolean> inserted = new HashMap<EntityID, Boolean>();
@@ -36,7 +36,9 @@ public class YSearchResult implements SearchResult {
 				idPath.add(yedge.getParentArea().getID());
 			}
 		}
-		
+		//BUGFIX: removes 1st EntityID which corresponds to the one the agent is in
+		//without removal, policeman was being confused on path clearing
+		idPath.remove(0);	
 		return idPath;
 	}
 

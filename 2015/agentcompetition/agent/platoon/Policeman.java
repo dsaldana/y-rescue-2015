@@ -128,7 +128,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		if (lastPosition != null && dist < 100.0) {
 			Area r1 = (Area) location();
 			Area r2 = (Area) model.getEntity(path.get(0));
-
+			Logger.info(String.format("Will clear from %s to %s", r1, r2));
 			boolean cleared = clearTowardsIntersection2(r1, r2, time);
 			lastPosition = null;
 			

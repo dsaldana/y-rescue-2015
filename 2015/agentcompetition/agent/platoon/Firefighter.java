@@ -111,8 +111,8 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         	
         	if (yb != null){	//this means that ID refers to a building
         		Building b = (Building) model.getEntity(id); 
-        		if (b == null){
-        			Logger.error("While updating YBuildings: cannot retrieve Building with ID="+id);
+        		if (b == null || b.isTemperatureDefined() || b.isFierynessDefined()){
+        			Logger.error("While updating YBuildings: Building "+id+" not found or has undefined temperature/fieryness");
         			continue;
         		}
         		yb.updateFromObservation(time, b.getTemperature(), b.getFieryness());

@@ -209,7 +209,7 @@ public class YBuilding {
 	    
 	    for (StandardEntity n : neighbors){
 	    	if (n instanceof Building){
-	    		Logger.info("Neighbor " + n.getID() + " at distance " + world.getDistance(referenced.getID(), n.getID()));
+	    		Logger.debug("Neighbor " + n.getID() + " at distance " + world.getDistance(referenced.getID(), n.getID()));
 	    		
 	    		double factor = Math.pow(Math.E, -2 * world.getDistance(referenced.getID(), n.getID()));
 	    		
