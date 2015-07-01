@@ -64,21 +64,6 @@ public class YSearch implements SearchStrategy {
 		return shortestPath(graphWrapper.getCentroids().get(start), getListOfCentroids(goals));
 	}
 
-	/*
-	public SearchResult shortestPath(EntityID start, Collection<EntityID> goals){
-		
-		YNode yStart = graphWrapper.getCentroids().get(start);
-		List<YNode> yGoals = new LinkedList<>();
-		
-		
-		//will calculate paths with area centroid as reference points
-		for(EntityID goal : goals){
-			yGoals.add(graphWrapper.getCentroids().get(goal));
-		}
-		
-		return shortestPath(yStart, yGoals);
-	}*/
-	
 	/**
 	 * Returns the shortest path among the paths to all nodes
 	 * @param start
@@ -115,25 +100,6 @@ public class YSearch implements SearchStrategy {
 		
 		return new YSearchResult(pathFinder.getPath());
 		
-		/*
-		List<YEdge> path = pathFinder.getPathEdgeList();
-		
-		
-		if (path == null) return null;
-		
-		List<EntityID> idPath = new LinkedList<EntityID>();
-		Map<EntityID, Boolean> inserted = new HashMap<EntityID, Boolean>();
-
-		//traverses each YEdge of path, building a list of EntityIDs without duplicates 
-		for (YEdge yedge : path){
-			if (! inserted.containsKey(yedge.getParentArea().getID())){
-				inserted.put(yedge.getParentArea().getID(), true);
-				idPath.add(yedge.getParentArea().getID());
-			}
-		}
-		
-		return idPath;
-		*/
 	}
 	
 	/**

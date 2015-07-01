@@ -45,7 +45,7 @@ public class YGraphWrapper {
 		centroids = new HashMap<>();
 		
 		//traverses all areas, adding nodes in midpoint of geometric edge frontiers
-		for(StandardEntity e : worldModel.getEntitiesOfType(StandardEntityURN.ROAD, StandardEntityURN.BUILDING, StandardEntityURN.REFUGE)){
+		for(StandardEntity e : worldModel.getEntitiesOfType(StandardEntityURN.ROAD, StandardEntityURN.BUILDING, StandardEntityURN.REFUGE, StandardEntityURN.HYDRANT)){
 			Area a = (Area) e;
 			
 			childYNodes.put(a.getID(), new ArrayList<YNode>());

@@ -79,7 +79,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         //first, creates an YBuilding for each Building and populates the map
         //TODO: refuge is not listed as YBuilding
         yBuildings = new HashMap<EntityID, YBuilding>();
-        for(StandardEntity s : model.getEntitiesOfType(StandardEntityURN.BUILDING)){
+        for(StandardEntity s : model.getEntitiesOfType(StandardEntityURN.BUILDING, StandardEntityURN.REFUGE)){
         	YBuilding y = new YBuilding((Building)s);
         	yBuildings.put(s.getID(), y);
         }
