@@ -289,4 +289,10 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             unexploredBuildings.remove(next);
         }
     }
+
+	@Override
+	protected void failsafe() {
+		// TODO Auto-generated method stub
+		
+	}
 }

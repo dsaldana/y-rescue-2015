@@ -92,7 +92,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     }
 
     @Override
-    protected void doThink(int time, ChangeSet changed, Collection<Command> heard) {
+    protected void doThink(int time, ChangeSet changed, Collection<Command> heard) throws Exception {
         if (time == readConfigIntValue(kernel.KernelConstants.IGNORE_AGENT_COMMANDS_KEY, 3)) {
             // Subscribe to channel 1
             sendSubscribe(time, 1);
@@ -111,7 +111,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         	
         	if (yb != null){	//this means that ID refers to a building
         		Building b = (Building) model.getEntity(id); 
-        		if (b == null || b.isTemperatureDefined() || b.isFierynessDefined()){
+        		if (b == null){// || b.isTemperatureDefined() || b.isFierynessDefined()){
         			Logger.error("While updating YBuildings: Building "+id+" not found or has undefined temperature/fieryness");
         			continue;
         		}
@@ -119,6 +119,8 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         		Logger.info("Updating " + yb + " from observation.");
         	}
         }
+        
+        //throw new Exception("Testing fail safe-ness");
         
         FireBrigade me = me();
         // Are we currently filling with water?
@@ -230,5 +232,103 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     	Set<EntityID> neighs = neighbours.get(target);
         return searchStrategy.shortestPath(me().getPosition(), neighs).getPath();
     }
+
+	@Override
+	protected void failsafe() {
+		if (time == config.getIntValue(kernel.KernelConstants.IGNORE_AGENT_COMMANDS_KEY)) {
+            // Subscribe to channel 1
+            sendSubscribe(time, 1);
+        }
+        for (Command next : heard) {
+            Logger.debug("Heard " + next);
+        }
+        
+        FireBrigade me = me();
+        // Are we currently filling with water?
+        if (me.isWaterDefined() && me.getWater() < maxWater && location() instanceof Refuge) {
+            Logger.info("Filling with water at " + location());
+            sendRest(time);
+            return;
+        }
+        // Are we out of water?
+        if (me.isWaterDefined() && me.getWater() == 0) {
+            // Head for a refuge
+            List<EntityID> path = failSafeSearch.breadthFirstSearch(me().getPosition(), refugeIDs);
+            if (path != null) {
+                Logger.info("Moving to refuge");
+                sendMove(time, path);
+                return;
+            }
+            else {
+                Logger.debug("Couldn't plan a path to a refuge.");
+                path = randomWalk();
+                Logger.info("Moving randomly");
+                sendMove(time, path);
+                return;
+            }
+        }
+        // Find all buildings that are on fire
+        Collection<EntityID> all = failSafeGetBurningBuildings();
+        // Can we extinguish any right now?
+        for (EntityID next : all) {
+            if (model.getDistance(getID(), next) <= maxDistance) {
+                Logger.info("Extinguishing " + next);
+                sendExtinguish(time, next, maxPower);
+                sendSpeak(time, 1, ("Extinguishing " + next).getBytes());
+                return;
+            }
+        }
+        // Plan a path to a fire
+        for (EntityID next : all) {
+            List<EntityID> path = failSafePlanPathToFire(next);
+            if (path != null) {
+                Logger.info("Moving to target");
+                sendMove(time, path);
+                return;
+            }
+        }
+        List<EntityID> path = null;
+        Logger.debug("Couldn't plan a path to a fire.");
+        path = failSafeRandomWalk();
+        Logger.info("Moving randomly");
+        sendMove(time, path);
+		
+	}
+	
+	/**
+	 * The getBurningBuildings of the sample agent
+	 * @return
+	 */
+	private Collection<EntityID> failSafeGetBurningBuildings() {
+        Collection<StandardEntity> e = model.getEntitiesOfType(StandardEntityURN.BUILDING);
+        List<Building> result = new ArrayList<Building>();
+        for (StandardEntity next : e) {
+            if (next instanceof Building) {
+                Building b = (Building)next;
+                if (b.isOnFire()) {
+                    result.add(b);
+                }
+            }
+        }
+        // Sort by distance
+        Collections.sort(result, new DistanceSorter(location(), model));
+        return objectsToIDs(result);
+    }
+	
+	/**
+	 * The planPathToFire of the sample agent
+	 * @param target
+	 * @return
+	 */
+	private List<EntityID> failSafePlanPathToFire(EntityID target) {
+        // Try to get to anything within maxDistance of the target
+        Collection<StandardEntity> targets = model.getObjectsInRange(target, maxDistance);
+        if (targets.isEmpty()) {
+            return null;
+        }
+        return failSafeSearch.breadthFirstSearch(me().getPosition(), objectsToIDs(targets));
+    }
+	
+	
 }
 

@@ -65,19 +65,13 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     protected int sightRange;
     
     
-    /**
-     * Current timestep
-     */
+    // Current timestep
     protected int time;
     
-    /**
-     * Current changeset
-     */
+    // Current changeset
     protected ChangeSet changed;
     
-    /**
-     * Current listened communication
-     */
+    // Current listened communication
     protected Collection<Command> heard;
     
     //the platoon agents of each type
@@ -86,39 +80,32 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     //the center agents of each type
     protected Collection<StandardEntity> fireStations, policeOffices, hospitals;
     
-    /**
-     * Ageent state machine
-     */
+    // Agent state machine
     protected StateMachine stateMachine;
+    
+    protected boolean commandIssued; //register whether the agent issued a command in current timestep
 
-    /**
-     * The search strategy
-     */
+    // The search strategy
     protected SearchStrategy searchStrategy;
+    
+    // The "failsafe' sample search stratety
+    protected SampleSearch failSafeSearch;
     
     /**
        The search algorithm.
     */
     //protected SampleSearch search;
     
-    /**
-     * The new awesome search graph
-     */
+    // The new awesome search graph
     protected YGraphWrapper searchGraph;
     
-    /**
-     * Stores my last location
-     */
+    // Stores my last location
     protected EntityID lastLocationID;
     
-    /**
-     * Agent command history
-     */
+    // Agent command history
     protected Map<Integer, AgentCommand> commandHistory;
 
-    /**
-       Whether to use AKSpeak messages or not.
-    */
+    // Whether to use AKSpeak messages or not.
     protected boolean useSpeak;
 
     /**
@@ -241,6 +228,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         //searchGraph = new YGraphWrapper(model);
         neighbours = NeighborhoodGraph.buildNeighborhoodGraph(model);
         
+        failSafeSearch = new SampleSearch(neighbours);
+        
         try {
         	searchStrategy = new YSearch(model);
         	Logger.info("Using YSearch strategy");
@@ -253,7 +242,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         catch (Exception e) {
         	//falls back to safe, simpler SampleSearch
         	Logger.error("Could not create YSearch instance.", e);
-        	searchStrategy = new SampleSearch(neighbours);
+        	searchStrategy = failSafeSearch;
         	Logger.info("Using fail-safe SampleSearch");
         }
         //Logger.info("\n"+searchGraph.dumpNodes());
@@ -321,6 +310,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	commandHistory.put(time, AgentCommands.REST);
     	Logger.info("Sending REST command");
     	super.sendRest(time);
+    	commandIssued = true;
     }
     
     @Override
@@ -328,6 +318,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	commandHistory.put(time, AgentCommands.MOVE);
     	Logger.info("Sending MOVE command with: " + path);
     	super.sendMove(time, path);
+    	commandIssued = true;
     }
     
     @Override
@@ -335,13 +326,15 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	commandHistory.put(time, AgentCommands.FireFighter.EXTINGUISH);
     	Logger.info(String.format("Sending EXTINGUISH command with: %s, %d", target, water));
     	super.sendExtinguish(time, target, water);
+    	commandIssued = true;
     }
     
     @Override
     protected void sendRescue(int time, EntityID target){
     	commandHistory.put(time, AgentCommands.Ambulance.RESCUE);
     	Logger.debug(String.format("Sending RESCUE command with: %s", target));
-    	super.sendRescue(time, target);;
+    	super.sendRescue(time, target);
+    	commandIssued = true;
     }
     
     @Override
@@ -349,6 +342,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	commandHistory.put(time, AgentCommands.Ambulance.LOAD);
     	Logger.debug(String.format("Sending LOAD command with: %s", target));
     	super.sendLoad(time, target);
+    	commandIssued = true;
     }
 
     @Override
@@ -356,6 +350,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	commandHistory.put(time, AgentCommands.Ambulance.UNLOAD);
     	Logger.debug(String.format("Sending UNLOAD command"));
     	super.sendUnload(time);
+    	commandIssued = true;
     }
     
     @Override
@@ -363,6 +358,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	commandHistory.put(time, AgentCommands.Policeman.CLEAR);
     	Logger.debug(String.format("Sending CLEAR command with: %s", target));
     	super.sendClear(time, target);
+    	commandIssued = true;
     }
     
     @Override
@@ -370,6 +366,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	commandHistory.put(time, AgentCommands.Policeman.CLEAR);
     	Logger.debug(String.format("Sending EXTINGUISH command with: %d, %d", destX, destY));
     	super.sendClear(time, destX, destY);
+    	commandIssued = true;
     }
 	
     /**
@@ -387,6 +384,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		this.time = time;
     		this.changed = changed;
     		this.heard = heard;
+    		commandIssued = false;
     		
     		MDC.put("location", location());
     		MDC.put("time", time);
@@ -407,9 +405,17 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		Logger.info(String.format("------- END OF TIMESTEP %d -------\n", time));
     	}
     	catch (Exception e){
-    		Logger.error(("System malfunction! (exception occurred)"), e);
+    		Logger.error(("System malfunction! (exception occurred). Going 'failsafe' behavior."), e);
+    		if (! commandIssued){
+    			failsafe();
+    		}
     	}
     }
+    
+    /**
+     * The behavior to execute when something goes wrong with normal behavior
+     */
+    protected abstract void failsafe();
     
     private void updateVisitHistory(){
     	
@@ -804,8 +810,9 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * @param time
      * @param changed
      * @param heard
+	 * @throws Exception 
      */
-    protected abstract void doThink(int time, ChangeSet changed, Collection<Command> heard);
+    protected abstract void doThink(int time, ChangeSet changed, Collection<Command> heard) throws Exception;
 
     /**
        Construct a random walk starting from this agent's current location to a random building.
@@ -813,7 +820,13 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     */
     protected List<EntityID> randomWalk() {
     	return explore();
-    	/*
+    }
+    
+    /**
+     * The random walk of the sample agent
+     * @return
+     */
+    protected List<EntityID> failSafeRandomWalk() {
         List<EntityID> result = new ArrayList<EntityID>(RANDOM_WALK_LENGTH);
         Set<EntityID> seen = new HashSet<EntityID>();
         EntityID current = ((Human)me()).getPosition();
@@ -837,8 +850,9 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
                 break;
             }
         }
-        return result;*/
+        return result;
     }
+
     
     /**
      * Attempts to reach unexplored places (a small random walk enhancement)

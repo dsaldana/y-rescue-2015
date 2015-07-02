@@ -364,6 +364,12 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		return (int) best;
 	}
 
+	@Override
+	protected void failsafe() {
+		// TODO Auto-generated method stub
+		
+	}
+
 	/**
 	 * Get the blockade that is nearest this agent.
 	 * 
