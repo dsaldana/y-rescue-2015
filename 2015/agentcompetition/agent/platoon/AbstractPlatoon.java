@@ -819,14 +819,20 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
        @return A random walk.
     */
     protected List<EntityID> randomWalk() {
-    	return explore();
+    	try{
+    		return explore();
+    	}
+    	catch (Exception e){
+    		Logger.error("Cannot use enhanced Random Walk. Going failsafe", e);
+    		return failSafeRandomWalk();
+    	}
     }
     
     /**
-     * The random walk of the sample agent
+     * The random walk of sample agent
      * @return
      */
-    protected List<EntityID> failSafeRandomWalk() {
+    private List<EntityID> failSafeRandomWalk() {
         List<EntityID> result = new ArrayList<EntityID>(RANDOM_WALK_LENGTH);
         Set<EntityID> seen = new HashSet<EntityID>();
         EntityID current = ((Human)me()).getPosition();

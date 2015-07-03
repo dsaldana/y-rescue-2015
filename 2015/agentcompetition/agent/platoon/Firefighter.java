@@ -289,7 +289,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         }
         List<EntityID> path = null;
         Logger.debug("Couldn't plan a path to a fire.");
-        path = failSafeRandomWalk();
+        path = randomWalk();
         Logger.info("Moving randomly");
         sendMove(time, path);
 		
