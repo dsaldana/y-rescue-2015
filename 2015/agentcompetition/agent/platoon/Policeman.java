@@ -55,7 +55,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 
 	@Override
 	protected void doThink(int time, ChangeSet changed,
-			Collection<Command> heard) {
+			Collection<Command> heard) throws Exception {
 		if (time == config
 				.getIntValue(kernel.KernelConstants.IGNORE_AGENT_COMMANDS_KEY)) {
 			// Subscribe to channel 1
@@ -64,7 +64,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		for (Command next : heard) {
 			Logger.debug("Heard " + next);
 		}
-
+		
 		int targetEntity = 254;
 
 		// ---- BEGIN Plan a path and moves to a blockade
@@ -378,6 +378,35 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
         if (target != null) {
             Logger.info("Clearing blockade " + target);
             sendSpeak(time, 1, ("Clearing " + target).getBytes());
+            sendClear(time, target.getID());
+            return;
+        }
+        // Plan a path to a blocked area
+        List<EntityID> path = failSafeSearch.breadthFirstSearch(me().getPosition(), getBlockedRoads());
+        if (path != null) {
+            Logger.info("Moving to target");
+            Road r = (Road)model.getEntity(path.get(path.size() - 1));
+            Blockade b = failSafeGetTargetBlockade(r, -1);
+            sendMove(time, path, b.getX(), b.getY());
+            Logger.debug("Path: " + path);
+            Logger.debug("Target coordinates: " + b.getX() + ", " + b.getY());
+            return;
+        }
+        Logger.debug("Couldn't plan a path to a blocked road");
+        Logger.info("Moving randomly");
+        sendMove(time, randomWalk());
+		/*if (time == config.getIntValue(kernel.KernelConstants.IGNORE_AGENT_COMMANDS_KEY)) {
+            // Subscribe to channel 1
+            sendSubscribe(time, 1);
+        }
+        for (Command next : heard) {
+            Logger.debug("Heard " + next);
+        }
+        // Am I near a blockade?
+        Blockade target = failSafeGetTargetBlockade();
+        if (target != null) {
+            Logger.info("Clearing blockade " + target);
+            sendSpeak(time, 1, ("Clearing " + target).getBytes());
 //            sendClear(time, target.getX(), target.getY());
             List<Line2D> lines = GeometryTools2D.pointsToLines(GeometryTools2D.vertexArrayToPoints(target.getApexes()), true);
             double best = Double.MAX_VALUE;
@@ -409,7 +438,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
         }
         Logger.debug("Couldn't plan a path to a blocked road");
         Logger.info("Moving randomly");
-        sendMove(time, randomWalk());
+        sendMove(time, randomWalk());*/
     }
 
 
