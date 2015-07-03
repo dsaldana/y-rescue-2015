@@ -1,9 +1,9 @@
 package problem;
 
 import rescuecore2.worldmodel.EntityID;
-import message.MessageEncoder;
+import message.TaskMessageEncoder;
 
-public abstract class Problem implements MessageEncoder {
+public abstract class Problem implements TaskMessageEncoder {
 	
 	private boolean solved;
 	private int lastUpdate;			//timestep where this problem were last updated

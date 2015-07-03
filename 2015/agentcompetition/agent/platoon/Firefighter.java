@@ -13,6 +13,7 @@ import java.util.Set;
 
 import org.apache.log4j.MDC;
 
+import commands.AgentCommands;
 import problem.BurningBuilding;
 import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
@@ -42,6 +43,9 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     private int maxDistance;	//max distance that water reaches
     private int maxPower;		//max amount of water launched by timestep
     private int refugeRefillRate, hydrantRefillRate;	//refill rates
+    private int lastWater; 	//amount of water I had in last cycle
+    
+    private boolean refugeRefillRateIsCorrect; 	//indicates whether I have read or calculated refill rate
     
     private YFireSimulator fireSimulator;
     private Map<EntityID, YBuilding> yBuildings;
@@ -56,11 +60,21 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     protected void postConnect() {
         super.postConnect();
         Logger.info("postConnect of FireFighter");
+        lastWater = -1;
+        
         model.indexClass(StandardEntityURN.BUILDING, StandardEntityURN.REFUGE,StandardEntityURN.HYDRANT,StandardEntityURN.GAS_STATION);
         maxWater = readConfigIntValue(MAX_WATER_KEY, 10000);
         maxDistance = readConfigIntValue(MAX_DISTANCE_KEY, 30000);
         maxPower = readConfigIntValue(MAX_POWER_KEY, 1000);
-        refugeRefillRate = readConfigIntValue(REFUGE_REFILL_RATE, 1000);
+        refugeRefillRate = readConfigIntValue(REFUGE_REFILL_RATE, -1);
+        
+        if(refugeRefillRate == -1){ //could not read refugeRefillRate... assume default
+        	refugeRefillRateIsCorrect = false;
+        	refugeRefillRate = 1000;
+        }
+        else {
+        	refugeRefillRateIsCorrect = true;
+        }
         //refugeRefillRate = readConfigIntValue("resq-fire.water_refill_rate", 1000);
         //refugeRefillRate = readConfigIntValue("resq-fire.water-refill-rate", 1000);
         //refugeRefillRate = readConfigIntValue("resq-fire.water-refill-rate", 1000);
@@ -77,7 +91,6 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         Logger.info("Creating own fire simulator...");
 
         //first, creates an YBuilding for each Building and populates the map
-        //TODO: refuge is not listed as YBuilding
         yBuildings = new HashMap<EntityID, YBuilding>();
         for(StandardEntity s : model.getEntitiesOfType(StandardEntityURN.BUILDING, StandardEntityURN.REFUGE)){
         	YBuilding y = new YBuilding((Building)s);
@@ -119,8 +132,6 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         		Logger.info("Updating " + yb + " from observation.");
         	}
         }
-        
-        //throw new Exception("Testing fail safe-ness");
         
         FireBrigade me = me();
         // Are we currently filling with water?
@@ -192,7 +203,41 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         Logger.info("Moving randomly");
         sendMove(time, path);
     }
+    
 
+    /****** BEGIN: overrides send* methods to register lastWater property ******/ 
+    @Override
+    protected void sendMove(int time, List<EntityID> path){
+    	super.sendMove(time, path);
+    	lastWater = me().getWater();
+    }
+    
+    @Override
+    protected void sendRest(int time){
+    	super.sendRest(time);
+    	//calculates the water it has obtained; calculates refill rate and sends if necessary
+    	if(! refugeRefillRateIsCorrect){
+    		Logger.info("Will calculate refill rate!");
+    		int deltaWater = me().getWater() - lastWater;
+    		if (deltaWater > 0){
+    			refugeRefillRate = deltaWater;
+    			refugeRefillRateIsCorrect = true;
+    			Logger.info("Refill rate calculation complete. Will communicate.");
+    		}
+    		else {
+    			Logger.error("Negative refill rate on sendRest? Found: " + deltaWater);
+    		}
+    	}
+    	lastWater = me().getWater();
+    }
+    
+    @Override
+    protected void sendExtinguish(int time, EntityID target, int water){
+    	super.sendExtinguish(time, target, water);
+    	lastWater = me().getWater();
+    }
+    /****** END: overrides send* methods to register lastWater property ******/
+    
     @Override
     protected EnumSet<StandardEntityURN> getRequestedEntityURNsEnum() {
         return EnumSet.of(StandardEntityURN.FIRE_BRIGADE);

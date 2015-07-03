@@ -14,5 +14,8 @@ public enum MessageType {
 	//solved types
 	SOLVED_BLOCKED_ROAD,
 	SOLVED_WOUNDED_HUMAN,
-	SOLVED_BURNING_BUILDING
+	SOLVED_BURNING_BUILDING,
+	
+	//misc types
+	BROADCAST_REFILL_RATE	//allows fire fighters to communicate the refill rate
 }
