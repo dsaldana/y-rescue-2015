@@ -91,9 +91,6 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             Logger.debug("Heard " + next);
         }
         
-        throw new Exception("Testing failsafe behavior");
-        
-        /*
         System.out.println("\nTime ambulance: " + time);
         
         String statusString = "HP:" + me().getHP() + " Total HP:" + totalHP + " burriedness:" + me().getBuriedness() + " Damage:" + me().getDamage() + " Stamina:" + me().getStamina() + " unexploredBuildings:" + unexploredBuildings.size();
@@ -244,7 +241,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         stateMachine.setState(ActionStates.RANDOM_WALK);
         Logger.info("Moving randomly");
         sendMove(time, randomWalk());
-        */
+        
     }
 
     @Override
