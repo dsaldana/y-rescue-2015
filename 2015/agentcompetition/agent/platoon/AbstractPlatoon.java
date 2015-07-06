@@ -2,6 +2,7 @@ package agent.platoon;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.HashSet;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.log4j.MDC;
 
 import commands.AgentCommand;
@@ -55,7 +57,7 @@ import util.LastVisitSorter;
    @param <E> The subclass of StandardEntity this agent wants to control.
  */
 public abstract class AbstractPlatoon<E extends StandardEntity> extends StandardAgent<E> {
-    private static final int RANDOM_WALK_LENGTH = 50;
+    private static final int RANDOM_WALK_LENGTH = 60;
 
     private static final String SAY_COMMUNICATION_MODEL = StandardCommunicationModel.class.getName();
     private static final String SPEAK_COMMUNICATION_MODEL = ChannelCommunicationModel.class.getName();
@@ -140,6 +142,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * Stores when entities were last visited
      */
     protected Map<EntityID, Integer> lastVisit;
+    protected CircularFifoQueue<EntityID> lastVisitQueue = new CircularFifoQueue<EntityID>(20);
     
     /**
      * Cache of refuge IDs.
@@ -166,7 +169,6 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * A list of problems that the agent will send to teammates
      */
     protected List<Problem> problemsToReport;
-
 	
     /**
      * Construct an AbstractPlatoon.
@@ -414,6 +416,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     private void updateVisitHistory(){
     	
     	lastVisit.put(location().getID(), time);	//stores that current location was visited now
+    	lastVisitQueue.add(location().getID());
     	
     	
     	IntArrayProperty positionHist = (IntArrayProperty) me().getProperty("urn:rescuecore2.standard:property:positionhistory");
@@ -479,7 +482,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		Logger.info((String.format("%s will communicate problem %s", me(), p)));
     		byte[] msg = p.encodeReportMessage(getID());
     		sendSay(time, msg);
-    		sendSpeak(time, 1, msg);	//TODO implementar alocação de canais
+    		sendSpeak(time, 1, msg);	//TODO implementar aloca����o de canais
     	}
     	
     	problemsToReport.clear();
