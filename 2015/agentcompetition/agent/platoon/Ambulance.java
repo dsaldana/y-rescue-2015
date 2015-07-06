@@ -252,7 +252,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             	printWriter.flush();
 
             	String stackTrace = writer.toString();
-            	Logger.info("ERROR " + stackTrace);
+            	Logger.error("Path search exception:", e);
             }
             
             if (path != null) {
@@ -271,7 +271,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         // Check if we are going in the same places in a loop
         if(lastVisitQueue.get(0).getValue() == listNodes.get(0).getValue() || lastVisitQueue.get(1).getValue() == listNodes.get(0).getValue()){
         	Logger.info("Local minima in paths where all buildings are burning, using normal random walk");
-        	listNodes = localRandomWalk();
+        	listNodes = failSafeRandomWalk();
         }
         
         sendMove(time, listNodes);
@@ -361,43 +361,6 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             unexploredBuildings.remove(next);
         }
     }
-    
-    /**
-	    Construct a random walk starting from this agent's current location to a random building.
-	    This is a simpler implementation for when the ambulance gets stuck in burned buildings
-	    @return A random walk.
-	    
-	    MapUtil
-	 */
-	 protected List<EntityID> localRandomWalk() {
-	     List<EntityID> result = new ArrayList<EntityID>(LOCAL_RANDOM_WALK_LENGTH);
-	     Set<EntityID> seen = new HashSet<EntityID>();
-	     EntityID current = ((Human)me()).getPosition();
-	     
-	     for (int i = 0; i < LOCAL_RANDOM_WALK_LENGTH; ++i) {
-	         result.add(current);
-	         seen.add(current);
-	         List<EntityID> possible = new ArrayList<EntityID>(neighbours.get(current));
-	         Collections.shuffle(possible, random);
-	         boolean found = false;
-	         for (EntityID next : possible) {
-	             if (seen.contains(next)) {
-	                 continue;
-	             }
-	             current = next;
-	             found = true;
-	             break;
-	         }
-	         if (!found) {
-	             // We reached a dead-end.
-	             break;
-	         }
-	     }
-	     
-	     lastVisit.entrySet();
-	     
-	     return result;
-	 }
 	 
 	 /**
      * Copied from SampleAgent. Do not change
