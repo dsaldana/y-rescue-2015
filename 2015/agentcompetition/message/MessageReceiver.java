@@ -2,6 +2,7 @@ package message;
 
 import java.io.UnsupportedEncodingException;
 
+import message.misc.BroadCastRefillRateMessage;
 import problem.BlockedRoad;
 import problem.BurningBuilding;
 import problem.Problem;
@@ -31,8 +32,26 @@ public class MessageReceiver {
         //decode the parts of the Message
         
         Logger.info("Decoding: " + '"' + msg + '"');
-        
         String[] parts = msg.split(",");
+        int type = Integer.parseInt(parts[0]);
+        
+        if (type == MessageType.BROADCAST_REFILL_RATE.ordinal()){
+        	return decodeBroadCastRefillRateMessage(cmd, parts);
+        }
+        
+        return decodeTaskMessage(cmd, parts);
+	}
+	
+	private static ReceivedMessage decodeBroadCastRefillRateMessage(Command cmd, String[] parts) {
+		//not used: int type = Integer.parseInt(parts[0]);
+		//not used: EntityID senderID = new EntityID(Integer.parseInt(parts[1])); //not used by now
+        
+		return new BroadCastRefillRateMessage(Integer.parseInt(parts[2]));
+	}
+
+	public static ReceivedMessage decodeTaskMessage(Command cmd, String[] parts){
+		
+        //String[] parts = msg.split(",");
         
         Problem p = null;
         MessageType t = null;

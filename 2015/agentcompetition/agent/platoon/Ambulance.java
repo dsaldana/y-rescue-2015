@@ -90,7 +90,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
     }
 
     @Override
-    protected void doThink(int time, ChangeSet changed, Collection<Command> heard) {
+    protected void doThink(int time, ChangeSet changed, Collection<Command> heard) throws Exception {
         if (time == config.getIntValue(kernel.KernelConstants.IGNORE_AGENT_COMMANDS_KEY)) {
             // Subscribe to channel 1
             sendSubscribe(time, 1);
@@ -291,6 +291,20 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         }
         return false;
     }
+    
+    /**
+     * Copied from sample agent. Do not change
+     * @return
+     */
+    private boolean failSafeSomeoneOnBoard() {
+        for (StandardEntity next : model.getEntitiesOfType(StandardEntityURN.CIVILIAN)) {
+            if (((Human)next).getPosition().equals(getID())) {
+                Logger.debug(next + " is on board");
+                return true;
+            }
+        }
+        return false;
+    }
 
     private List<Human> getTargets() {
         List<Human> targets = new ArrayList<Human>();
@@ -315,6 +329,30 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         //Collections.sort(targets, new DistanceSorter(location(), model));
         Collections.sort(targets, new HPSorter(location(), model));
         
+        return targets;
+    }
+    
+    /**
+     * Copied from SampleAgent. Do not change
+     * @return
+     */
+    private List<Human> failSafeGetTargets() {
+        List<Human> targets = new ArrayList<Human>();
+        for (StandardEntity next : model.getEntitiesOfType(StandardEntityURN.CIVILIAN, StandardEntityURN.FIRE_BRIGADE, StandardEntityURN.POLICE_FORCE, StandardEntityURN.AMBULANCE_TEAM)) {
+            Human h = (Human)next;
+            if (h == me()) {
+                continue;
+            }
+            if (h.isHPDefined()
+                && h.isBuriednessDefined()
+                && h.isDamageDefined()
+                && h.isPositionDefined()
+                && h.getHP() > 0
+                && (h.getBuriedness() > 0 || h.getDamage() > 0)) {
+                targets.add(h);
+            }
+        }
+        Collections.sort(targets, new DistanceSorter(location(), model));
         return targets;
     }
 
@@ -360,4 +398,85 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 	     
 	     return result;
 	 }
+	 
+	 /**
+     * Copied from SampleAgent. Do not change
+     * @return
+     */
+    private void failSafeUpdateUnexploredBuildings(ChangeSet changed) {
+        for (EntityID next : changed.getChangedEntities()) {
+            unexploredBuildings.remove(next);
+        }
+    }
+
+	@Override
+	protected void failsafe() {
+		if (time == config.getIntValue(kernel.KernelConstants.IGNORE_AGENT_COMMANDS_KEY)) {
+            // Subscribe to channel 1
+            sendSubscribe(time, 1);
+        }
+        for (Command next : heard) {
+            Logger.debug("Heard " + next);
+        }
+        failSafeUpdateUnexploredBuildings(changed);
+        // Am I transporting a civilian to a refuge?
+        if (failSafeSomeoneOnBoard()) {
+            // Am I at a refuge?
+            if (location() instanceof Refuge) {
+                // Unload!
+                Logger.info("Unloading");
+                sendUnload(time);
+                return;
+            }
+            else {
+                // Move to a refuge
+                List<EntityID> path = failSafeSearch.breadthFirstSearch(me().getPosition(), refugeIDs);
+                if (path != null) {
+                    Logger.info("Moving to refuge");
+                    sendMove(time, path);
+                    return;
+                }
+                // What do I do now? Might as well carry on and see if we can dig someone else out.
+                Logger.debug("Failed to plan path to refuge");
+            }
+        }
+        // Go through targets (sorted by distance) and check for things we can do
+        for (Human next : failSafeGetTargets()) {
+            if (next.getPosition().equals(location().getID())) {
+                // Targets in the same place might need rescueing or loading
+                if ((next instanceof Civilian) && next.getBuriedness() == 0 && !(location() instanceof Refuge)) {
+                    // Load
+                    Logger.info("Loading " + next);
+                    sendLoad(time, next.getID());
+                    return;
+                }
+                if (next.getBuriedness() > 0) {
+                    // Rescue
+                    Logger.info("Rescueing " + next);
+                    sendRescue(time, next.getID());
+                    return;
+                }
+            }
+            else {
+                // Try to move to the target
+                List<EntityID> path = failSafeSearch.breadthFirstSearch(me().getPosition(), next.getPosition());
+                if (path != null) {
+                    Logger.info("Moving to target");
+                    sendMove(time, path);
+                    return;
+                }
+            }
+        }
+        // Nothing to do
+        List<EntityID> path = failSafeSearch.breadthFirstSearch(me().getPosition(), unexploredBuildings);
+        if (path != null) {
+            Logger.info("Searching buildings");
+            sendMove(time, path);
+            return;
+        }
+        Logger.info("Moving randomly");
+        sendMove(time, randomWalk());
+
+	}
+
 }

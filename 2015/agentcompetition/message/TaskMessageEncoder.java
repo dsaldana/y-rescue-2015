@@ -2,7 +2,7 @@ package message;
 
 import rescuecore2.worldmodel.EntityID;
 
-public interface MessageEncoder {
+public interface TaskMessageEncoder {
 	/**
 	 * Encodes a message that reports a problem
 	 * @param senderID
