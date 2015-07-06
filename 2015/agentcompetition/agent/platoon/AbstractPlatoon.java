@@ -445,7 +445,14 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		
     		for(StandardEntity entity: intersectz){
     			if (entity instanceof Area) {
+    				//tests if entity in lastVisit was not updated yet
+    				if(lastVisit.containsKey(entity.getID()) && lastVisit.get(entity.getID()) < time) {
+    					lastVisitQueue.add(entity.getID());
+    				}
+    				
+    				//updates visit time of entity in hash map
     				lastVisit.put(entity.getID(), time);
+    				//lastVisitQueue.add(entity.getID()); 
     				//Logger.info("Entity " + entity.getID() + " updated @ " + time);
     			}
     		}

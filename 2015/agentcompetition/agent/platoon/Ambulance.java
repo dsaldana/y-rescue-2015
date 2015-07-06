@@ -104,6 +104,10 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         String statusString = "HP:" + me().getHP() + " Total HP:" + totalHP + " burriedness:" + me().getBuriedness() + " Damage:" + me().getDamage() + " Stamina:" + me().getStamina() + " unexploredBuildings:" + unexploredBuildings.size();
         System.out.println(statusString);
         
+        Logger.info("Changeset: " + changed);
+        Logger.info("Deleted: " + changed.getDeletedEntities());
+        Logger.info("Changed: " + changed.getChangedEntities());
+        
         String refugees = "";
         for(EntityID ent : refugeIDs){
         	refugees += ent.getValue() + " ";
@@ -224,6 +228,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             }
             else {
                 // Try to move to the target
+            	// Check if position is not a human ID TODO
                 List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), next.getPosition()).getPath();
                 if (path != null) {
                 	stateMachine.setState(ActionStates.GOING_TO_TARGET);
