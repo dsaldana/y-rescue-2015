@@ -9,9 +9,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 
+import commands.AgentCommands;
 import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
 import rescuecore2.worldmodel.ChangeSet;
+import rescuecore2.worldmodel.properties.IntArrayProperty;
 import rescuecore2.messages.Command;
 import rescuecore2.log.Logger;
 import rescuecore2.misc.Pair;
@@ -61,8 +63,38 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			// Subscribe to channel 1
 			sendSubscribe(time, 1);
 		}
-		for (Command next : heard) {
+		/*for (Command next : heard) {
 			Logger.debug("Heard " + next);
+		}*/
+		
+		
+		if(stuck()){
+			if (me().getBuriedness() > 0){
+				//TODO: create a wounded human problem of self and report it
+			} else {
+				Blockade target = getTargetBlockade();
+		        if (target != null) {
+		            Logger.info("STUCK! Clearing blockade " + target);
+		            //sendSpeak(time, 1, ("Clearing " + target).getBytes());
+//			            sendClear(time, target.getX(), target.getY());
+		            List<Line2D> lines = GeometryTools2D.pointsToLines(GeometryTools2D.vertexArrayToPoints(target.getApexes()), true);
+		            double best = Double.MAX_VALUE;
+		            Point2D bestPoint = null;
+		            Point2D origin = new Point2D(me().getX(), me().getY());
+		            for (Line2D next : lines) {
+		                Point2D closest = GeometryTools2D.getClosestPointOnSegment(next, origin);
+		                double d = GeometryTools2D.getDistance(origin, closest);
+		                if (d < best) {
+		                    best = d;
+		                    bestPoint = closest;
+		                }
+		            }
+		            Vector2D v = bestPoint.minus(new Point2D(me().getX(), me().getY()));
+		            v = v.normalised().scale(1000000);
+		            sendClear(time, (int)(me().getX() + v.getX()), (int)(me().getY() + v.getY()));
+		            return;
+		        }
+			}
 		}
 		
 		int targetEntity = 254;
@@ -72,13 +104,13 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		EntityID target = new EntityID(targetEntity);
 		List<EntityID> path = computePath(target);
 
-		if (time < 3) {
+		/*if (time < 3) {
 			return;
-		}
+		}*/
 
 		// FIXME if location is refuge, then target accomplished
 		if (location().getID().getValue() == target.getValue()) {
-			System.out.println("MISSION ACCOMPLISHED");
+			Logger.info("MISSION ACCOMPLISHED");
 
 			// Collection<StandardEntity> roads =
 			// model.getEntitiesOfType(StandardEntityURN.ROAD);
@@ -116,7 +148,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		// local position
 		Point2D current_position = new Point2D(me().getX(), me().getY());
 
-		Area b = (Area) model.getEntity(path.get(path.size() - 1));
+		Area destination = (Area) model.getEntity(path.get(path.size() - 1));
 
 		double dist = Double.MAX_VALUE;
 		if (lastPosition != null) {
@@ -132,8 +164,12 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			boolean cleared = clearTowardsIntersection2(r1, r2, time);
 			lastPosition = null;
 			
-			if (cleared)
+			if (cleared) {
 				return;
+			}
+			else {
+				Logger.info("Could not clear...");
+			}
 
 			// ---- END Tests if blockade is in range and sends clear
 		}
@@ -142,16 +178,20 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 
 		// Moving
 		stateMachine.setState(ActionStates.GOING_TO_TARGET);
-		Logger.info("Moving to target");
-		sendMove(time, path, b.getX(), b.getY());
-		Logger.debug("Path: " + path + ", coords: " + b.getX() + ", "
-				+ b.getY());
+		Logger.info("Moving to target " + destination);
+		sendMove(time, path, destination.getX(), destination.getY());
+		
+		Logger.info("Path: " + path + ", coords: " + destination.getX() + ", "
+				+ destination.getY());
 		return;
 
 	}
 
 	private boolean clearTowardsIntersection2(Area r1, Area r2, int time) {
+		
+		Logger.info("Will clear from " + r1  + " to " + r2);
 		Point2D intersection = intersectionPoint(r1, r2);
+		Logger.info("Intersection located at " + intersection);
 
 		// / get all the blockades
 		Area location = (Area) location();
@@ -184,7 +224,9 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 				// break;
 
 			}
-
+			else{
+				Logger.info("Won't send clear: intersects=" + intersects);
+			}
 		}
 		return false;
 

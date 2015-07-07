@@ -237,9 +237,10 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         	Logger.info("Using YSearch strategy");
         	//searchStrategy = new SampleSearch(neighbours);
         	
-        	Logger.info("TEST!");
+        	/*Logger.info("TEST!");
         	Logger.info("Dij:" + searchStrategy.shortestPath(new EntityID(297), new EntityID(273)).getPath());
         	Logger.info("BFS:" + new SampleSearch(neighbours).shortestPath(new EntityID(297), new EntityID(273)).getPath());
+        	*/
         }
         catch (Exception e) {
         	//falls back to safe, simpler SampleSearch
@@ -842,6 +843,33 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     }
     
     /**
+     * Tests whether I tried to move last time and it was not possible
+     * @return
+     */
+    protected boolean stuck(){
+    	
+    	//agents cannot issue move commands in beginning
+    	if (time == config.getIntValue(kernel.KernelConstants.IGNORE_AGENT_COMMANDS_KEY)) {
+			return false;
+		}
+    	
+    	if (commandHistory.size() == 0) {
+    		return false;
+    	}
+    	
+    	//quick test to check whether i'm stuck
+		IntArrayProperty positionHist = (IntArrayProperty)changed.getChangedProperty(getID(), "urn:rescuecore2.standard:property:positionhistory");
+		
+		if (commandHistory.containsKey(time -1) && commandHistory.get(time - 1).equals(AgentCommands.MOVE) && 
+				(! positionHist.isDefined() || positionHist.getValue().length == 0)) 
+		{
+			Logger.info("Dammit, I'm stuck!");
+			return true;
+		}
+		return false;
+    }
+    
+    /**
      * The random walk of sample agent
      * @return
      */
@@ -871,6 +899,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         }
         return result;
     }
+    
+    
 
     
     /**
