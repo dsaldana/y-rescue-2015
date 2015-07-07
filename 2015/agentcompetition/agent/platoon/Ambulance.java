@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import problem.WoundedHuman;
 import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
 import rescuecore2.worldmodel.ChangeSet;
@@ -36,6 +37,7 @@ import statemachine.ActionStates;
 import util.DistanceSorter;
 import util.HPSorter;
 import util.LastVisitSorter;
+import util.WoundedHumanHPSorter;
 
 /**
  *  RoboMedic agent. Implements a simple scheme to rescue Civilians.
@@ -99,16 +101,16 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             Logger.debug("Heard " + next);
         }
         
-        System.out.println("\nTime ambulance: " + time);
+        //System.out.println("\nTime ambulance: " + time);
         
         String statusString = "HP:" + me().getHP() + " Total HP:" + totalHP + " burriedness:" + me().getBuriedness() + " Damage:" + me().getDamage() + " Stamina:" + me().getStamina() + " unexploredBuildings:" + unexploredBuildings.size();
         System.out.println(statusString);
         
-        Logger.info("Changeset: " + changed);
+        //Logger.info("Changeset: " + changed);
         Logger.info("Deleted: " + changed.getDeletedEntities());
         Logger.info("Changed: " + changed.getChangedEntities());
         
-        String refugees = "";
+        /*String refugees = "";
         for(EntityID ent : refugeIDs){
         	refugees += ent.getValue() + " ";
         }
@@ -125,7 +127,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         IntArrayProperty positionHist = (IntArrayProperty) me().getProperty("urn:rescuecore2.standard:property:positionhistory");
         int[] positionList = positionHist.getValue();
         System.out.println("Last position list: " + Arrays.toString(positionList));
-        
+        */
         updateUnexploredBuildings(changed);
         System.out.println("Unexplored buildings: " + unexploredBuildings.size());
         
@@ -190,46 +192,47 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         } 
         
         // Go through targets (sorted by distance) and check for things we can do
-        List<Human> humanList = getTargets();
+        List<WoundedHuman> humanList = getTargets();
         System.out.println("HumanList size: " + humanList.size());
         
-        for (Human next : getTargets()) {
+        for (WoundedHuman next : humanList) {
         	
-        	Logger.info("Pos " + next.getPosition() +  " My pos:" + me().getPosition());
+        	Logger.info("Pos " + next.position +  " My pos:" + me().getPosition());
         	
-        	if(burningBuildings.containsKey(next.getPosition())){
+        	if(burningBuildings.containsKey(next.position)){
                 Logger.info("The building is burning! Next");
             	continue;
             }
         	
-        	if(refugeIDs.contains(next.getPosition(model))){
+        	if(refugeIDs.contains(next.position)){
         		Logger.info("The Civilian is on refugee! Next");
             	continue;
         	}
         	
-            if (next.getPosition().equals(location().getID()) ) {
+            if (next.position.equals(location().getID()) ) {
             	// Targets in the same place might need rescueing or loading
-                if ((next instanceof Civilian) && next.getBuriedness() == 0 && !(location() instanceof Refuge) && !refugeIDs.contains(((Civilian) next).getPosition().getValue())) {
+            	Logger.info("" + next + " isCivilian? " + isCivilian(next));
+                if (isCivilian(next)  && next.buriedness == 0 && !(location() instanceof Refuge) && !refugeIDs.contains(next.position)) {
                     // Load
                 	stateMachine.setState(ActionStates.Ambulance.LOADING);
-                    Logger.info("Loading " + next + " the civilian is at: "+ next.getPosition().getValue());
-                    sendLoad(time, next.getID());
+                    Logger.info("Loading " + next + " the civilian is at: "+ next.position);
+                    sendLoad(time, next.civilianID);
                     return;
                 }
                 
-                if (next.getBuriedness() > 0) {
+                if (next.buriedness > 0) {
                     // Rescue
-                	String humanStatusString = "HP:" + next.getHP() + " burriedness:" + next.getBuriedness() + " Damage:" + next.getDamage() + " Stamina:" + next.getStamina() + "Direction: " + next.getDirection();
+                	String humanStatusString = "HP:" + next.health + " burriedness:" + next.buriedness + " Damage:" + next.damage ;
                     Logger.info("Rescueing " + next + " " + humanStatusString);
                 	stateMachine.setState(ActionStates.Ambulance.UNBURYING);
-                    sendRescue(time, next.getID());
+                    sendRescue(time, next.civilianID);
                     return;
                 }
             }
             else {
                 // Try to move to the target
             	// Check if position is not a human ID TODO
-                List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), next.getPosition()).getPath();
+                List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), next.position).getPath();
                 if (path != null) {
                 	stateMachine.setState(ActionStates.GOING_TO_TARGET);
                     Logger.info("Moving to target");
@@ -240,6 +243,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         }
         
         // Nothing to do, check the unexplored buildings
+        Logger.info("Checking unexplored buildings");
         List<EntityID> entityIDList = new ArrayList<EntityID> ();
         for (EntityID subset : unexploredBuildings) {
         	entityIDList.add(subset);
@@ -251,12 +255,12 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             try{
             	path = searchStrategy.shortestPath(me().getPosition(), entityIDList).getPath();
             }catch(Exception e){
-            	StringWriter writer = new StringWriter();
-            	PrintWriter printWriter = new PrintWriter( writer );
-            	e.printStackTrace( printWriter );
-            	printWriter.flush();
+            	//StringWriter writer = new StringWriter();
+            	//PrintWriter printWriter = new PrintWriter( writer );
+            	//e.printStackTrace( printWriter );
+            	//printWriter.flush();
 
-            	String stackTrace = writer.toString();
+            	//String stackTrace = writer.toString();
             	Logger.error("Path search exception:", e);
             }
             
@@ -282,7 +286,18 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         sendMove(time, listNodes);
     }
 
-    @Override
+    /**
+     * Tests whether the wounded human is a civilian (i.e.: is not on the lists of platoon units)
+     * TODO test because contains accept any object :(
+     * @param next
+     * @return
+     */
+    private boolean isCivilian(WoundedHuman next) {
+    	EntityID id = next.civilianID;
+		return ! (firefighters.contains(id) || policemen.contains(id) || ambulances.contains(id));
+	}
+
+	@Override
     protected EnumSet<StandardEntityURN> getRequestedEntityURNsEnum() {
         return EnumSet.of(StandardEntityURN.AMBULANCE_TEAM);
     }
@@ -311,8 +326,8 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         return false;
     }
 
-    private List<Human> getTargets() {
-        List<Human> targets = new ArrayList<Human>();
+    private List<WoundedHuman> getTargets() {
+        List<WoundedHuman> targets = new ArrayList<WoundedHuman>();
         for (StandardEntity next : model.getEntitiesOfType(StandardEntityURN.CIVILIAN, StandardEntityURN.FIRE_BRIGADE, StandardEntityURN.POLICE_FORCE, StandardEntityURN.AMBULANCE_TEAM)) {
         	//System.out.println("\nHuman: " + next.getID());
         	
@@ -327,12 +342,15 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
                 && h.getHP() > 0
                 && (h.getBuriedness() > 0 || h.getDamage() > 0)
                 ) {
-                targets.add(h);
+                
+            	targets.add(new WoundedHuman(h.getID(), h.getPosition(), h.getBuriedness(), h.getHP(), h.getDamage(), 0));
             }
         }
         
+        targets.addAll(woundedHumans.values());
+        
         //Collections.sort(targets, new DistanceSorter(location(), model));
-        Collections.sort(targets, new HPSorter(location(), model));
+        Collections.sort(targets, new WoundedHumanHPSorter()); //TODO: replace by a LifeExpectancySorter or something alike
         
         return targets;
     }

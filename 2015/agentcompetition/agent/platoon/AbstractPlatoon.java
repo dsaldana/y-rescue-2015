@@ -539,10 +539,10 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		if (msg == null || !(msg.problem instanceof WoundedHuman)) continue; //skips 'broken' and wrong type msgs
     		
     		WoundedHuman h = (WoundedHuman) msg.problem;
-    		
+    		Logger.info("Received wounded human " + h);
     		//if-elses to filter message by type
     		if(msg.msgType == MessageType.REPORT_WOUNDED_HUMAN){
-    			
+    			Logger.info("Will update from message " + h);
     			updateFromMessage(h);
     			//else discards message (incoming problem is older than the one I know
     		}
@@ -596,17 +596,20 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 	}
 	
 	private void updateFromMessage(WoundedHuman h) {
-		if (model.getDistance(me().getID(), h.getEntityID()) < sightRange){
-			Logger.debug(String.format("Human %s data received, but ignored because it's in sight range.", h.getEntityID()));
+		if (model.getDistance(me().getID(), h.position) < sightRange){
+			Logger.info(String.format("Human %s data received, but ignored because it's in sight range.", h.getEntityID()));
 			return;
 		}
+		
+		Logger.info("Update condition: " + (!woundedHumans.containsKey(h) || h.getUpdateTime() > woundedHumans.get(h).getUpdateTime()));
 		
 		//checks whether I already know this problem or if the incoming problem is more recent
 		if(!woundedHumans.containsKey(h) || h.getUpdateTime() > woundedHumans.get(h).getUpdateTime() ){
 			woundedHumans.put(h.getEntityID(), h);
 			//problemsToReport.add(h);
-			Logger.info(String.format("Added %s to problems to report", h));
+			Logger.info(String.format("Added %s list of problems", h));
 		}
+		Logger.info(""+woundedHumans.keySet());
 	}
 	
 	private void updateFromMessage(BurningBuilding bb) {
