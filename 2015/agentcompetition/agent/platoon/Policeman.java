@@ -36,8 +36,12 @@ import statemachine.ActionStates;
  */
 public class Policeman extends AbstractPlatoon<PoliceForce> {
 	private static final String DISTANCE_KEY = "clear.repair.distance";
+	private static final String WIDTH_KEY = "clear.repair.rad";
+	private static final String RATE_KEY = "clear.repair.rate";
 
-	private int clearRange;
+	private int clearRange,	//range that first clear method can reach 
+		clearWidth,				//width of the 'shot' to clear road 
+		clearRate;				//clear rate in square meters per timestep 
 
 	// testing dav
 	private boolean moving;
@@ -52,7 +56,9 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 	protected void postConnect() {
 		super.postConnect();
 		model.indexClass(StandardEntityURN.ROAD);
-		clearRange = config.getIntValue(DISTANCE_KEY);
+		clearRange = readConfigIntValue(DISTANCE_KEY, 10000);
+		clearWidth = readConfigIntValue(WIDTH_KEY, 1250);// getConfig().getIntValue("clear.repair.rad", 1250);
+		clearRate = readConfigIntValue(RATE_KEY, 10);
 	}
 
 	@Override
@@ -69,39 +75,35 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		
 		
 		if(stuck()){
-			if (me().getBuriedness() > 0){
-				//TODO: create a wounded human problem of self and report it
-			} else {
-				Blockade target = getTargetBlockade();
-		        if (target != null) {
-		            Logger.info("STUCK! Clearing blockade " + target);
-		            //sendSpeak(time, 1, ("Clearing " + target).getBytes());
+			Blockade target = getTargetBlockade();
+	        if (target != null) {
+	            Logger.info("STUCK! Clearing blockade " + target);
+	            //sendSpeak(time, 1, ("Clearing " + target).getBytes());
 //			            sendClear(time, target.getX(), target.getY());
-		            List<Line2D> lines = GeometryTools2D.pointsToLines(GeometryTools2D.vertexArrayToPoints(target.getApexes()), true);
-		            double best = Double.MAX_VALUE;
-		            Point2D bestPoint = null;
-		            Point2D origin = new Point2D(me().getX(), me().getY());
-		            for (Line2D next : lines) {
-		                Point2D closest = GeometryTools2D.getClosestPointOnSegment(next, origin);
-		                double d = GeometryTools2D.getDistance(origin, closest);
-		                if (d < best) {
-		                    best = d;
-		                    bestPoint = closest;
-		                }
-		            }
-		            Vector2D v = bestPoint.minus(new Point2D(me().getX(), me().getY()));
-		            v = v.normalised().scale(1000000);
-		            sendClear(time, (int)(me().getX() + v.getX()), (int)(me().getY() + v.getY()));
-		            return;
-		        }
-			}
+	            List<Line2D> lines = GeometryTools2D.pointsToLines(GeometryTools2D.vertexArrayToPoints(target.getApexes()), true);
+	            double best = Double.MAX_VALUE;
+	            Point2D bestPoint = null;
+	            Point2D origin = new Point2D(me().getX(), me().getY());
+	            for (Line2D next : lines) {
+	                Point2D closest = GeometryTools2D.getClosestPointOnSegment(next, origin);
+	                double d = GeometryTools2D.getDistance(origin, closest);
+	                if (d < best) {
+	                    best = d;
+	                    bestPoint = closest;
+	                }
+	            }
+	            Vector2D v = bestPoint.minus(new Point2D(me().getX(), me().getY()));
+	            v = v.normalised().scale(1000000);
+	            sendClear(time, (int)(me().getX() + v.getX()), (int)(me().getY() + v.getY()));
+	            return;
+	        }
 		}
 		
-		int targetEntity = 254;
+		//int targetEntity = 254;
 
 		// ---- BEGIN Plan a path and moves to a blockade
 		// /////// Plan to go to some area or building
-		EntityID target = new EntityID(targetEntity);
+		EntityID target = getRoadToClear(); // new EntityID(targetEntity);
 		List<EntityID> path = computePath(target);
 
 		/*if (time < 3) {
@@ -121,6 +123,11 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		if (path != null && path.size() > 0) {
 			clearPath(path);
 		}
+	}
+
+	private EntityID getRoadToClear() {
+		
+		return new EntityID(255);
 	}
 
 	private List<EntityID> computePath(EntityID entityId) {
@@ -196,6 +203,12 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		// / get all the blockades
 		Area location = (Area) location();
 		List<EntityID> blockades = location.getBlockades();
+		
+		if (blockades == null) {
+			Logger.info("This Area " + location + " is clear! Won't clear.");
+			return false;
+		}
+		
 		int x = me().getX();
 		int y = me().getY();
 		// line from position to the intersection.

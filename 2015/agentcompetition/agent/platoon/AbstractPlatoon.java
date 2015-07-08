@@ -319,8 +319,24 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     @Override
     protected void sendMove(int time, List<EntityID> path){
     	commandHistory.put(time, AgentCommands.MOVE);
+    	if (path.get(0) != getLocation().getID()){
+    		Logger.debug("Adding current Area " + getLocation().getID() + " to path.");
+    		path.add(0, getLocation().getID());
+    	}
     	Logger.info("Sending MOVE command with: " + path);
     	super.sendMove(time, path);
+    	commandIssued = true;
+    }
+    
+    @Override
+    protected void sendMove(int time, List<EntityID> path, int destX, int destY){
+    	commandHistory.put(time, AgentCommands.MOVE);
+    	if (path.get(0) != getLocation().getID()){
+    		Logger.debug("Adding current Area " + getLocation().getID() + " to path.");
+    		path.add(0, getLocation().getID());
+    	}
+    	Logger.info(String.format("Sending MOVE command with: %s, coords (%d, %d)", path, destX, destY));
+    	super.sendMove(time, path, destX, destY);
     	commandIssued = true;
     }
     
@@ -367,7 +383,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     @Override
     protected void sendClear(int time, int destX, int destY){
     	commandHistory.put(time, AgentCommands.Policeman.CLEAR);
-    	Logger.debug(String.format("Sending EXTINGUISH command with: %d, %d", destX, destY));
+    	Logger.debug(String.format("Sending CLEAR command with: %d, %d", destX, destY));
     	super.sendClear(time, destX, destY);
     	commandIssued = true;
     }
@@ -395,6 +411,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		Logger.info("Heard:" + heard);
     		
     		updateVisitHistory();
+    		
+    		checkBuriedness();
     		
     		//IntArrayProperty positionHist = (IntArrayProperty)changed.getChangedProperty(getID(), "urn:rescuecore2.standard:property:positionhistory");
     		//Logger.info("History: " + positionHist + positionHist.getValue());
@@ -465,10 +483,33 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * @param path1
      * @param path2
      * @return The shortest path 
-     */
+     *
     protected List<EntityID> shortestPath(List<EntityID> path1, List<EntityID> path2)
     {
     	return path2;
+    }*/
+    
+    /**
+     * Checks if I am buried; report a problem if this is the case.
+     */
+    private void checkBuriedness(){
+    	Human me = (Human) me();
+    	if(me.isBuriednessDefined() && me.getBuriedness() > 0){
+    		Logger.debug("I'm BURIED!");
+    		
+    		//creates a problem to report based on my data
+    		WoundedHuman wh = new WoundedHuman(
+				me.getID(), me.getPosition(), me.getBuriedness(), 
+				me.getHP(), me.getDamage(), time
+			);
+    		
+    		problemsToReport.add(wh);
+    		
+    		Logger.info("I'm BURIED! Added 'me' to problems to report");
+    	}
+    	else {
+    		Logger.debug("I'm not buried.");
+    	}
     }
     
     /**
@@ -493,10 +534,10 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 		//Logger.info(("the blk roads:" + blockedRoads.keySet()));
     	Logger.info("#problemsToReport: " + problemsToReport.size());
     	for(Problem p : problemsToReport){
-    		Logger.info((String.format("%s will communicate problem %s", me(), p)));
+    		Logger.debug((String.format("%s will communicate problem %s", me(), p)));
     		byte[] msg = p.encodeReportMessage(getID());
     		sendSay(time, msg);
-    		sendSpeak(time, 1, msg);	//TODO implementar aloca����o de canais
+    		sendSpeak(time, 1, msg);	//TODO implementar alocacao de canais
     	}
     	
     	problemsToReport.clear();
@@ -540,7 +581,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		if (msg == null || !(msg.problem instanceof WoundedHuman)) continue; //skips 'broken' and wrong type msgs
     		
     		WoundedHuman h = (WoundedHuman) msg.problem;
-    		Logger.info("Received wounded human " + h);
+    		Logger.debug("Received wounded human " + h);
     		//if-elses to filter message by type
     		if(msg.msgType == MessageType.REPORT_WOUNDED_HUMAN){
     			Logger.info("Will update from message " + h);
@@ -866,6 +907,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 			Logger.info("Dammit, I'm stuck!");
 			return true;
 		}
+		Logger.info("Not stuck! PositionHist=" + positionHist + " commandHist="+commandHistory);
 		return false;
     }
     
