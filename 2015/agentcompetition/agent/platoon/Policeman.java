@@ -112,7 +112,20 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		
 		if (blockadeOnWayTo(currentPath.get(0))){
 			Logger.info("Attempting clear from " + location());
-			doClear(time);
+			
+			//Point2D origin = new Point2D(me().getX(), me().getY());
+			
+			Edge frontier = Geometry.findSmallestEdgeConnecting((Area)location(), (Area)model.getEntity(currentPath.get(0)));
+			Point2D target = Geometry.midpoint(frontier);
+			
+		    Vector2D v = target.minus(new Point2D(me().getX(), me().getY()));
+		    v = v.normalised().scale(1000000);
+		    sendClear(time, (int)(me().getX() + v.getX()), (int)(me().getY() + v.getY()));
+			
+			//sendClear(time, x, y);
+			
+			//doClear(currentPath.get(0), time); //TODO: improve this version of doClear and USE IT. 
+			//doClear(time);
 		}
 		else { //move!
 			Logger.info(String.format("No blockade on way to %s. Will follow path %s", currentPath.get(0), currentPath));
@@ -143,6 +156,38 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		if (path != null && path.size() > 0) {
 			clearPath(path);
 		}*/
+	}
+
+	/**
+	 * Attempts to clear in direction of Area with the given id
+	 * TODO: not working yet
+	 * @param entityID
+	 * @param time
+	 */
+	private void doClear(EntityID areaID, int time) {
+		Blockade target =  findBlockadeOnWayTo(areaID);
+		Logger.info("Clearing blockade " + target + " on way to " + areaID);
+		if (target != null) {
+		    
+		    //sendSpeak(time, 1, ("Clearing " + target).getBytes());
+//			            sendClear(time, target.getX(), target.getY());
+		    List<Line2D> lines = GeometryTools2D.pointsToLines(GeometryTools2D.vertexArrayToPoints(target.getApexes()), true);
+		    double best = Double.MAX_VALUE;
+		    Point2D bestPoint = null;
+		    Point2D origin = new Point2D(me().getX(), me().getY());
+		    for (Line2D next : lines) {
+		        Point2D closest = GeometryTools2D.getClosestPointOnSegment(next, origin);
+		        double d = GeometryTools2D.getDistance(origin, closest);
+		        if (d < best) {
+		            best = d;
+		            bestPoint = closest;
+		        }
+		    }
+		    Vector2D v = bestPoint.minus(new Point2D(me().getX(), me().getY()));
+		    v = v.normalised().scale(1000000);
+		    sendClear(time, (int)(me().getX() + v.getX()), (int)(me().getY() + v.getY()));
+		}
+		
 	}
 
 	/**
@@ -200,12 +245,57 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		//TODO build the 'shot' rectangle and see if it intersects with a blockade in this area
 		ArrayList<Blockade> blockList = new ArrayList<Blockade>(getBlockadesInRange(me().getX(), me().getY(), clearRange));
 		Logger.debug("Blockade list " + blockList + " in range " + clearRange);
-		if (isBlockadeInClearArea(blockList, target))
+		if (anyBlockadeInClearArea(blockList, target))
 			return true;
 		return false;
 	}
 	
-	private boolean isBlockadeInClearArea(ArrayList<Blockade> blockList, Point2D target) {
+	private Blockade findBlockadeOnWayTo(EntityID dest) {
+		
+		Logger.debug("Will check blockades on way to " + dest);
+		
+		if (! neighbours.get(location().getID()).contains(dest)){
+			Logger.warn(String.format("Destination %s is not neighbor of current location %s. Will calculate a path", dest, location().getID()));
+			List<EntityID> path = searchStrategy.shortestPath(location().getID(), dest).getPath();
+			dest = path.get(0);
+		}
+		Edge frontier = Geometry.findSmallestEdgeConnecting((Area)location(), (Area)model.getEntity(dest));
+		
+		Point2D target = Geometry.midpoint(frontier);
+		
+		Logger.debug("Will check blockades on way to " + dest);
+		
+		
+		//TODO build the 'shot' rectangle and see if it intersects with a blockade in this area
+		ArrayList<Blockade> blockList = new ArrayList<Blockade>(getBlockadesInRange(me().getX(), me().getY(), clearRange));
+		Logger.debug("Blockade list " + blockList + " in range " + clearRange);
+
+		return findBlockadeInClearArea(blockList, target);
+	}
+	
+	/**
+	 * Returns the ID of the first blockade in clear area
+	 * @param blockList
+	 * @param target
+	 * @return
+	 */
+	private Blockade findBlockadeInClearArea(ArrayList<Blockade> blockList, Point2D target) {
+		
+		java.awt.geom.Area clearArea = getClearArea((int)target.getX(), (int)target.getY(), clearRange, clearWidth);
+		for (Blockade block : blockList) {
+			java.awt.geom.Area select = new java.awt.geom.Area(block.getShape());
+			select.intersect(clearArea);
+			if (!select.isEmpty()) {
+				Logger.debug(block + "  has intersect with clear area ");
+				return block;
+			}
+		}
+		return null;
+	}
+	
+	
+	
+	private boolean anyBlockadeInClearArea(ArrayList<Blockade> blockList, Point2D target) {
 		boolean result = false;
 		java.awt.geom.Area clearArea = getClearArea((int)target.getX(), (int)target.getY(), clearRange, clearWidth);
 		for (Blockade block : blockList) {
