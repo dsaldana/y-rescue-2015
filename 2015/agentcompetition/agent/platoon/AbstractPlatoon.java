@@ -900,7 +900,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	
     	//quick test to check whether i'm stuck
 		IntArrayProperty positionHist = (IntArrayProperty)changed.getChangedProperty(getID(), "urn:rescuecore2.standard:property:positionhistory");
-		
+		//TODO: positionHist is not reliable (if agent moves only slightly, it is not counting as stuck
 		if (commandHistory.containsKey(time -1) && commandHistory.get(time - 1).equals(AgentCommands.MOVE) && 
 				(! positionHist.isDefined() || positionHist.getValue().length == 0)) 
 		{

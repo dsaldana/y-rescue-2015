@@ -1,5 +1,7 @@
 package agent.platoon;
 
+import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.PathIterator;
 import java.awt.geom.Rectangle2D;
@@ -8,6 +10,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.PriorityQueue;
 
 import commands.AgentCommands;
 import rescuecore2.worldmodel.Entity;
@@ -22,6 +25,7 @@ import rescuecore2.misc.geometry.Line2D;
 import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.misc.geometry.Vector2D;
 import rescuecore2.standard.entities.Edge;
+import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityURN;
@@ -29,7 +33,10 @@ import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.Blockade;
 import rescuecore2.standard.entities.PoliceForce;
 import rescuecore2.standard.entities.Area;
+import search.SearchResult;
 import statemachine.ActionStates;
+import util.DistanceSorter;
+import util.Geometry;
 
 /**
  * RoboCop agent. Implements the reinforcement learning scheme
@@ -46,6 +53,9 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 	// testing dav
 	private boolean moving;
 	private Point2D lastPosition;
+	
+	EntityID destination;
+	List<EntityID> currentPath;
 
 	@Override
 	public String toString() {
@@ -55,10 +65,13 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 	@Override
 	protected void postConnect() {
 		super.postConnect();
-		model.indexClass(StandardEntityURN.ROAD);
+		model.indexClass(StandardEntityURN.ROAD, StandardEntityURN.HYDRANT);
 		clearRange = readConfigIntValue(DISTANCE_KEY, 10000);
 		clearWidth = readConfigIntValue(WIDTH_KEY, 1250);// getConfig().getIntValue("clear.repair.rad", 1250);
 		clearRate = readConfigIntValue(RATE_KEY, 10);
+		
+		destination = null;
+		currentPath = null;
 	}
 
 	@Override
@@ -75,40 +88,47 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		
 		
 		if(stuck()){
-			Blockade target = getTargetBlockade();
-	        if (target != null) {
-	            Logger.info("STUCK! Clearing blockade " + target);
-	            //sendSpeak(time, 1, ("Clearing " + target).getBytes());
-//			            sendClear(time, target.getX(), target.getY());
-	            List<Line2D> lines = GeometryTools2D.pointsToLines(GeometryTools2D.vertexArrayToPoints(target.getApexes()), true);
-	            double best = Double.MAX_VALUE;
-	            Point2D bestPoint = null;
-	            Point2D origin = new Point2D(me().getX(), me().getY());
-	            for (Line2D next : lines) {
-	                Point2D closest = GeometryTools2D.getClosestPointOnSegment(next, origin);
-	                double d = GeometryTools2D.getDistance(origin, closest);
-	                if (d < best) {
-	                    best = d;
-	                    bestPoint = closest;
-	                }
-	            }
-	            Vector2D v = bestPoint.minus(new Point2D(me().getX(), me().getY()));
-	            v = v.normalised().scale(1000000);
-	            sendClear(time, (int)(me().getX() + v.getX()), (int)(me().getY() + v.getY()));
-	            return;
-	        }
+			Logger.info("STUCK!");
+			doClear(time);
+		}
+		
+		if (destination == null){
+			destination = getDestination();
+			Logger.info("I had no destination, now it is" + destination);
+			
+		}
+		if (destination == location().getID()){
+			destination = getDestination();
+			Logger.info("I have arrived to my destination. New destination is" + destination);
+		}
+		Logger.info("Planning path from " + location().getID() + " to " + destination);
+		currentPath = searchStrategy.shortestPath(location().getID(), destination).getPath();
+		
+		if (currentPath == null){
+			Logger.warn("Could not plan a path to destination. Going failsafe.");
+			failsafe();
+			return;
+		}
+		
+		if (blockadeOnWayTo(currentPath.get(0))){
+			Logger.info("Attempting clear from " + location());
+			doClear(time);
+		}
+		else { //move!
+			Logger.info(String.format("No blockade on way to %s. Will follow path %s", currentPath.get(0), currentPath));
+			sendMove(time, currentPath);
 		}
 		
 		//int targetEntity = 254;
 
 		// ---- BEGIN Plan a path and moves to a blockade
 		// /////// Plan to go to some area or building
-		EntityID target = getRoadToClear(); // new EntityID(targetEntity);
+		/*EntityID target = getRoadToClear(); // new EntityID(targetEntity);
 		List<EntityID> path = computePath(target);
 
 		/*if (time < 3) {
 			return;
-		}*/
+		}*
 
 		// FIXME if location is refuge, then target accomplished
 		if (location().getID().getValue() == target.getValue()) {
@@ -122,11 +142,162 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 
 		if (path != null && path.size() > 0) {
 			clearPath(path);
+		}*/
+	}
+
+	/**
+	 * @param time
+	 */
+	private void doClear(int time) {
+		//TODO: use bestblockade and SOS clear method here
+		
+		Blockade target =  getTargetBlockade();
+		Logger.info("Clearing blockade " + target);
+		if (target != null) {
+		    
+		    //sendSpeak(time, 1, ("Clearing " + target).getBytes());
+//			            sendClear(time, target.getX(), target.getY());
+		    List<Line2D> lines = GeometryTools2D.pointsToLines(GeometryTools2D.vertexArrayToPoints(target.getApexes()), true);
+		    double best = Double.MAX_VALUE;
+		    Point2D bestPoint = null;
+		    Point2D origin = new Point2D(me().getX(), me().getY());
+		    for (Line2D next : lines) {
+		        Point2D closest = GeometryTools2D.getClosestPointOnSegment(next, origin);
+		        double d = GeometryTools2D.getDistance(origin, closest);
+		        if (d < best) {
+		            best = d;
+		            bestPoint = closest;
+		        }
+		    }
+		    Vector2D v = bestPoint.minus(new Point2D(me().getX(), me().getY()));
+		    v = v.normalised().scale(1000000);
+		    sendClear(time, (int)(me().getX() + v.getX()), (int)(me().getY() + v.getY()));
 		}
 	}
 
-	private EntityID getRoadToClear() {
+	/**
+	 * Returns whether there is a blockade in range of clearance on way 
+	 * to neighbor entity ID
+	 * @param dest
+	 * @return
+	 */
+	private boolean blockadeOnWayTo(EntityID dest) {
 		
+		Logger.debug("Will check blockades on way to " + dest);
+		
+		if (! neighbours.get(location().getID()).contains(dest)){
+			Logger.warn(String.format("Destination %s is not neighbor of current location %s. Will calculate a path", dest, location().getID()));
+			List<EntityID> path = searchStrategy.shortestPath(location().getID(), dest).getPath();
+			dest = path.get(0);
+		}
+		Edge frontier = Geometry.findSmallestEdgeConnecting((Area)location(), (Area)model.getEntity(dest));
+		
+		Point2D target = Geometry.midpoint(frontier);
+		
+		Logger.debug("Will check blockades on way to " + dest);
+		
+		
+		//TODO build the 'shot' rectangle and see if it intersects with a blockade in this area
+		ArrayList<Blockade> blockList = new ArrayList<Blockade>(getBlockadesInRange(me().getX(), me().getY(), clearRange));
+		Logger.debug("Blockade list " + blockList + " in range " + clearRange);
+		if (isBlockadeInClearArea(blockList, target))
+			return true;
+		return false;
+	}
+	
+	private boolean isBlockadeInClearArea(ArrayList<Blockade> blockList, Point2D target) {
+		boolean result = false;
+		java.awt.geom.Area clearArea = getClearArea((int)target.getX(), (int)target.getY(), clearRange, clearWidth);
+		for (Blockade block : blockList) {
+			java.awt.geom.Area select = new java.awt.geom.Area(block.getShape());
+			select.intersect(clearArea);
+			if (!select.isEmpty()) {
+				Logger.debug(block + "  has intersect with clear area ");
+				result = true;
+			}
+		}
+		return result;
+	}
+
+	public PriorityQueue<Blockade> getBlockadesInRange(int x, int y, int range) {
+		final PriorityQueue<Blockade> result = new PriorityQueue<Blockade>(20, new DistanceSorter(me(), model));
+		Rectangle r = new Rectangle(x - range, y - range, x + range, y + range);
+		
+		//getObjectsInRectangle does not returns the blockades!
+		Collection<StandardEntity> entities = model.getObjectsInRectangle(x - range, y - range, x + range, y + range);
+		Logger.info(String.format("Testing intersection of blockades with rect(%d, %d, %d, %d)", x - range, y - range, x + range, y + range));
+		Logger.info(String.format("Found entities: " + entities));
+		for(StandardEntity e : entities){
+			if (e instanceof Road){
+				Road road = (Road) e;
+				if (road.isBlockadesDefined()){ // && road.getBlockades().size() > 0){
+					Logger.debug("On road " + road);
+					
+					for (EntityID blockID : road.getBlockades()){
+						Logger.debug(String.format("Dist. do block %s: %d ", blockID, model.getDistance(me().getID(), blockID)));	
+						if(model.getDistance(me().getID(), blockID) < range){
+							Logger.debug("Blockade " + blockID + " intersects");
+							result.add((Blockade)model.getEntity(blockID));
+						}
+						
+					}
+				}
+			}
+			
+		}
+		
+		/*index.intersects(r, new IntProcedure() {
+			@Override
+			public boolean execute(int id) {
+				StandardEntity e = getEntity(new EntityID(id));
+				if (e != null && e instanceof Road && ((Road) e).isBlockadesDefined()) {
+					for (Blockade blockade : ((Road) e).getBlockades()) {
+						if (PoliceUtils.isValid(blockade))
+							result.add(blockade);
+					}
+				}
+				return true;
+			}
+		})*/;
+		return result;
+	}
+	
+	/**
+	 * from clear.Geometry
+	 */
+	public java.awt.geom.Area getClearArea(int targetX, int targetY, int clearLength, int clearRad) {
+		clearLength = clearLength - 200;
+		clearRad = clearRad - 200;
+		Vector2D agentToTarget = new Vector2D(targetX - me().getX(), targetY - me().getY());
+
+		if (agentToTarget.getLength() > clearLength)
+			agentToTarget = agentToTarget.normalised().scale(clearLength);
+
+		Vector2D backAgent = (new Vector2D(me().getX(), me().getY()))
+				.add(agentToTarget.normalised().scale(-450));
+		Line2D line = new Line2D(backAgent.getX(), backAgent.getY(),
+				agentToTarget.getX(), agentToTarget.getY());
+
+		Vector2D dir = agentToTarget.normalised().scale(clearRad);
+		Vector2D perpend1 = new Vector2D(-dir.getY(), dir.getX());
+		Vector2D perpend2 = new Vector2D(dir.getY(), -dir.getX());
+
+		Point2D points[] = new Point2D[] {
+				line.getOrigin().plus(perpend1),
+				line.getEndPoint().plus(perpend1),
+				line.getEndPoint().plus(perpend2),
+				line.getOrigin().plus(perpend2) };
+		int[] xPoints = new int[points.length];
+		int[] yPoints = new int[points.length];
+		for (int i = 0; i < points.length; i++) {
+			xPoints[i] = (int) points[i].getX();
+			yPoints[i] = (int) points[i].getY();
+		}
+		return new java.awt.geom.Area(new Polygon(xPoints, yPoints, points.length));
+	}
+
+	private EntityID getDestination() {
+		//TODO: regularly change target
 		return new EntityID(255);
 	}
 
@@ -244,6 +415,96 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		return false;
 
 	}
+	
+	/**
+	 * Gets the best blockade that blocks the entrance of a building
+	 * @param list
+	 * @return
+	 */
+	protected Blockade bestEntranceBlockade(List<Blockade> list) {
+		Logger.debug("Choosing the best blockade from: " + list);
+		if (list == null) {
+			Logger.warn("List of blockades is null. Will return null Blockade");
+			return null;
+		}
+		Blockade best = null;
+		double bestValue = 0;
+		for (Blockade blockade : list) {
+			if (isValid(blockade)) {
+				int value = computeBlockadeValue(blockade);
+				if (value > bestValue) {
+					bestValue = value;
+					best = blockade;
+				}
+			}
+		}
+		Logger.info("Best blockade: " + best);
+		return best;
+	}
+	
+	
+	
+	public boolean isValid(Blockade b) {
+		if (b == null) {
+			System.err.println("null blockade passed to isValid");
+			return false;
+		}
+		//PoliceForceAgent policeForceAgent = (PoliceForceAgent) b.getAgent();
+		double blockadeDistance = getBlockadeDistance(b);
+		// implemented by salim
+		// if (Utils.distance(b.getLocation(), getLocation()) > clearDistance+)
+		/*if (b.getLastSenseTime() < policeForceAgent.time() - 2) {
+			log.debug(b + " is invalid! it is seen in " + b.getLastSenseTime());
+			return false;
+		}*/
+		if (blockadeDistance >= clearRange) {
+			Logger.debug(b + " invalid.  ClearRange:" + clearRange + ", dist. to block: " + blockadeDistance);
+			return false;
+		}
+		// --------------------------
+		return true;
+	}
+	
+	/**
+	 * Returns the closest point from Policeman to Blockade
+	 * @param b
+	 * @return
+	 */
+	public double getBlockadeDistance(Blockade b) {
+		if (b == null) {
+			Logger.warn("getBlockadeDistance received null blockade.");
+			return Double.MAX_VALUE;
+		}
+		
+		Point2D agentLocation =  new Point2D(me().getX(), me().getY());
+
+		double bestDistance = Double.MAX_VALUE;
+		List<Line2D> blockadelines = GeometryTools2D.pointsToLines(GeometryTools2D.vertexArrayToPoints(b.getApexes()), true);
+		for (Line2D line : blockadelines) {
+			Point2D closest = GeometryTools2D.getClosestPointOnSegment(line, agentLocation);
+			double distance = GeometryTools2D.getDistance(agentLocation, closest);
+			if (bestDistance > distance) {
+				bestDistance = distance;
+			}
+		}
+
+		//		return SOSGeometryTools.distance(b.getEdges(), policeForceAgent.me().getPositionPoint());
+		return bestDistance;
+
+	}
+	
+	private int computeBlockadeValue(Blockade blockade) {
+		Point2D mypoint =  new Point2D(me().getX(), me().getY());
+		Point2D centroid = getBlockadeCentroid(blockade);
+		
+		double distance = Math.hypot(mypoint.getX() - centroid.getX(), mypoint.getY() - centroid.getY());
+		return (int) (1000000 / Math.max(distance, 1));
+	}
+	
+	public Point2D getBlockadeCentroid(Blockade b) {
+		return GeometryTools2D.computeCentroid(GeometryTools2D.vertexArrayToPoints(b.getApexes()));
+	}
+
 
 	private void clearTowardsIntersection(Area r1, Area r2, int time) {
 		/**
@@ -432,7 +693,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
         Blockade target = failSafeGetTargetBlockade();
         if (target != null) {
             Logger.info("Clearing blockade " + target);
-            sendSpeak(time, 1, ("Clearing " + target).getBytes());
+            //sendSpeak(time, 1, ("Clearing " + target).getBytes());
             sendClear(time, target.getID());
             return;
         }
