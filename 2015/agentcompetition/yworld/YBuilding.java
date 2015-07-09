@@ -47,22 +47,22 @@ public class YBuilding {
     public static float concreteBurning = 800;
 	
 	//some properties
-	float energy, capacity, initialFuel, fuel; //fieryness, brokenness, energy;
-	int water, fieryness;
-	double totalWallArea;
+	public float energy, capacity, initialFuel, fuel; //fieryness, brokenness, energy;
+	public int water, fieryness;
+	public double totalWallArea;
 	
-	NumberGenerator<Double> burnRate;
+	public NumberGenerator<Double> burnRate;
 	
 	/**
 	 * this flag indicates that the fuel information was updated from agent information,
 	 * since agent cannot perceive the actual fuel of building 
 	 */
-	boolean fuzzyFuel; 
+	public boolean fuzzyFuel; 
 	
 	//the simulator entity that this YBuilding refers to
-	Building referenced;
+	public Building referenced;
 	
-	int lastSeen;	//the timestep this building was last seen by the agent
+	public int lastSeen;	//the timestep this building was last seen by the agent
 	
 	
 	public YBuilding(Building theBuilding){
@@ -89,6 +89,22 @@ public class YBuilding {
         
         totalWallArea = calculateWallArea();
 	}
+	
+	//////////////////////////////////////////////////////////////
+	public YBuilding(YBuilding yBuild){
+		referenced = yBuild.referenced;	
+		energy = yBuild.energy;
+		water = yBuild.water;
+	    burnRate = yBuild.burnRate;
+		fieryness = yBuild.fieryness;	
+		lastSeen = yBuild.lastSeen;
+		capacity = yBuild.capacity;
+        fuel = yBuild.fuel; 
+        initialFuel = yBuild.initialFuel;
+        fuzzyFuel = yBuild.fuzzyFuel;
+        totalWallArea = yBuild.totalWallArea;
+	}
+    ////////////////////////////////////////////////////////////
 	
 	/**
 	 * Updates information of this YBuilding. 
@@ -274,7 +290,7 @@ public class YBuilding {
 		}
 	}
 	
-	private void addWater(int w) {
+	public void addWater(int w) {
 		water += w;
 		if (water < 0) water = 0;
 	}
