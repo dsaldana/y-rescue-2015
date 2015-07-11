@@ -22,6 +22,7 @@ import message.ReceivedMessage;
 import problem.BlockedRoad;
 import problem.BurningBuilding;
 import problem.Problem;
+import problem.Recruitment;
 import problem.WoundedHuman;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.Entity;
@@ -156,6 +157,12 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * A list of problems that the agent will send to teammates
      */
     protected List<Problem> problemsToReport;
+    
+    /**
+     * List of messages for recruitment
+     */
+    protected List<Recruitment> recruitmentMsgToSend;
+    protected List<Recruitment> recruitmentMsgReceived;
 	
     /**
      * Construct an AbstractPlatoon.
@@ -171,7 +178,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	
     	stateMachine = new StateMachine(ActionStates.RANDOM_WALK);
     	
-    	
+    	recruitmentMsgToSend = new ArrayList<Recruitment>();
+    	recruitmentMsgReceived = new ArrayList<Recruitment>();
     }
 
     @Override
@@ -414,8 +422,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		}
     	}
     }
-    
-    /**
+
+	/**
      * The behavior to execute when something goes wrong with normal behavior
      */
     protected abstract void failsafe();
@@ -480,6 +488,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	decodeBlockedRoadMessages(heard);
     	decodeBurningBuildingMessages(heard);
     	decodeWoundedHumanMessages(heard);
+    	decodeRecruitmentMessage(heard);
     }
     
     /**
@@ -492,6 +501,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 		Logger.info(("#blocked roads:" + blockedRoads.size()));
 		//Logger.info(("the blk roads:" + blockedRoads.keySet()));
     	Logger.info("#problemsToReport: " + problemsToReport.size());
+    	Logger.info("#recruitment messages: " + recruitmentMsgToSend.size());
     	for(Problem p : problemsToReport){
     		Logger.info((String.format("%s will communicate problem %s", me(), p)));
     		byte[] msg = p.encodeReportMessage(getID());
@@ -499,9 +509,17 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		sendSpeak(time, 1, msg);	//TODO implementar aloca����o de canais
     	}
     	
+    	for(Recruitment r : recruitmentMsgToSend){
+    		Logger.info((String.format("%s will communicate recruitment %s", me(), r)));
+    		byte[] msg = r.encodeReportMessage(getID());
+    		sendSay(time, msg);
+    		sendSpeak(time, 1, msg);
+    	}
+    	
     	problemsToReport.clear();
+    	recruitmentMsgToSend.clear();
     }
-    
+
     /**
      * Returns the time of the last visit to an entity 
      * @param id
@@ -530,6 +548,39 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		else if(msg.msgType == MessageType.SOLVED_BLOCKED_ROAD){
     			updateFromMessage(b);
     			blockedRoads.get(b).markSolved(next.getTime()); //ensures that problem is marked as solved
+    		}
+    	}
+    }
+    
+    protected void decodeRecruitmentMessage(Collection<Command> heard){
+    	recruitmentMsgReceived.clear();
+    	
+    	for(Command next : heard){
+    		ReceivedMessage msg = MessageReceiver.decodeMessage(next);
+    		if (msg == null || !(msg.problem instanceof Recruitment)) continue;
+    		
+    		Recruitment h = (Recruitment) msg.problem;
+    		Logger.info("Received recruitment " + h);
+    		
+    		if(msg.msgType == MessageType.RECRUITMENT_REQUEST){
+    			Logger.info("Receive RECRUITMENT_REQUEST");
+    			updateFromMessage(h);
+    		}
+    		else if(msg.msgType == MessageType.RECRUITMENT_COMMIT){
+    			Logger.info("Receive RECRUITMENT_COMMIT");
+    			updateFromMessage(h);
+    		}
+    		else if(msg.msgType == MessageType.RECRUITMENT_RELEASE){
+    			Logger.info("Receive RECRUITMENT_RELEASE");
+    			updateFromMessage(h);
+    		}
+    		else if(msg.msgType == MessageType.RECRUITMENT_ENGAGE){
+    			Logger.info("Receive RECRUITMENT_ENGAGE");
+    			updateFromMessage(h);
+    		}
+    		else if(msg.msgType == MessageType.RECRUITMENT_TIMEOUT){
+    			Logger.info("Receive RECRUITMENT_TIMEOUT");
+    			updateFromMessage(h);
     		}
     	}
     }
@@ -644,6 +695,17 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 			Logger.info(("Discarded info of bldg " + bb.getEntityID() + ". Outdated."));
 		}
 	}
+	
+	/**
+	 * Inserts the recruitment into knowledge base if it does not exists in there
+	 * or it is newer than the previously existing one
+	 * @param b
+	 * @return 
+	 */
+	private void updateFromMessage(Recruitment r) {
+		recruitmentMsgReceived.add(r);
+		Logger.info(String.format("Added %s to recruitment to report", r));
+	}
     
     
     /**
@@ -672,7 +734,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         	if(entity instanceof Building){
         		Building b = (Building) entity;
         		
-        		System.out.println("Will check " + b);
+        		//System.out.println("Will check " + b);
         		//Logger.info("" + b.getProperties());
         		//if building is burning, adds it to knowledge base or update its entry. 
         		//else, mark it as solved if it was on knowledge base
@@ -746,7 +808,6 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
                 }
         	}
         }
-		
 	}
     
     /**
@@ -801,6 +862,15 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 			burningBuildings.put(b.getID(), burning);
 		}
 		problemsToReport.add(burning);
+	}
+	
+	/**
+	 * 
+	 * @param time
+	 * @param changed
+	 */
+    private void updateRecruitment(int time, int task) {
+    	
 	}
 	
 	/**

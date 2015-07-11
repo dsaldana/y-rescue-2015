@@ -17,5 +17,12 @@ public enum MessageType {
 	SOLVED_BURNING_BUILDING,
 	
 	//misc types
-	BROADCAST_REFILL_RATE	//allows fire fighters to communicate the refill rate
+	BROADCAST_REFILL_RATE,	//allows fire fighters to communicate the refill rate
+	
+	// Recruitment protocol messages
+	RECRUITMENT_REQUEST,
+	RECRUITMENT_COMMIT,
+	RECRUITMENT_RELEASE,
+	RECRUITMENT_ENGAGE,
+	RECRUITMENT_TIMEOUT
 }

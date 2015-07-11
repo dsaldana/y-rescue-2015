@@ -1,10 +1,5 @@
 package agent.platoon;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ArrayList;
@@ -15,18 +10,19 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import message.MessageType;
+import message.RecruitmentMsgUtil;
+import message.TaskType;
+import problem.Recruitment;
 import problem.WoundedHuman;
 import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
 import rescuecore2.worldmodel.ChangeSet;
-import rescuecore2.worldmodel.properties.IntArrayProperty;
 import rescuecore2.messages.Command;
 import rescuecore2.misc.collections.LazyMap;
 import rescuecore2.log.Logger;
 import rescuecore2.standard.entities.Area;
-import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.StandardEntity;
-import rescuecore2.standard.entities.StandardEntityConstants;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.entities.AmbulanceTeam;
 import rescuecore2.standard.entities.Human;
@@ -34,22 +30,34 @@ import rescuecore2.standard.entities.Civilian;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.StandardWorldModel;
 import statemachine.ActionStates;
+import statemachine.StateMachine;
 import util.DistanceSorter;
-import util.HPSorter;
-import util.LastVisitSorter;
 import util.WoundedHumanHPSorter;
 
 /**
- *  RoboMedic agent. Implements a simple scheme to rescue Civilians.
+ *  Ambulance agent. The main objective is to rescue, unbury and transport Civilians.
  */
 public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 	
+	private final int BURRIEDNESS_TRESHOLD_RECRUITMENT = 10;
+	private final int TIMEOUT_REACHING_TARGET = 10;
+	private final int TIMEOUT_WAIT_RESPONSE = 5;
+	private final int RECRUITMENT_LIMIT = 1;
+	
 	private Integer totalHP = 0;
     private Collection<EntityID> unexploredBuildings;
-    private int LOCAL_RANDOM_WALK_LENGTH = 60; 
-    private int localVisitLoopCounter = 0;
-    
     private Integer assignedBuildingNumber = 0;
+    private EntityID currentTarget = null;
+    private TaskType currentTask = null;
+    private RecruitmentMsgUtil recruitmentUtil = null;
+    private int reachingTargetTimestep = 0;
+    private int agentsRecruited = 0;
+    private int timeWaitingRecruitmentResponse = 0;
+    
+    private boolean isMinimumID = false;
+    
+    protected StateMachine recruitmentStateMachine;
+    
     
     Map<EntityID, Set<EntityID>> neighbours = new LazyMap<EntityID, Set<EntityID>>() {
         @Override
@@ -57,11 +65,6 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             return new HashSet<EntityID>();
         }
     };
-
-    @Override
-    public String toString() {
-        return String.format("Ambulance(%s)", me().getID());
-    }
 
     @Override
     protected void postConnect() {
@@ -89,6 +92,24 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         
         totalHP = me().getHP();
         assignedBuildingNumber = unexploredBuildings.size();
+        
+        // Define the recruitment util class with the capabilities of this agent
+        List<TaskType> taskCapabilities = new LinkedList<TaskType>();
+        taskCapabilities.add(TaskType.AMBULANCE_UNBURY);
+        recruitmentUtil = new RecruitmentMsgUtil(taskCapabilities);
+        
+        // Hack to test the RECRUITMENT process
+        if(ambulances.size() > 1){
+        	int minValue = me().getID().getValue();
+        	for(StandardEntity e : ambulances){
+        		if(e.getID().getValue() < minValue){
+        			minValue = e.getID().getValue();
+        		}
+        	}
+        	if(minValue == me().getID().getValue()){
+        		isMinimumID = true;
+        	}
+        }
     }
 
     @Override
@@ -101,9 +122,13 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             Logger.debug("Heard " + next);
         }
         
+        for(Recruitment r : recruitmentMsgReceived){
+        	Logger.debug("Recruitment Heard " + r.toString());
+        }
+        
         //System.out.println("\nTime ambulance: " + time);
         
-        String statusString = "HP:" + me().getHP() + " Total HP:" + totalHP + " burriedness:" + me().getBuriedness() + " Damage:" + me().getDamage() + " Stamina:" + me().getStamina() + " unexploredBuildings:" + unexploredBuildings.size();
+        String statusString = "HP:" + me().getHP() + " Total HP:" + totalHP + " pos:" + me().getPosition() + " Damage:" + me().getDamage() + " Stamina:" + me().getStamina() + " unexploredBuildings:" + unexploredBuildings.size();
         System.out.println(statusString);
         
         //Logger.info("Changeset: " + changed);
@@ -128,6 +153,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         int[] positionList = positionHist.getValue();
         System.out.println("Last position list: " + Arrays.toString(positionList));
         */
+        
         updateUnexploredBuildings(changed);
         System.out.println("Unexplored buildings: " + unexploredBuildings.size());
         
@@ -136,6 +162,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             // Am I at a refuge?
             if (location() instanceof Refuge) {
                 // Unload!
+            	currentTarget = null;
             	Logger.info("Unloading");
             	stateMachine.setState(ActionStates.Ambulance.UNLOADING);
                 sendUnload(time);
@@ -155,11 +182,18 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             }
         }
         else{
+        	if(stateMachine.currentState() == ActionStates.Ambulance.CARRYING_WOUNDED || stateMachine.currentState() == ActionStates.Ambulance.UNLOADING){
+        		currentTarget = null;
+        		stateMachine.setState(ActionStates.RANDOM_WALK);
+        	}
         	if (!(location() instanceof Refuge)) {
-    			for (StandardEntity next : model.getEntitiesOfType(StandardEntityURN.CIVILIAN, StandardEntityURN.FIRE_BRIGADE, StandardEntityURN.POLICE_FORCE, StandardEntityURN.AMBULANCE_TEAM)) {
-    				if (((Human) next).getPosition().equals(location().getID()) ) {
+    			//for (StandardEntity next : model.getEntitiesOfType(StandardEntityURN.CIVILIAN, StandardEntityURN.FIRE_BRIGADE, StandardEntityURN.POLICE_FORCE, StandardEntityURN.AMBULANCE_TEAM)) {
+        		for (StandardEntity next  :model.getObjectsInRange(me().getID(), sightRange)) {
+    				if (next instanceof Human && ((Human) next).getPosition().equals(location().getID()) ) {
     					if ((next instanceof Civilian) && ((Human) next).getBuriedness() == 0 && !(location() instanceof Refuge) && !refugeIDs.contains(((Civilian) next).getPosition().getValue())) {
     	                    // Load
+    						stateMachine.setState(ActionStates.Ambulance.LOADING);
+    						currentTarget = next.getID();
     	                    Logger.info("Loading now!" + next + "(" + next.getClass().getName() + ")" + " At pos: " + ((Civilian) next).getPosition().getValue());
     	                    sendLoad(time, next.getID());
     	                    return;
@@ -169,6 +203,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         	}
         }
         
+        // If the agent is on a fire zone and get damaged, go to a refuge
         if (me().getDamage() >= 10){
         	Logger.debug("Receiving damage");
         	List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), refugeIDs).getPath();
@@ -181,99 +216,308 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
             Logger.debug("Failed to plan path to refuge");
         }
         
-        if(unexploredBuildings.size() > assignedBuildingNumber * 0.1){
-        	Logger.info("Not enough exploration yet...");
-        	List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), unexploredBuildings).getPath();
-            if (path != null) {
-            	Logger.info("Searching buildings -50%");
-                sendMove(time, path);
-                return;
-            }
-        } 
         
-        // Go through targets (sorted by distance) and check for things we can do
-        List<WoundedHuman> humanList = getTargets();
-        System.out.println("HumanList size: " + humanList.size());
-        
-        for (WoundedHuman next : humanList) {
+        // Check for recruitment process
+        recruitmentUtil.clearMessagesToSend();
+        recruitmentUtil.updateMessages(super.recruitmentMsgReceived);
+        if(stateMachine.currentState() == ActionStates.GOING_TO_TARGET || 
+        		stateMachine.currentState() == ActionStates.Ambulance.SEARCHING_BUILDINGS || 
+        		stateMachine.currentState() == ActionStates.RANDOM_WALK ||
+        		stateMachine.currentState() == ActionStates.RECRUITMENT_WAITING_RESPONSE){
         	
-        	Logger.info("Pos " + next.position +  " My pos:" + me().getPosition());
-        	
-        	if(burningBuildings.containsKey(next.position)){
-                Logger.info("The building is burning! Next");
-            	continue;
-            }
-        	
-        	if(refugeIDs.contains(next.position)){
-        		Logger.info("The Civilian is on refugee! Next");
-            	continue;
+        	if((recruitmentUtil.hasEngage() || recruitmentUtil.hasRelease()) && stateMachine.currentState() == ActionStates.RECRUITMENT_WAITING_RESPONSE){
+        		timeWaitingRecruitmentResponse++;
+        		
+        		for(Recruitment r : recruitmentUtil.getEngageMessages()){
+        			if(r.getToEntityID().getValue() == me().getID().getValue() && r.getTaskType() == currentTask){
+        				stateMachine.setState(ActionStates.RECRUITMENT_GOING_TO_TARGET);
+        				timeWaitingRecruitmentResponse = 0;
+        				break;
+        			}
+        		}
+        		
+        		for(Recruitment r : recruitmentUtil.getReleaseMessages()){
+        			if(r.getToEntityID().getValue() == me().getID().getValue() && r.getTaskType() == currentTask){
+        				stateMachine.setState(ActionStates.RANDOM_WALK);
+        				timeWaitingRecruitmentResponse = 0;
+        				break;
+        			}
+        		}
         	}
         	
-            if (next.position.equals(location().getID()) ) {
-            	// Targets in the same place might need rescueing or loading
-            	Logger.info("" + next + " isCivilian? " + isCivilian(next));
-                if (isCivilian(next)  && next.buriedness == 0 && !(location() instanceof Refuge) && !refugeIDs.contains(next.position)) {
-                    // Load
-                	stateMachine.setState(ActionStates.Ambulance.LOADING);
-                    Logger.info("Loading " + next + " the civilian is at: "+ next.position);
-                    sendLoad(time, next.civilianID);
-                    return;
-                }
-                
-                if (next.buriedness > 0) {
-                    // Rescue
-                	String humanStatusString = "HP:" + next.health + " burriedness:" + next.buriedness + " Damage:" + next.damage ;
-                    Logger.info("Rescueing " + next + " " + humanStatusString);
-                	stateMachine.setState(ActionStates.Ambulance.UNBURYING);
-                    sendRescue(time, next.civilianID);
-                    return;
-                }
-            }
-            else {
-                // Try to move to the target
-            	// Check if position is not a human ID TODO
-                List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), next.position).getPath();
+        	if(timeWaitingRecruitmentResponse >= TIMEOUT_WAIT_RESPONSE){
+        		stateMachine.setState(ActionStates.RANDOM_WALK);
+        		timeWaitingRecruitmentResponse = 0;
+        	}
+        	
+        	if(recruitmentUtil.hasCommit()){
+        		for(Recruitment r : recruitmentUtil.getCommitMessages()){
+        			if(r.getEntityID().getValue() == me().getID().getValue() && r.getTaskType() == currentTask){
+        				if(agentsRecruited >= RECRUITMENT_LIMIT){
+        					recruitmentUtil.responseCommit(r, me().getID(), MessageType.RECRUITMENT_RELEASE, me().getPosition(), time);
+        				}
+        				else{
+        					recruitmentUtil.responseCommit(r, me().getID(), MessageType.RECRUITMENT_ENGAGE, me().getPosition(), time);
+        				}
+        				agentsRecruited++;
+        			}
+        		}
+        		
+        		agentsRecruited = 0;
+        	}
+        	
+        	if(recruitmentUtil.hasRequest()){
+        		for(Recruitment r : recruitmentUtil.getRequestMessages()){
+        			if(r.getToEntityID().getValue() == me().getID().getValue()) continue;
+        			if(r.taskType == TaskType.AMBULANCE_UNBURY && (currentTarget == null || currentTarget.getValue() != r.getEntityID().getValue())){
+        				int d1 = 0;
+        				int d2 = 0;
+        				
+        				if(currentTarget != null){
+        					d1 = model.getDistance(me().getPosition(), currentTarget);
+        					d2 = model.getDistance(me().getPosition(), r.getPosition());
+        				}
+        			
+        				if(d2 < d1 || currentTarget == null){
+        					Logger.info("Timeout reaching recruitment target, going to normal operations");
+        					currentTarget = r.getPosition();
+        					currentTask = TaskType.AMBULANCE_UNBURY;
+        					stateMachine.setState(ActionStates.RECRUITMENT_WAITING_RESPONSE);
+        					recruitmentUtil.responseRequest(r, me().getID(), MessageType.RECRUITMENT_COMMIT, me().getPosition(), time);
+        					break;
+        				}
+        			}
+        			else if(r.taskType == TaskType.AMBULANCE_UNBURY && currentTarget.getValue() == r.getEntityID().getValue()){
+        				currentTask = TaskType.AMBULANCE_UNBURY;
+        				recruitmentUtil.responseRequest(r, me().getID(), MessageType.RECRUITMENT_COMMIT, me().getPosition(), time);
+        				stateMachine.setState(ActionStates.RECRUITMENT_WAITING_RESPONSE);
+        				break;
+        			}
+        		}
+        	}
+        	
+        	/*if(isMinimumID){
+        		Recruitment rr = new Recruitment(me().getID(), me().getID(), me().getPosition(), TaskType.AMBULANCE_UNBURY, MessageType.RECRUITMENT_COMMIT, time);
+        		recruitmentUtil.responseRequest(rr, me().getID(), MessageType.RECRUITMENT_COMMIT, me().getPosition(), time);
+        		
+        		rr = new Recruitment(me().getID(), me().getID(), me().getPosition(), TaskType.AMBULANCE_UNBURY, MessageType.RECRUITMENT_ENGAGE, time);
+        		recruitmentUtil.responseRequest(rr, me().getID(), MessageType.RECRUITMENT_ENGAGE, me().getPosition(), time);
+        		
+        		rr = new Recruitment(me().getID(), me().getID(), me().getPosition(), TaskType.AMBULANCE_UNBURY, MessageType.RECRUITMENT_RELEASE, time);
+        		recruitmentUtil.responseRequest(rr, me().getID(), MessageType.RECRUITMENT_RELEASE, me().getPosition(), time);
+        		
+        		rr = new Recruitment(me().getID(), me().getID(), me().getPosition(), TaskType.AMBULANCE_UNBURY, MessageType.RECRUITMENT_TIMEOUT, time);
+        		recruitmentUtil.responseRequest(rr, me().getID(), MessageType.RECRUITMENT_TIMEOUT, me().getPosition(), time);
+        	}*/
+        }
+        super.recruitmentMsgToSend = recruitmentUtil.getMessagesToSend();
+        
+        if(stateMachine.currentState() == ActionStates.RECRUITMENT_GOING_TO_TARGET){
+        	if(me().getPosition().getValue() == currentTarget.getValue()){
+        		Logger.info("Recruitment reach target, doing task!");
+        		stateMachine.setState(ActionStates.RECRUITMENT_DOING_TASK);
+        	}
+        	else if(reachingTargetTimestep >= TIMEOUT_REACHING_TARGET){
+        		Logger.info("Timeout reaching recruitment target, going to normal operations");
+        		currentTarget = null;
+        		stateMachine.setState(ActionStates.RANDOM_WALK);
+        		reachingTargetTimestep = 0;
+        	}
+        	else{
+        		List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), currentTarget).getPath();
                 if (path != null) {
-                	stateMachine.setState(ActionStates.GOING_TO_TARGET);
-                    Logger.info("Moving to target");
+                    Logger.info("Moving to recruitment target ["+ currentTarget.getValue() +"]");
                     sendMove(time, path);
                     return;
                 }
-            }
+        		reachingTargetTimestep++;
+        	}
+        }
+        else if(stateMachine.currentState() == ActionStates.RECRUITMENT_DOING_TASK){
+        	if (!(location() instanceof Refuge)) {
+        		Collection<StandardEntity> se = model.getObjectsInRange(me().getID(), sightRange);
+        		Logger.info("All objects in sight:" + se.toArray());
+        		for (StandardEntity next : se) {
+    				if (next instanceof Human && ((Human) next).getPosition().equals(location().getID()) ) {
+    					if ((next instanceof Civilian) && ((Human) next).getBuriedness() == 0 && !(location() instanceof Refuge) && !refugeIDs.contains(((Civilian) next).getPosition().getValue())) {
+    	                    // Load
+    						currentTarget = next.getID();
+    	                    Logger.info("Rescuing now (Recruitment)!" + next + "(" + next.getClass().getName() + ")" + " At pos: " + ((Civilian) next).getPosition().getValue());
+    	                    stateMachine.setState(ActionStates.Ambulance.UNBURYING);
+    	                    sendRescue(time, next.getID());
+    	                    return;
+    	                }
+    				}
+    			}
+        		List<WoundedHuman> humanList = getTargets();
+    	        System.out.println("HumanList size: " + humanList.size());
+    	        
+    	        for (WoundedHuman next : humanList) {
+    	        	if(next.position.getValue() == me().getPosition().getValue()){
+    	        		currentTarget = next.civilianID;
+	                    Logger.info("Rescuing now (Recruitment wounded human)!" + next + "(" + next.getClass().getName() + ")" + " At pos: " + next.position.getValue());
+	                    stateMachine.setState(ActionStates.Ambulance.UNBURYING);
+	                    sendRescue(time, next.civilianID);
+	                    return;
+    	        	}
+    	        }
+        	}
+        	else{
+        		stateMachine.setState(ActionStates.RANDOM_WALK);
+        		currentTarget = null;
+        	}
         }
         
-        // Nothing to do, check the unexplored buildings
-        Logger.info("Checking unexplored buildings");
-        List<EntityID> entityIDList = new ArrayList<EntityID> ();
-        for (EntityID subset : unexploredBuildings) {
-        	entityIDList.add(subset);
-        }
-        Collections.shuffle(entityIDList);
-        
-        if(entityIDList.size() > 0){
-        	List<EntityID> path = null;
-            try{
-            	path = searchStrategy.shortestPath(me().getPosition(), entityIDList).getPath();
-            }catch(Exception e){
-            	//StringWriter writer = new StringWriter();
-            	//PrintWriter printWriter = new PrintWriter( writer );
-            	//e.printStackTrace( printWriter );
-            	//printWriter.flush();
-
-            	//String stackTrace = writer.toString();
-            	Logger.error("Path search exception:", e);
-            }
-            
-            if (path != null) {
-            	stateMachine.setState(ActionStates.Ambulance.SEARCHING_BUILDINGS);
-                Logger.info("Searching buildings");
-                sendMove(time, path);
+        if(stateMachine.currentState() == ActionStates.Ambulance.UNBURYING){
+        	Human humanTarget = ((Human) model.getEntity(currentTarget));
+        	if (humanTarget.getBuriedness() > 0) {
+            	String humanStatusString = "HP:" + humanTarget.getHP() + " burriedness:" + humanTarget.getBuriedness() + " Damage:" + humanTarget.getDamage() ;
+                Logger.info("Rescueing (STATE) " + currentTarget + " " + humanStatusString);
+            	stateMachine.setState(ActionStates.Ambulance.UNBURYING);
+                sendRescue(time, humanTarget.getID());
+                
+                if(humanTarget.getBuriedness() >= BURRIEDNESS_TRESHOLD_RECRUITMENT){
+                	recruitmentMsgToSend.add(new Recruitment(me().getID(), me().getID(), humanTarget.getPosition(), TaskType.AMBULANCE_UNBURY, MessageType.RECRUITMENT_REQUEST, time));
+                }
                 return;
             }
+        	else{
+        		stateMachine.setState(ActionStates.Ambulance.LOADING);
+        		Logger.info("Loading (STATE) " + currentTarget + " the civilian is at: "+ humanTarget.getPosition());
+                sendLoad(time, currentTarget);
+                stateMachine.setState(ActionStates.Ambulance.CARRYING_WOUNDED);
+                return;
+        	}
         }
         
+        if(!isMinimumID){
+	        
+        	// COMMENTED FOR TESTING
+        	/*if(unexploredBuildings.size() > assignedBuildingNumber * 0.1){
+	        	Logger.info("Not enough exploration yet...");
+	        	List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), unexploredBuildings).getPath();
+	            if (path != null) {
+	            	Logger.info("Searching buildings -50%");
+	                sendMove(time, path);
+	                return;
+	            }
+	        }*/
+	        
+	        // Go through targets (sorted by distance) and check for things we can do
+	        List<WoundedHuman> humanList = getTargets();
+	        System.out.println("HumanList size: " + humanList.size());
+	        
+	        for (WoundedHuman next : humanList) {
+	        	
+	        	Logger.info("Pos " + next.position +  " My pos:" + me().getPosition());
+	        	
+	        	if(burningBuildings.containsKey(next.position)){
+	                Logger.info("The building is burning! Next");
+	            	continue;
+	            }
+	        	
+	        	if(refugeIDs.contains(next.position)){
+	        		Logger.info("The Civilian is on refugee! Next");
+	            	continue;
+	        	}
+	        	
+	            if (next.position.equals(location().getID()) ) {
+	            	// Targets in the same place might need rescueing or loading
+	            	Logger.info("" + next + " isCivilian? " + isCivilian(next));
+	                if (isCivilian(next)  && next.buriedness == 0 && !(location() instanceof Refuge) && !refugeIDs.contains(next.position)) {
+	                	boolean civilianFound = false;
+	                	Collection<StandardEntity> objectsInRange = model.getObjectsInRange(me().getID(), sightRange);
+	                	for (StandardEntity sightEntities : objectsInRange) {
+	                		if(sightEntities.getID().getValue() == next.getEntityID().getValue()){
+	                			civilianFound = true;
+	                			break;
+	                		}
+	                	}
+	                	
+	                	if(civilianFound){
+		                	// Load
+		                	currentTarget = next.getEntityID();
+		                	stateMachine.setState(ActionStates.Ambulance.LOADING);
+		                    Logger.info("Loading " + next + " the civilian is at: "+ next.position);
+		                    sendLoad(time, next.civilianID);
+		                    return;
+	                	}
+	                	else{
+	                		Logger.info("Loading STOPPED no civilian at:" + next.position);
+	                	}
+	                }
+	                
+	                if (next.buriedness > 0) {
+	                    // Rescue
+	                	currentTarget = next.getEntityID();
+	                	String humanStatusString = "HP:" + next.health + " burriedness:" + next.buriedness + " Damage:" + next.damage ;
+	                    Logger.info("Rescueing " + next + " " + humanStatusString);
+	                	stateMachine.setState(ActionStates.Ambulance.UNBURYING);
+	                    sendRescue(time, next.civilianID);
+	                    
+	                    if(next.buriedness >= BURRIEDNESS_TRESHOLD_RECRUITMENT){
+	                    	recruitmentMsgToSend.add(new Recruitment(me().getID(), me().getID(), next.position, TaskType.AMBULANCE_UNBURY, MessageType.RECRUITMENT_REQUEST, time));
+	                    }
+	                    return;
+	                }
+	            }
+	            else {
+	                // Try to move to the target
+	            	// Check if position is not a human ID TODO
+	                List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), next.position).getPath();
+	                if (path != null) {
+	                	currentTarget = next.getEntityID();
+	                	stateMachine.setState(ActionStates.GOING_TO_TARGET);
+	                    Logger.info("Moving to target");
+	                    sendMove(time, path);
+	                    return;
+	                }
+	            }
+	        }
+	        
+	        // Nothing to do, check the unexplored buildings
+	        Logger.info("Checking unexplored buildings");
+	        List<EntityID> entityIDList = new ArrayList<EntityID> ();
+	        for (EntityID subset : unexploredBuildings) {
+	        	entityIDList.add(subset);
+	        }
+	        Collections.shuffle(entityIDList);
+	        
+	        if(entityIDList.size() > 0){
+	        	List<EntityID> path = null;
+	            try{
+	            	path = searchStrategy.shortestPath(me().getPosition(), entityIDList).getPath();
+	            }catch(Exception e){
+	            	Logger.error("Path search exception:", e);
+	            }
+	            
+	            if (path != null) {
+	            	stateMachine.setState(ActionStates.Ambulance.SEARCHING_BUILDINGS);
+	                Logger.info("Searching buildings");
+	                sendMove(time, path);
+	                return;
+	            }
+	        }
+	        
+	        stateMachine.setState(ActionStates.RANDOM_WALK);
+	        Logger.info("Moving randomly");
+	        List<EntityID> listNodes = randomWalk();
+	        
+	        // Check if we are going in the same places in a loop
+	        if(lastVisitQueue.get(0).getValue() == listNodes.get(0).getValue() || lastVisitQueue.get(1).getValue() == listNodes.get(0).getValue()){
+	        	Logger.info("Local minima in paths where all buildings are burning, using normal random walk");
+	        	listNodes = failSafeRandomWalk();
+	        }
+	        
+	        sendMove(time, listNodes);
+        }
+        
+        // COMMENTED FOR TESTING
         // If there is no more unexplored buildings, go random
-        stateMachine.setState(ActionStates.RANDOM_WALK);
+        /*if(stateMachine.currentState() != ActionStates.RECRUITMENT_WAITING_RESPONSE && stateMachine.currentState() != ActionStates.RECRUITMENT_GOING_TO_TARGET){
+        	stateMachine.setState(ActionStates.RANDOM_WALK);
+        }
+        
         Logger.info("Moving randomly");
         List<EntityID> listNodes = randomWalk();
         
@@ -283,7 +527,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         	listNodes = failSafeRandomWalk();
         }
         
-        sendMove(time, listNodes);
+        sendMove(time, listNodes);*/
     }
 
     /**
@@ -305,20 +549,6 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
     private boolean someoneOnBoard() {
         for (StandardEntity next : model.getEntitiesOfType(StandardEntityURN.CIVILIAN)) {
             if (((Human) next).getPosition().equals(getID())) {
-                Logger.debug(next + " is on board");
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    /**
-     * Copied from sample agent. Do not change
-     * @return
-     */
-    private boolean failSafeSomeoneOnBoard() {
-        for (StandardEntity next : model.getEntitiesOfType(StandardEntityURN.CIVILIAN)) {
-            if (((Human)next).getPosition().equals(getID())) {
                 Logger.debug(next + " is on board");
                 return true;
             }
@@ -353,6 +583,32 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
         Collections.sort(targets, new WoundedHumanHPSorter()); //TODO: replace by a LifeExpectancySorter or something alike
         
         return targets;
+    }
+    
+    @Override
+    public String toString() {
+        return String.format("Ambulance(%s)", me().getID());
+    }
+    
+    /* ===============================================================================
+     * 	   
+     * 		Fail safe behaviors, do not modify unless you know what you are doing
+     * 
+     * ===============================================================================
+     */
+    
+    /**
+     * Copied from sample agent. Do not change
+     * @return
+     */
+    private boolean failSafeSomeoneOnBoard() {
+        for (StandardEntity next : model.getEntitiesOfType(StandardEntityURN.CIVILIAN)) {
+            if (((Human)next).getPosition().equals(getID())) {
+                Logger.debug(next + " is on board");
+                return true;
+            }
+        }
+        return false;
     }
     
     /**

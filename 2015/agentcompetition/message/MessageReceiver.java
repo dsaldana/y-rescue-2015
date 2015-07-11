@@ -6,6 +6,7 @@ import message.misc.BroadCastRefillRateMessage;
 import problem.BlockedRoad;
 import problem.BurningBuilding;
 import problem.Problem;
+import problem.Recruitment;
 import problem.WoundedHuman;
 import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
@@ -132,6 +133,75 @@ public class MessageReceiver {
         	p = new BurningBuilding(id, 0, Fieryness.WATER_DAMAGE.ordinal(), 0, cmd.getTime());
         	p.markSolved(cmd.getTime());
         	t = MessageType.SOLVED_BURNING_BUILDING;
+        }
+        
+        // --- Recruitment message types
+        if (type == MessageType.RECRUITMENT_REQUEST.ordinal()){
+        	int taskType = Integer.parseInt(parts[3]);
+        	position = new EntityID(Integer.parseInt(parts[4]));
+        	
+        	TaskType enumTaskType = TaskType.getValue(taskType);
+        	if(enumTaskType == null){
+        		// TODO: check if this is going to work watchout with returning NULL !
+        		return null;
+        	}
+        	
+        	p = new Recruitment(senderID, id, position, enumTaskType, MessageType.RECRUITMENT_REQUEST, cmd.getTime());
+        	t = MessageType.RECRUITMENT_REQUEST;
+        }
+        else if (type == MessageType.RECRUITMENT_COMMIT.ordinal()){
+        	int taskType = Integer.parseInt(parts[3]);
+        	position = new EntityID(Integer.parseInt(parts[4]));
+        	
+        	TaskType enumTaskType = TaskType.getValue(taskType);
+        	if(enumTaskType == null){
+        		// TODO: check if this is going to work watchout with returning NULL !
+        		return null;
+        	}
+        	
+        	p = new Recruitment(senderID, id, position, enumTaskType, MessageType.RECRUITMENT_COMMIT, cmd.getTime());
+        	t = MessageType.RECRUITMENT_COMMIT;
+        }
+        else if (type == MessageType.RECRUITMENT_RELEASE.ordinal()){
+        	int taskType = Integer.parseInt(parts[3]);
+        	position = new EntityID(Integer.parseInt(parts[4]));
+        	
+        	TaskType enumTaskType = TaskType.getValue(taskType);
+        	if(enumTaskType == null){
+        		// TODO: check if this is going to work watchout with returning NULL !
+        		return null;
+        	}
+        	
+        	p = new Recruitment(senderID, id, position, enumTaskType, MessageType.RECRUITMENT_RELEASE, cmd.getTime());
+        	t = MessageType.RECRUITMENT_RELEASE;
+        }
+        else if (type == MessageType.RECRUITMENT_ENGAGE.ordinal()){
+        	int taskType = Integer.parseInt(parts[3]);
+        	position = new EntityID(Integer.parseInt(parts[4]));
+        	
+        	TaskType enumTaskType = TaskType.getValue(taskType);
+        	if(enumTaskType == null){
+        		// TODO: check if this is going to work watchout with returning NULL !
+        		return null;
+        	}
+        	
+        	p = new Recruitment(senderID, id, position, enumTaskType, MessageType.RECRUITMENT_ENGAGE, cmd.getTime());
+        	t = MessageType.RECRUITMENT_ENGAGE;
+        	
+        }
+        else if (type == MessageType.RECRUITMENT_TIMEOUT.ordinal()){
+        	int taskType = Integer.parseInt(parts[3]);
+        	position = new EntityID(Integer.parseInt(parts[4]));
+        	
+        	TaskType enumTaskType = TaskType.getValue(taskType);
+        	if(enumTaskType == null){
+        		// TODO: check if this is going to work watchout with returning NULL !
+        		return null;
+        	}
+        	
+        	p = new Recruitment(senderID, id, position, enumTaskType, MessageType.RECRUITMENT_TIMEOUT, cmd.getTime());
+        	t = MessageType.RECRUITMENT_TIMEOUT;
+
         }
         
         return new ReceivedMessage(t, p);

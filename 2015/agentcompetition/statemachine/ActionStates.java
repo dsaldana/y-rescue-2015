@@ -15,6 +15,11 @@ public class ActionStates {
 	public static final State BLOCKED = new State("BLOCKED");		//surrounded by blockades
 	public static final State RANDOM_WALK = new State("RANDOM_WALK");		//'exploring'
     public static final State GOING_TO_TARGET = new State("GOING_TO_TARGET"); //target chosen, going for it
+    
+    // Recruitment states
+    public static final State RECRUITMENT_GOING_TO_TARGET = new State("RECRUITMENT_GOING_TO_TARGET"); // Recruitment target chosen, going for it
+    public static final State RECRUITMENT_DOING_TASK = new State("RECRUITMENT_DOING_TASK"); // Recruitment target chosen, going for it
+    public static final State RECRUITMENT_WAITING_RESPONSE = new State("RECRUITMENT_WAITING_RESPONSE"); // Recruitment target chosen, going for it
 	
 	
 	public static class FireFighter {
