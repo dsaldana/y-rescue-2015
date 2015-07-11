@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.DijkstraShortestPath;
@@ -22,6 +21,7 @@ import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.EntityID;
 import search.SearchResult;
+import util.Geometry;
 
 
 public class YGraphWrapper {
@@ -41,7 +41,7 @@ public class YGraphWrapper {
 	public YGraphWrapper(StandardWorldModel worldModel){
 		
 		theGraph = new SimpleWeightedGraph<YNode, YEdge>(YEdge.class);
-		childYNodes = new HashMap<>();
+		childYNodes = new HashMap<EntityID, List<YNode>>();
 		centroids = new HashMap<>();
 		
 		//traverses all areas, adding nodes in midpoint of geometric edge frontiers
@@ -56,7 +56,7 @@ public class YGraphWrapper {
 					continue;	//ignores edges without neighbors
 				}
 				
-				Edge frontier = findSmallestEdgeConnecting(a, (Area)worldModel.getEntity(edge.getNeighbour()));
+				Edge frontier = Geometry.findSmallestEdgeConnecting(a, (Area)worldModel.getEntity(edge.getNeighbour()));
 				
 				int nodeX = Math.abs(frontier.getEndX() + frontier.getStartX()) / 2;
 				int nodeY = Math.abs(frontier.getEndY() + frontier.getStartY()) / 2;
@@ -125,11 +125,18 @@ public class YGraphWrapper {
 			);
 		}
 		
+		Logger.debug("Will expand node "+ node);
+		
 		//adds the vertex and creates edges between all ynodes in parent area
 		Area parentArea = node.getParentAreas().first();
+		//Logger.debug("Parent Area: "+ parentArea);
 		addVertex(parentArea, node);
-		for (YNode neighbor : childYNodes.get(parentArea)){
+		//Logger.debug("childYNodes of area: " + childYNodes.get(parentArea));
+		for (YNode neighbor : childYNodes.get(parentArea.getID())){
 			YEdge e = new YEdge(node, neighbor);
+			
+			if (neighbor.equals(node)) continue;		//self-loops are not allowed
+			
 			theGraph.addEdge(node, neighbor, e);
 			theGraph.setEdgeWeight(e, e.getWeight());
 		}
@@ -179,44 +186,6 @@ public class YGraphWrapper {
 		}
 		
 		return s;
-	}
-	
-	/**
-	 * Returns the smallest edge on the frontier of two areas
-	 * @param a1
-	 * @param a2
-	 * @return
-	 */
-	private static Edge findSmallestEdgeConnecting(Area a1, Area a2){
-		
-		//gets the edges that are the frontier in the two areas
-		Edge frontier1_2 = findFrontierOfArea(a1.getEdges(), a2);
-		Edge frontier2_1 = findFrontierOfArea(a2.getEdges(), a1);
-		
-		//calculates x and y lengths of edges to find which is smaller
-		int frontier1_2_xLength = frontier1_2.getEndX() - frontier1_2.getStartX();
-		int frontier1_2_yLength = frontier1_2.getEndY() - frontier1_2.getStartY();
-		
-		int frontier2_1_xLength = frontier2_1.getEndX() - frontier2_1.getStartX();
-		int frontier2_1_yLength = frontier2_1.getEndY() - frontier2_1.getStartY();
-		
-		
-		if (Math.hypot(frontier1_2_xLength, frontier1_2_yLength) < Math.hypot(frontier2_1_xLength, frontier2_1_yLength)){
-			return frontier1_2;
-		}
-		
-		return frontier2_1;
-	}
-	
-	private static Edge findFrontierOfArea(List<Edge> edges, Area a) throws NoSuchElementException{
-		
-		for (Edge e : edges){
-			if (e.getNeighbour() != null && e.getNeighbour().equals(a.getID())){
-				return e;
-			}
-		}
-		throw new NoSuchElementException(String.format("No frontier of %s was found in %s", a, edges));
-		//return null;
 	}
 
 }

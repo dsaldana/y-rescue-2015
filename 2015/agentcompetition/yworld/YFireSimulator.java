@@ -2,6 +2,7 @@ package yworld;
 
 import java.util.Map;
 
+import rescuecore2.log.Logger;
 import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.EntityID;
 import rescuecore2.worldmodel.WorldModel;
@@ -43,6 +44,17 @@ public class YFireSimulator {
         //FIXED
         cool();
     }
+    
+    public void stepOneBuilding(YBuilding build){
+    	//refill();
+        //executeExtinguishRequests();
+        burn(build);
+        cool(build);
+        burnNeighborhood(build);
+        //exchangeBuilding();
+        //FIXED
+        cool(build);
+    }
 
 	private void burnNeighborhood() {
 		for (YBuilding yb : yBuildings.values()){
@@ -50,6 +62,10 @@ public class YFireSimulator {
 			yb.heatFromNeighborhood(world, 20000, yBuildings); //20000 corresponds to 20 meters
 		}
 		
+	}
+	
+	private void burnNeighborhood(YBuilding yb) {
+		yb.heatFromNeighborhood(world, 20000, yBuildings); //20000 corresponds to 20 meters		
 	}
 	
 	/**
@@ -67,11 +83,19 @@ public class YFireSimulator {
 		}
 		
 	}
+	
+	private void cool(YBuilding yb) {
+		yb.cool(WATER_COEFFICIENT, GAMMA);
+	}
 
 	private void burn() {
 		for (YBuilding yb : yBuildings.values()){
 			yb.burnStep();
 		}
 		
+	}
+	
+	private void burn(YBuilding yb) {
+		yb.burnStep();		
 	}
 }
