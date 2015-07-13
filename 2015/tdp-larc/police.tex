@@ -16,7 +16,8 @@ To achieve these goals, police force agents use a behavior-based controller. Eac
 
 
 \subsection{Task Allocation}
-Initially, the map will be divided into \emph{n} clusters, where \emph{n} is the number of police force team agents. These clusters will be created taking into account the size of the map and the localization of each agent. Agents who are near an important feature of the map will be given the \behavior{sweeper} behavior, while agents who are on other areas will be given the \behavior{by-demand} behavior. When an agent finishes its tasks, it will then be assigned to the \behavior{scout} behavior.
+%Initially, the map will be divided into \emph{n} clusters, where \emph{n} is the number of police force team agents. These clusters will be created taking into account the size of the map and the localization of each agent.
+Agents who are near an important feature of the map will be given the \behavior{sweeper} behavior, while agents who are on other areas will be given the \behavior{by-demand} behavior. When an agent finishes its tasks, it will then be assigned to the \behavior{scout} behavior.
 
 The \behavior{sweeper} agent task is simple and direct: it will clear its cluster's paths until all paths are clear. It will not listen to any communication channel or stop its task for any reason. The \behavior{by-demand} agent task is more complicated, as it will be listening to a communication channel and responding  to calls for help. An agent from any other team will be able to broadcast a distress message to the police force team informing that it is trapped and need assistance. This message contains the sender's current task and location. When a \behavior{by-demand} agent receives a help message and it is the closest to the sender agent, this \behavior{by-demand} agent will drop its current task and will respond to that message.
 
@@ -25,16 +26,16 @@ Both behaviours, \behavior{sweeper} and \behavior{by-demand}, will keep listenin
 % Implementar o Q-learning no agente policia
 % dividi-los em dois times, um fica responsavel por desbloquear caminhos 'vitais' (até refugio ou hidrantes, por ex.) e outro time escuta os canais dos outros agentes para limpar o caminho deles até suas tarefas.
 
-\subsection{Cleaning paths}
+\subsection{Clearing paths}
 The mentioned behaviors have a common task, the police must clean the path to a required destination.
 To achieve this goal, the police try to move to the objective, passing by a sequence of streets, that represented by polygons. We identify the topological path by navigating along the graph as described in section \ref{sec:path}. The resultant is a path composed by $m$ places, which are also polygons, therefore, we have a sequence of polygons $\mathcal{P} = \{P_0, P_2, ..., P_n \}$ that represent the $m$ places that the police must travel to arrive to the target, where $P_0$ is the polygon of the initial position and $P_n$ is the target place.
 
-The objective of cleaning process is to sweep the environment using the minimum time steps.
+The objective of clearing process is to sweep the environment using the minimum time steps.
 For this reason, we propose a method that try to cross the polygons as fast as possible, it means, crossing in straight line.
 Consider that we are in the polygon $P_{i-1}$ and we want to move to  $P_{i+1}$, crossing by  $P_{i}$.
-We know that the polygons are adjacent, then they have at least one side of the polygon in common.
-We take nearest side to the robot from $P_{i-1}$ and $P_{i}$, as the side is a line segment between two points $p_1$ and $p_2$ and compute a middle point $p'_1$.
-Then, we look for the nearest side to the point $p'_1$ from $P_{i}$ and $P_{i+1}$. This new line segment is composed by the points $p_3$ and $p_4$, which we use to compute the new middle point $p'_2$. Then, we will try to move the police from  $p'_1$ to $p'_2$ in order to cross the polygon $P_{i}$.
+We know that the polygons are adjacent, thus they have at least one edge in common.
+We take nearest edge to the agent from $P_{i-1}$ and $P_{i}$, as the edge is a line segment between two points $p_1$ and $p_2$ and compute a middle point $p'_1$.
+Then, we look for the nearest edge to the point $p'_1$ from $P_{i}$ and $P_{i+1}$. This new line segment is composed by the points $p_3$ and $p_4$, which we use to compute the new middle point $p'_2$. Then, we will try to move the police from  $p'_1$ to $p'_2$ in order to cross the polygon $P_{i}$.
 
 A straightforward method to cross $P_{i}$ can be just move in one step, and clean in direction to $p'_2$ in the next step cyclically until arrive to $p'_2$. However,
 it can be improved by taking advantage of the distance of the shoot for cleaning.

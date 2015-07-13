@@ -3,12 +3,14 @@
 
 This team is responsible by the most important task in a disaster environment, namely the search and rescue of injured civilians. Seeking for this goal, the ambulance team will be aided by the other agents with respect to the discovery of new victims.
 
-The team of paramedics will be divided into sectors, defined by the number of available agents and map size. These regions will have a category of importance measured by the quantity of civilians not rescued yet, ordering the contingent of agents to be designated to most important areas. Separating the agents into regions of interest will make them cover all the map and save, in thesis, the majority of civilians.
+%The team of paramedics will be divided into sectors, defined by the number of available agents and map size. These regions will have a category of importance measured by the quantity of civilians not rescued yet, ordering the contingent of agents to be designated to most important areas. Separating the agents into regions of interest will make them cover all the map and save, in thesis, the majority of civilians.
 % Buscando pela eficiência no resgate, os tipos de paramédicos serão divididos em setores, definidos pela quantidade de agentes deste tipo disponível. Estas regiões serão regidas por um grau de importância medida pela quantidade de civis ainda por serem resgatados naquela área. Isso fará com que o contingente de agentes seja designado para áreas mais interessantes para realização de resgates.
 
 \subsection{Task Allocation}
 
-The task prioritization of this team will be governed by the life estimation of the alive civilians. This estimation takes four factors into account: agent-civilian distance; civilian's life; civilian's damage and whether or not the civilian is buried in a burning building.
+The task prioritization of this team will be governed by the life estimation of the alive civilians. Life estimation uses the same method of RoboCup Rescue Simulator regarding damage calculation. However, we don't have access to the values of the parameters used by the simulator, thus we use estimated ones.
+
+With life estimation, the ambulance team calculates the priority of the civilian based on the distance between them and whether or not the civilian is in a burning building.
 
 %Based on these features, the agents will tend to save civilians with higher probability of survival. %, lowering the priority of the others civilians with less chance to live.
 
