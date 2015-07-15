@@ -3,19 +3,21 @@
 
 This team is responsible by the most important task in a disaster environment, namely the search and rescue of injured civilians. Seeking for this goal, the ambulance team will be aided by the other agents with respect to the discovery of new victims.
 
-The team of paramedics will be divided into sectors or clusters, defined by the number of available agents and map size. Every agent will explore their designated region before engage any task, to be able to create at least a minimum map of their local region. 
+The team of paramedics will be divided into sectors or clusters, defined by the number of available agents and map size. Every agent will explore their designated region before engaging in any task, to be able to acquire proper knowledge about their local region. 
 
-The agents can visit the regions of other ambulances if in their specific region there is no new tasks or if another agent has asked for support. Every region or cluster will have a category of importance measured by the quantity of civilians not rescued yet, ordering the contingent of agents to be designated to most important areas. Separating the agents into regions of interest will make them cover all the map and save, in thesis, the majority of civilians.
+The agents can visit the regions of other ambulances if in their specific region there are no new tasks or if another agent has asked for support. Every region or cluster will have a category of importance measured by the quantity of civilians not rescued yet, ordering the contingent of agents to be designated to most important areas. The intention of dividing the map into sectors is to facilitate coverage by the agents, which may help them maximize the number of rescued victims.
 
 % Buscando pela eficiência no resgate, os tipos de paramédicos serão divididos em setores, definidos pela quantidade de agentes deste tipo disponível. Estas regiões serão regidas por um grau de importância medida pela quantidade de civis ainda por serem resgatados naquela área. Isso fará com que o contingente de agentes seja designado para áreas mais interessantes para realização de resgates.
 
 \subsection{Task Allocation}
 
-The task prioritization of this team will be governed by the life estimation of the alive civilians. This estimation takes four factors into account: agent-civilian distance; civilian's life; civilian's damage and whether or not the civilian is buried or in a burning building.
+The task prioritization of this team will be governed by the life estimation of the alive civilians. Life estimation uses the same method of RoboCup Rescue Simulator regarding damage calculation. However, we don't have access to the values of the parameters used by the simulator, thus we use estimated ones. With life estimation, the ambulance team calculates the priority of the civilian based on the distance between them.
 
-The agents will tend to save the closer civilians with most chances of a successful rescue and survival, lowering the priority of the others civilians with less chance to live, less probability of be reached or to be rescued.
+%This estimation takes four factors into account: agent-civilian distance; civilian's life; civilian's damage and whether or not the civilian is buried or in a burning building.
 
-As ambulances can die from fire and damage, this agents need to be particularly careful with burning buildings. If the agent if rescuing a civilian and the building start catching fire, the agent will communicate the fire and search for the next best available civilian.
+The agents will tend to save the closer civilians with most chances of a successful rescue and survival, lowering the priority of the others civilians with less chance to live, less probability of being reached or rescued.
+
+As ambulances can die from fire and damage, these agents need to be particularly careful with burning buildings. If the agent if rescuing a civilian and the building start catching fire, the agent will communicate the fire and search for the next best available civilian.
 
 %Based on these features, the agents will tend to save civilians with higher probability of survival. %, lowering the priority of the others civilians with less chance to live.
 
@@ -25,4 +27,5 @@ As ambulances can die from fire and damage, this agents need to be particularly 
 
 \subsection{Rescuing}
 
-The rescuing process takes a long time for one agent, due the fact that only one unit of buriedness can be removed at a time step. To speedup the rescuing process a recruitment protocol was implemented to allow agents to recruit another agents for cooperation in several tasks. In the ambulance, the cooperation allows other agents help with the unbury, improving the overall number of rescuing civilians.
+The rescuing process takes a long time for one agent. %, due the fact that only one unit of buriedness can be removed at a time step. 
+To accelerate the rescuing process, a recruitment protocol was implemented to allow agents to recruit other agents for cooperation in several tasks (see Section \ref{sec:recruiting}). In the ambulance, the cooperation allows other agents help unburying civilians, improving the overall number of rescued victims.

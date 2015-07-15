@@ -9,7 +9,8 @@ Firefighters will assign a score to each burning building depending on the ``eff
 
 \subsection{Task Allocation}
 
-Firefighters assign a score to each building. The score takes into account the importance of the building (the ones with buried civilians and/or located near gas stations are more important), the agent-to-building distance and effort needed to extinguish the fire. Effort estimation takes as input the prediction of how fire evolves (obtained from the simplified simulated model previously discussed) and returns a measure of water and time needed to control the fire. The importance of the building increases its score whereas the distance and the effort decreases its score (a fire brigade agent will prefer to extinguish fires on close, important buildings that do not require too much effort). %Figure \ref{fig:firebrigade} shows how a firefighter calculates the score of a building.
+Firefighters assign a score to each building. The score takes into account the importance of the building (the ones with buried civilians and/or located near gas stations are more important), the agent-to-building distance and effort needed to extinguish the fire. 
+Effort estimation takes as input the prediction of how fire evolves (obtained from the simplified simulated model previously discussed) and returns a measure of water power needed to control the fire. The importance of the building increases its score whereas the distance and the effort decreases its score (a fire brigade agent will prefer to extinguish fires on close, important buildings that do not require too much effort). %Figure \ref{fig:firebrigade} shows how a firefighter calculates the score of a building.
 
 %\begin{figure}[!ht]
 %     \centering

@@ -2,6 +2,7 @@
 \label{sec:communication}
 
 \subsection{Message construction}
+\label{sec:msg}
 The goal of communication is to increase the knowledge base of agents and to improve coordination among them. However, in a disaster scenario, communication can be unreliable and bandwidth is limited. To address these problems, our communication strategy is based on a simple protocol. We define three message types for each kind of problem (blockades, burning buildings and buried civilians) the agents may encounter:
 
 \begin{itemize}
@@ -14,13 +15,13 @@ The goal of communication is to increase the knowledge base of agents and to imp
 
 %Coordination among agents, i.e., requesting help for more effort-demanding tasks require a special protocol, described in Section \ref{sec:recruiting}.
 
-In order to save radio bandwidth and maximize the amount of data shared between agents, our communication will use a data compression algorithm. Each agent is responsible for compressing/decompressing the communication data.
+%In order to save radio bandwidth and maximize the amount of data shared between agents, our communication will use a data compression algorithm. Each agent is responsible for compressing/decompressing the communication data.
 
 \subsection{Recruiting protocol}
 \label{sec:recruiting}
-When an agent estimates that it needs help to perform a task, it starts a recruitment process consisting of the following three steps: first, a \msg{request} message is sent by the recruiter agent to other agents. Agents who receive the \msg{request} message and are available to help  send back a \msg{committed} message. 
+When an agent estimates that it needs help to perform a task, it starts a recruitment process that consists of the following three steps: first, a \msg{request} message is sent by the recruiter agent to other agents. Agents who receive the \msg{request} message and are available to help  send back a \msg{committed} message. 
 Receiving \msg{committed} messages allows the recruiter agent to select the teammates that will help best in the task. 
-The recruiter sends \msg{engage} messages to selected teammates and \msg{release} to non-selected ones.  Note that \msg{engage} messages used in the recruitment protocol are different from \msg{engaging} messages used in general communication (previously described). This recruitment process is a simplification of the recruitment protocol of eXtreme-Ants algorithm \cite{Santos&Bazzan2009optmas}. Figure \ref{fig:auction} illustrates the recruitment process.
+The recruiter sends \msg{engage} messages to selected teammates and \msg{release} to non-selected ones.  Note that \msg{engage} messages used in the recruitment protocol are different from \msg{engaging} messages used in general communication (Section \ref{sec:msg}). This recruitment process is based on the recruitment protocol of eXtreme-Ants \cite{Santos&Bazzan2009optmas}, which is a scalable task allocation algorithm based on swarm intelligence. Figure \ref{fig:auction} illustrates the recruitment process.
 
 \begin{figure}[ht]
   \centering
