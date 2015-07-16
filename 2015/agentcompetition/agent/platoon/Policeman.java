@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.PriorityQueue;
+import java.util.Random;
 
 import commands.AgentCommands;
 import rescuecore2.worldmodel.Entity;
@@ -38,9 +39,6 @@ import statemachine.ActionStates;
 import util.DistanceSorter;
 import util.Geometry;
 
-/**
- * RoboCop agent. Implements the reinforcement learning scheme
- */
 public class Policeman extends AbstractPlatoon<PoliceForce> {
 	private static final String DISTANCE_KEY = "clear.repair.distance";
 	private static final String WIDTH_KEY = "clear.repair.rad";
@@ -194,7 +192,6 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 	 * @param time
 	 */
 	private void doClear(int time) {
-		//TODO: use bestblockade and SOS clear method here
 		
 		Blockade target =  getTargetBlockade();
 		Logger.info("Clearing blockade " + target);
@@ -242,7 +239,6 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		Logger.debug("Will check blockades on way to " + dest);
 		
 		
-		//TODO build the 'shot' rectangle and see if it intersects with a blockade in this area
 		ArrayList<Blockade> blockList = new ArrayList<Blockade>(getBlockadesInRange(me().getX(), me().getY(), clearRange));
 		Logger.debug("Blockade list " + blockList + " in range " + clearRange);
 		if (anyBlockadeInClearArea(blockList, target))
@@ -294,7 +290,12 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 	}
 	
 	
-	
+	/**
+	 * Returns true if a blockade in the list is in clearRange around target area
+	 * @param blockList
+	 * @param target
+	 * @return
+	 */
 	private boolean anyBlockadeInClearArea(ArrayList<Blockade> blockList, Point2D target) {
 		boolean result = false;
 		java.awt.geom.Area clearArea = getClearArea((int)target.getX(), (int)target.getY(), clearRange, clearWidth);
@@ -387,8 +388,14 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 	}
 
 	private EntityID getDestination() {
-		//TODO: regularly change target
-		return new EntityID(255);
+		//TODO: better target selection
+		Collection<StandardEntity> entities = model.getEntitiesOfType(StandardEntityURN.BUILDING, 
+				StandardEntityURN.ROAD, StandardEntityURN.HYDRANT, 
+				StandardEntityURN.REFUGE);
+		
+		return ((StandardEntity[])entities.toArray())[new Random().nextInt(entities.size())].getID();
+		
+		//return new EntityID(255);
 	}
 
 	private List<EntityID> computePath(EntityID entityId) {

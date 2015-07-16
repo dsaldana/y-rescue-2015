@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import commands.AgentCommands.FireFighter;
 
-import agent.center.RobotCenter;
+import agent.center.YCenter;
 import agent.platoon.Ambulance;
 import agent.platoon.Firefighter;
 import agent.platoon.Policeman;
@@ -124,7 +124,7 @@ public final class LaunchAgents {
 		try {
 			while (true) {
 				Logger.info("Connecting Center " + (i++) + "...");
-				launcher.connect(new RobotCenter());
+				launcher.connect(new YCenter());
 				Logger.info("success");
 			}
 		} catch (ComponentConnectionException e) {

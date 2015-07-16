@@ -15,7 +15,7 @@ import rescuecore2.registry.Registry;
 import rescuecore2.standard.entities.StandardEntityFactory;
 import rescuecore2.standard.entities.StandardPropertyFactory;
 import rescuecore2.standard.messages.StandardMessageFactory;
-import agent.center.RobotCenter;
+import agent.center.YCenter;
 import agent.platoon.AbstractPlatoon;
 import agent.platoon.Ambulance;
 import agent.platoon.Firefighter;
