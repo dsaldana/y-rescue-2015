@@ -12,12 +12,12 @@ import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.StandardEntityURN;
 
 /**
- *  RobotCenter agent.
+ *  Y-Rescue Center agent.
  */
-public class RobotCenter extends StandardAgent<Building> {
+public class YCenter extends StandardAgent<Building> {
     @Override
     public String toString() {
-        return "RobotCenter " + me().getID();
+        return "YCenter " + me().getID();
     }
 
     @Override

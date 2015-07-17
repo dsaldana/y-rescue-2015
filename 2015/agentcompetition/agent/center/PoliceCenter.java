@@ -10,9 +10,9 @@ import rescuecore2.standard.entities.PoliceOffice;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.ChangeSet;
 
-public class CopCenter extends StandardAgent<PoliceOffice> {
+public class PoliceCenter extends StandardAgent<PoliceOffice> {
 
-	public CopCenter() {
+	public PoliceCenter() {
 		// TODO Auto-generated constructor stub
 	}
 	
