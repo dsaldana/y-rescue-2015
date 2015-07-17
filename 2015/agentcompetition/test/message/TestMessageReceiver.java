@@ -2,12 +2,12 @@ package test.message;
 
 import static org.junit.Assert.*;
 import message.MessageReceiver;
-import message.MessageType;
+import message.MessageTypes;
 import message.ReceivedMessage;
 
 import org.junit.Test;
 
-import problem.BlockedRoad;
+import problem.BlockedArea;
 import problem.BurningBuilding;
 import problem.WoundedHuman;
 import rescuecore2.standard.messages.AKSpeak;
@@ -36,7 +36,7 @@ public class TestMessageReceiver {
 		received = MessageReceiver.decodeMessage(msg);
 		decoded = (BurningBuilding) received.problem;
 		
-		assertEquals(MessageType.REPORT_BURNING_BUILDING, received.msgType);
+		assertEquals(MessageTypes.REPORT_BURNING_BUILDING, received.msgType);
 		assertEquals(b.getEntityID(), decoded.getEntityID());
 		assertEquals(b.brokenness, decoded.brokenness);
 		assertEquals(b.fieryness, decoded.fieryness);
@@ -47,7 +47,7 @@ public class TestMessageReceiver {
 		msg = new AKSpeak(me, msgTime, 1, b.encodeEngageMessage(me));
 		received = MessageReceiver.decodeMessage(msg);
 		decoded = (BurningBuilding) received.problem;
-		assertEquals(MessageType.ENGAGE_BURNING_BUILDING, received.msgType);
+		assertEquals(MessageTypes.ENGAGE_BURNING_BUILDING, received.msgType);
 		assertEquals(b.getEntityID(), decoded.getEntityID());
 		assertEquals(b.brokenness, decoded.brokenness);
 		assertEquals(b.fieryness, decoded.fieryness);
@@ -58,7 +58,7 @@ public class TestMessageReceiver {
 		msg = new AKSpeak(me, msgTime, 1, b.encodeSolvedMessage(me));
 		received = MessageReceiver.decodeMessage(msg);
 		decoded = (BurningBuilding) received.problem;
-		assertEquals(MessageType.SOLVED_BURNING_BUILDING, received.msgType);
+		assertEquals(MessageTypes.SOLVED_BURNING_BUILDING, received.msgType);
 		assertEquals(b.getEntityID(), decoded.getEntityID());
 		assertTrue(decoded.isSolved());
 		assertEquals(msgTime, decoded.getUpdateTime());
@@ -79,7 +79,7 @@ public class TestMessageReceiver {
 		received = MessageReceiver.decodeMessage(msg);
 		decoded = (WoundedHuman) received.problem;
 		
-		assertEquals(MessageType.REPORT_WOUNDED_HUMAN, received.msgType);
+		assertEquals(MessageTypes.REPORT_WOUNDED_HUMAN, received.msgType);
 		assertEquals(h.getEntityID(), decoded.getEntityID());
 		assertEquals(h.buriedness, decoded.buriedness);
 		assertEquals(h.damage, decoded.damage);
@@ -91,7 +91,7 @@ public class TestMessageReceiver {
 		msg = new AKSpeak(me, msgTime, 1, h.encodeEngageMessage(me));
 		received = MessageReceiver.decodeMessage(msg);
 		decoded = (WoundedHuman) received.problem;
-		assertEquals(MessageType.ENGAGE_WOUNDED_HUMAN, received.msgType);
+		assertEquals(MessageTypes.ENGAGE_WOUNDED_HUMAN, received.msgType);
 		assertEquals(h.getEntityID(), decoded.getEntityID());
 		assertEquals(h.buriedness, decoded.buriedness);
 		assertEquals(h.damage, decoded.damage);
@@ -103,7 +103,7 @@ public class TestMessageReceiver {
 		msg = new AKSpeak(me, msgTime, 1, h.encodeSolvedMessage(me));
 		received = MessageReceiver.decodeMessage(msg);
 		decoded = (WoundedHuman) received.problem;
-		assertEquals(MessageType.SOLVED_WOUNDED_HUMAN, received.msgType);
+		assertEquals(MessageTypes.SOLVED_WOUNDED_HUMAN, received.msgType);
 		assertEquals(h.getEntityID(), decoded.getEntityID());
 		assertTrue(decoded.isSolved());
 		assertEquals(msgTime, decoded.getUpdateTime());
@@ -113,18 +113,18 @@ public class TestMessageReceiver {
 	public void testReceivingBlockedRoad() {
 		AKSpeak msg;
 		ReceivedMessage received;
-		BlockedRoad decoded;
+		BlockedArea decoded;
 		EntityID me = new EntityID(1);
 		int msgTime = 5;
 		
-		BlockedRoad b = new BlockedRoad(new EntityID(2), 50, msgTime);
+		BlockedArea b = new BlockedArea(new EntityID(2), 50, msgTime);
 		
 		//reportMessage
 		msg = new AKSpeak(me, msgTime, 1, b.encodeReportMessage(me));
 		received = MessageReceiver.decodeMessage(msg);
-		decoded = (BlockedRoad) received.problem;
+		decoded = (BlockedArea) received.problem;
 		
-		assertEquals(MessageType.REPORT_BLOCKED_ROAD, received.msgType);
+		assertEquals(MessageTypes.REPORT_BLOCKED_AREA, received.msgType);
 		assertEquals(b.getEntityID(), decoded.getEntityID());
 		assertEquals(b.repairCost, decoded.repairCost);
 		assertEquals(msgTime, decoded.getUpdateTime());
@@ -132,8 +132,8 @@ public class TestMessageReceiver {
 		//engageMessage
 		msg = new AKSpeak(me, msgTime, 1, b.encodeEngageMessage(me));
 		received = MessageReceiver.decodeMessage(msg);
-		decoded = (BlockedRoad) received.problem;
-		assertEquals(MessageType.ENGAGE_BLOCKED_ROAD, received.msgType);
+		decoded = (BlockedArea) received.problem;
+		assertEquals(MessageTypes.ENGAGE_BLOCKED_AREA, received.msgType);
 		assertEquals(b.getEntityID(), decoded.getEntityID());
 		assertEquals(b.repairCost, decoded.repairCost);
 		assertEquals(msgTime, decoded.getUpdateTime());
@@ -141,8 +141,8 @@ public class TestMessageReceiver {
 		//solvedMessage
 		msg = new AKSpeak(me, msgTime, 1, b.encodeSolvedMessage(me));
 		received = MessageReceiver.decodeMessage(msg);
-		decoded = (BlockedRoad) received.problem;
-		assertEquals(MessageType.SOLVED_BLOCKED_ROAD, received.msgType);
+		decoded = (BlockedArea) received.problem;
+		assertEquals(MessageTypes.SOLVED_BLOCKED_AREAS, received.msgType);
 		assertEquals(b.getEntityID(), decoded.getEntityID());
 		assertTrue(decoded.isSolved());
 		assertEquals(msgTime, decoded.getUpdateTime());

@@ -3,10 +3,10 @@ package message;
 import problem.Problem;
 
 public class ReceivedMessage {
-	public MessageType msgType;
+	public MessageTypes msgType;
 	public Problem problem;
 	
-	public ReceivedMessage(MessageType mType, Problem p) {
+	public ReceivedMessage(MessageTypes mType, Problem p) {
 		msgType = mType;
 		problem = p;
 	}

@@ -1,15 +1,9 @@
 package problem;
 
-import message.MessageType;
+import message.MessageTypes;
 import message.TaskType;
 import rescuecore2.worldmodel.EntityID;
 
-/**
- * Encapsulates a problem related to a wounded civilian
- * Attributes are public
- * @author anderson
- *
- */
 public class Recruitment extends Problem {
 
 	public EntityID requestEntity;		// the entity that requested the recruitment
@@ -17,7 +11,7 @@ public class Recruitment extends Problem {
 	public EntityID position;			// id of the place where this request came from
 	
 	public TaskType taskType;				//how much the civilian is buried
-	public MessageType messageType;	//the civilian's HP
+	public MessageTypes messageType;	//the civilian's HP
 	
 	/**
 	 * Constructs a Recruitment and sets its attributes 
@@ -28,7 +22,7 @@ public class Recruitment extends Problem {
 	 * @param dmg
 	 * @param lastUpdate
 	 */
-	public Recruitment(EntityID requestEntity, EntityID responseEntity, EntityID position, TaskType taskType, MessageType responseType, int lastUpdate){
+	public Recruitment(EntityID requestEntity, EntityID responseEntity, EntityID position, TaskType taskType, MessageTypes responseType, int lastUpdate){
 		this.requestEntity = requestEntity;
 		this.responseEntity = responseEntity;
 		
@@ -57,7 +51,7 @@ public class Recruitment extends Problem {
 	 * @param dmg
 	 * @param time
 	 */
-	public void update(EntityID position, TaskType taskType, MessageType responseType, int lastUpdate) {
+	public void update(EntityID position, TaskType taskType, MessageTypes responseType, int lastUpdate) {
 		this.position = position;
 		this.taskType = taskType;
 		this.messageType = responseType;
@@ -68,7 +62,7 @@ public class Recruitment extends Problem {
 		return this.taskType;
 	}
 	
-	public MessageType getMessageType(){
+	public MessageTypes getMessageType(){
 		return this.messageType;
 	}
 	

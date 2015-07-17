@@ -118,6 +118,10 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         //calculates next step of fire simulation
         fireSimulator.step();
         
+        if(stuck()){
+        	
+        }
+        
         //updates YBuilding data from observation (overrides predicted data)
         for (EntityID id : changed.getChangedEntities()){
         	YBuilding yb = yBuildings.get(id);

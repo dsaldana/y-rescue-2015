@@ -2,14 +2,14 @@ package test.message;
 
 import static org.junit.Assert.*;
 import message.MessageReceiver;
-import message.MessageType;
+import message.MessageTypes;
 import message.ReceivedMessage;
 import message.misc.BroadCastRefillRateMessage;
 import message.misc.BroadCastRefillRateMessageHandler;
 
 import org.junit.Test;
 
-import problem.BlockedRoad;
+import problem.BlockedArea;
 import rescuecore2.standard.messages.AKSpeak;
 import rescuecore2.worldmodel.EntityID;
 
@@ -23,7 +23,7 @@ public class TestBroadCastRefillRate {
 		
 		String reportMsg = String.format(
 			"%d,%d,%d", 
-			MessageType.BROADCAST_REFILL_RATE.ordinal(), senderID, testRefillRate
+			MessageTypes.BROADCAST_REFILL_RATE.ordinal(), senderID, testRefillRate
 		);
 		assertArrayEquals(
 			reportMsg.getBytes(), 
@@ -45,7 +45,7 @@ public class TestBroadCastRefillRate {
 		msg = new AKSpeak(me, msgTime, 1, BroadCastRefillRateMessageHandler.encodeMessage(me, refillRate));
 		received = (BroadCastRefillRateMessage) MessageReceiver.decodeMessage(msg);
 		
-		assertEquals(MessageType.BROADCAST_REFILL_RATE, received.msgType);
+		assertEquals(MessageTypes.BROADCAST_REFILL_RATE, received.msgType);
 		assertEquals(msgTime, msg.getTime());
 		assertEquals(refillRate, received.getRefillRate());
 	}

@@ -1,11 +1,11 @@
 package test.message;
 
 import static org.junit.Assert.*;
-import message.MessageType;
+import message.MessageTypes;
 
 import org.junit.Test;
 
-import problem.BlockedRoad;
+import problem.BlockedArea;
 import problem.BurningBuilding;
 import problem.WoundedHuman;
 import rescuecore2.worldmodel.EntityID;
@@ -23,7 +23,7 @@ public class TestProblemEncoding {
 		//report message
 		String reportMsg = String.format(
 			"%d,%d,%d,%d,%d,%d,%d", 
-			MessageType.REPORT_WOUNDED_HUMAN.ordinal(), me.getValue(), humanID.getValue(),humanPos.getValue(),
+			MessageTypes.REPORT_WOUNDED_HUMAN.ordinal(), me.getValue(), humanID.getValue(),humanPos.getValue(),
 			buriedness,hp,dmg,lastUpdate
 		);
 		assertArrayEquals(reportMsg.getBytes(), h.encodeReportMessage(me));
@@ -31,7 +31,7 @@ public class TestProblemEncoding {
 		//engage message
 		String engageMsg = String.format(
 			"%d,%d,%d,%d,%d,%d,%d", 
-			MessageType.ENGAGE_WOUNDED_HUMAN.ordinal(), me.getValue(), humanID.getValue(),humanPos.getValue(),
+			MessageTypes.ENGAGE_WOUNDED_HUMAN.ordinal(), me.getValue(), humanID.getValue(),humanPos.getValue(),
 			buriedness,hp,dmg,lastUpdate
 		);
 		assertArrayEquals(engageMsg.getBytes(), h.encodeEngageMessage(me));
@@ -40,7 +40,7 @@ public class TestProblemEncoding {
 		//engage message
 		String solvedMsg = String.format(
 			"%d,%d,%d", 
-			MessageType.SOLVED_WOUNDED_HUMAN.ordinal(), me.getValue(), humanID.getValue()
+			MessageTypes.SOLVED_WOUNDED_HUMAN.ordinal(), me.getValue(), humanID.getValue()
 		);
 		assertArrayEquals(solvedMsg.getBytes(), h.encodeSolvedMessage(me));
 		
@@ -56,7 +56,7 @@ public class TestProblemEncoding {
 		//report message
 		String reportMsg = String.format(
 			"%d,%d,%d,%d,%d,%d", 
-			MessageType.REPORT_BURNING_BUILDING.ordinal(), me.getValue(), buildingID.getValue(),
+			MessageTypes.REPORT_BURNING_BUILDING.ordinal(), me.getValue(), buildingID.getValue(),
 			brokenness, fieryness, temperature
 		);
 		assertArrayEquals(reportMsg.getBytes(), b.encodeReportMessage(me));
@@ -64,7 +64,7 @@ public class TestProblemEncoding {
 		//engage message
 		String engageMsg = String.format(
 			"%d,%d,%d,%d,%d,%d", 
-			MessageType.ENGAGE_BURNING_BUILDING.ordinal(), me.getValue(), buildingID.getValue(),
+			MessageTypes.ENGAGE_BURNING_BUILDING.ordinal(), me.getValue(), buildingID.getValue(),
 			brokenness, fieryness, temperature
 		);
 		assertArrayEquals(engageMsg.getBytes(), b.encodeEngageMessage(me));
@@ -73,7 +73,7 @@ public class TestProblemEncoding {
 		//engage message
 		String solvedMsg = String.format(
 			"%d,%d,%d", 
-			MessageType.SOLVED_BURNING_BUILDING.ordinal(), me.getValue(), buildingID.getValue()
+			MessageTypes.SOLVED_BURNING_BUILDING.ordinal(), me.getValue(), buildingID.getValue()
 		);
 		assertArrayEquals(solvedMsg.getBytes(), b.encodeSolvedMessage(me));
 	}
@@ -83,19 +83,19 @@ public class TestProblemEncoding {
 		EntityID me = new EntityID(1);
 		EntityID roadID = new EntityID(2);
 		int repairCost = 30, lastUpdate = 20;
-		BlockedRoad b = new BlockedRoad(roadID, repairCost, lastUpdate);
+		BlockedArea b = new BlockedArea(roadID, repairCost, lastUpdate);
 		
 		//report message
 		String reportMsg = String.format(
 			"%d,%d,%d,%d", 
-			MessageType.REPORT_BLOCKED_ROAD.ordinal(), me.getValue(), roadID.getValue(), repairCost
+			MessageTypes.REPORT_BLOCKED_AREA.ordinal(), me.getValue(), roadID.getValue(), repairCost
 		);
 		assertArrayEquals(reportMsg.getBytes(), b.encodeReportMessage(me));
 		
 		//engage message
 		String engageMsg = String.format(
 			"%d,%d,%d,%d", 
-			MessageType.ENGAGE_BLOCKED_ROAD.ordinal(), me.getValue(), roadID.getValue(), repairCost
+			MessageTypes.ENGAGE_BLOCKED_AREA.ordinal(), me.getValue(), roadID.getValue(), repairCost
 		);
 		assertArrayEquals(engageMsg.getBytes(), b.encodeEngageMessage(me));
 
@@ -103,7 +103,7 @@ public class TestProblemEncoding {
 		//engage message
 		String solvedMsg = String.format(
 			"%d,%d,%d", 
-			MessageType.SOLVED_BLOCKED_ROAD.ordinal(), me.getValue(), roadID.getValue()
+			MessageTypes.SOLVED_BLOCKED_AREAS.ordinal(), me.getValue(), roadID.getValue()
 		);
 		assertArrayEquals(solvedMsg.getBytes(), b.encodeSolvedMessage(me));
 	}

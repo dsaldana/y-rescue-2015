@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import message.MessageType;
+import message.MessageTypes;
 import message.RecruitmentMsgUtil;
 import message.TaskType;
 import problem.Recruitment;
@@ -230,7 +230,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 					recruitmentMsgToSend.add(new Recruitment(me().getID(), me()
 							.getID(), humanTarget.getPosition(),
 							TaskType.AMBULANCE_UNBURY,
-							MessageType.RECRUITMENT_REQUEST, time));
+							MessageTypes.RECRUITMENT_REQUEST, time));
 				}
 				return;
 			} else {
@@ -527,11 +527,11 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 							&& r.getTaskType() == currentTask) {
 						if (agentsRecruited >= RECRUITMENT_LIMIT) {
 							recruitmentUtil.responseCommit(r, me().getID(),
-									MessageType.RECRUITMENT_RELEASE, me()
+									MessageTypes.RECRUITMENT_RELEASE, me()
 											.getPosition(), time);
 						} else {
 							recruitmentUtil.responseCommit(r, me().getID(),
-									MessageType.RECRUITMENT_ENGAGE, me()
+									MessageTypes.RECRUITMENT_ENGAGE, me()
 											.getPosition(), time);
 							agentsRecruited++;
 						}
@@ -567,7 +567,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 							stateMachine
 									.setState(ActionStates.RECRUITMENT_WAITING_RESPONSE);
 							recruitmentUtil.responseRequest(r, me().getID(),
-									MessageType.RECRUITMENT_COMMIT, me()
+									MessageTypes.RECRUITMENT_COMMIT, me()
 											.getPosition(), time);
 							break;
 						}
@@ -576,7 +576,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 									.getValue()) {
 						currentTask = TaskType.AMBULANCE_UNBURY;
 						recruitmentUtil.responseRequest(r, me().getID(),
-								MessageType.RECRUITMENT_COMMIT, me()
+								MessageTypes.RECRUITMENT_COMMIT, me()
 										.getPosition(), time);
 						stateMachine
 								.setState(ActionStates.RECRUITMENT_WAITING_RESPONSE);
@@ -728,7 +728,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 						recruitmentMsgToSend.add(new Recruitment(me().getID(),
 								me().getID(), next.position,
 								TaskType.AMBULANCE_UNBURY,
-								MessageType.RECRUITMENT_REQUEST, time));
+								MessageTypes.RECRUITMENT_REQUEST, time));
 					}
 					return true;
 				}

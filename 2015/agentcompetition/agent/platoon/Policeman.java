@@ -39,6 +39,7 @@ import rescuecore2.standard.entities.PoliceForce;
 import rescuecore2.standard.entities.Area;
 import search.SearchResult;
 import statemachine.ActionStates;
+import util.Destination;
 import util.DistanceSorter;
 import util.Geometry;
 
@@ -55,7 +56,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 	private boolean moving;
 	private Point2D lastPosition;
 	
-	EntityID destination;
+	Destination destination;
 	List<EntityID> currentPath;
 
 	@Override
@@ -98,12 +99,12 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			Logger.info("I had no destination, now it is" + destination);
 			
 		}
-		if (destination == location().getID()){
+		if (destination.match(location().getID(), me().getX(), me().getY())){
 			destination = getDestination();
 			Logger.info("I have arrived to my destination. New destination is" + destination);
 		}
 		Logger.info("Planning path from " + location().getID() + " to " + destination);
-		currentPath = searchStrategy.shortestPath(location().getID(), destination).getPath();
+		currentPath = searchStrategy.shortestPath(location().getID(), destination.getAreaID()).getPath();
 		
 		if (currentPath == null){
 			Logger.warn("Could not plan a path to destination. Going failsafe.");
@@ -390,15 +391,15 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		return new java.awt.geom.Area(new Polygon(xPoints, yPoints, points.length));
 	}
 
-	private EntityID getDestination() {
+	private Destination getDestination() {
 		//TODO: better target selection
 		Collection<StandardEntity> entities = model.getEntitiesOfType(StandardEntityURN.BUILDING, 
 				StandardEntityURN.ROAD, StandardEntityURN.HYDRANT, 
 				StandardEntityURN.REFUGE);
 		
 		Set<EntityID> ids = objectsToIDs(entities);
-		
-		return ids.toArray(new EntityID[1])[new Random().nextInt(entities.size())];
+		EntityID destID = ids.toArray(new EntityID[1])[new Random().nextInt(entities.size())];
+		return new Destination(destID, -1, -1);
 		
 		//return new EntityID(255);
 	}

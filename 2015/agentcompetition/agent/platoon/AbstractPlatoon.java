@@ -17,9 +17,9 @@ import org.apache.log4j.MDC;
 import commands.AgentCommand;
 import commands.AgentCommands;
 import message.MessageReceiver;
-import message.MessageType;
+import message.MessageTypes;
 import message.ReceivedMessage;
-import problem.BlockedRoad;
+import problem.BlockedArea;
 import problem.BurningBuilding;
 import problem.Problem;
 import problem.Recruitment;
@@ -154,7 +154,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * The boolean indicates whether the problem is solved or not.
      * During think(), the agent must update these structures 
      */
-    protected Map<EntityID, BlockedRoad> blockedRoads;
+    protected Map<EntityID, BlockedArea> blockedRoads;
     protected Map<EntityID, WoundedHuman> woundedHumans;
     protected Map<EntityID, BurningBuilding> burningBuildings;
     
@@ -173,7 +173,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * Construct an AbstractPlatoon.
      */
     protected AbstractPlatoon() {
-    	blockedRoads = new HashMap<EntityID, BlockedRoad>();
+    	blockedRoads = new HashMap<EntityID, BlockedArea>();
     	woundedHumans = new HashMap<EntityID, WoundedHuman>();
     	burningBuildings = new HashMap<EntityID, BurningBuilding>();
     	
@@ -583,17 +583,17 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     protected void decodeBlockedRoadMessages(Collection<Command> heard){
     	for(Command next : heard){
     		ReceivedMessage msg = MessageReceiver.decodeMessage(next);
-    		if (msg == null || !(msg.problem instanceof BlockedRoad)) continue; //skips 'broken' and wrong type msgs
+    		if (msg == null || !(msg.problem instanceof BlockedArea)) continue; //skips 'broken' and wrong type msgs
     		
-    		BlockedRoad b = (BlockedRoad) msg.problem;
+    		BlockedArea b = (BlockedArea) msg.problem;
     		
     		//if-elses to filter message by type
-    		if(msg.msgType == MessageType.REPORT_BLOCKED_ROAD){
+    		if(msg.msgType == MessageTypes.REPORT_BLOCKED_AREA){
     			
     			updateFromMessage(b);
     			//else discards message (incoming problem is older than the one I know
     		}
-    		else if(msg.msgType == MessageType.SOLVED_BLOCKED_ROAD){
+    		else if(msg.msgType == MessageTypes.SOLVED_BLOCKED_AREAS){
     			updateFromMessage(b);
     			blockedRoads.get(b).markSolved(next.getTime()); //ensures that problem is marked as solved
     		}
@@ -610,23 +610,23 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		Recruitment h = (Recruitment) msg.problem;
     		Logger.info("Received recruitment " + h);
     		
-    		if(msg.msgType == MessageType.RECRUITMENT_REQUEST){
+    		if(msg.msgType == MessageTypes.RECRUITMENT_REQUEST){
     			Logger.info("Receive RECRUITMENT_REQUEST");
     			updateFromMessage(h);
     		}
-    		else if(msg.msgType == MessageType.RECRUITMENT_COMMIT){
+    		else if(msg.msgType == MessageTypes.RECRUITMENT_COMMIT){
     			Logger.info("Receive RECRUITMENT_COMMIT");
     			updateFromMessage(h);
     		}
-    		else if(msg.msgType == MessageType.RECRUITMENT_RELEASE){
+    		else if(msg.msgType == MessageTypes.RECRUITMENT_RELEASE){
     			Logger.info("Receive RECRUITMENT_RELEASE");
     			updateFromMessage(h);
     		}
-    		else if(msg.msgType == MessageType.RECRUITMENT_ENGAGE){
+    		else if(msg.msgType == MessageTypes.RECRUITMENT_ENGAGE){
     			Logger.info("Receive RECRUITMENT_ENGAGE");
     			updateFromMessage(h);
     		}
-    		else if(msg.msgType == MessageType.RECRUITMENT_TIMEOUT){
+    		else if(msg.msgType == MessageTypes.RECRUITMENT_TIMEOUT){
     			Logger.info("Receive RECRUITMENT_TIMEOUT");
     			updateFromMessage(h);
     		}
@@ -641,12 +641,12 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		WoundedHuman h = (WoundedHuman) msg.problem;
     		Logger.debug("Received wounded human " + h);
     		//if-elses to filter message by type
-    		if(msg.msgType == MessageType.REPORT_WOUNDED_HUMAN){
+    		if(msg.msgType == MessageTypes.REPORT_WOUNDED_HUMAN){
     			Logger.info("Will update from message " + h);
     			updateFromMessage(h);
     			//else discards message (incoming problem is older than the one I know
     		}
-    		else if(msg.msgType == MessageType.SOLVED_WOUNDED_HUMAN){
+    		else if(msg.msgType == MessageTypes.SOLVED_WOUNDED_HUMAN){
     			updateFromMessage(h);
     			woundedHumans.get(h).markSolved(next.getTime()); //ensures that problem is marked as solved
     		}
@@ -663,12 +663,12 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		BurningBuilding bb = (BurningBuilding) msg.problem;
     		
     		//if-elses to filter message by type
-    		if(msg.msgType == MessageType.REPORT_BURNING_BUILDING){
+    		if(msg.msgType == MessageTypes.REPORT_BURNING_BUILDING){
     			
     			updateFromMessage(bb);
     			//else discards message (incoming problem is older than the one I know
     		}
-    		else if(msg.msgType == MessageType.SOLVED_BURNING_BUILDING){
+    		else if(msg.msgType == MessageTypes.SOLVED_BURNING_BUILDING){
     			updateFromMessage(bb);
     			burningBuildings.get(bb).markSolved(next.getTime()); //ensures that problem is marked as solved
     		}
@@ -681,7 +681,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 	 * @param b
 	 * @return 
 	 */
-	private void updateFromMessage(BlockedRoad b) {
+	private void updateFromMessage(BlockedArea b) {
 		if (model.getDistance(me().getID(), b.getEntityID()) < sightRange){
 			Logger.debug(String.format("Road %s data received, but ignored because it's in sight range.", b.getEntityID()));
 			return;
@@ -848,7 +848,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
                 else {
                 	//mark as solved if exists (since it has no blockades)
                 	if(blockedRoads.containsKey(r.getID())){
-                		BlockedRoad notBlockedAnymore = blockedRoads.get(r.getID());
+                		BlockedArea notBlockedAnymore = blockedRoads.get(r.getID());
                 		
                 		notBlockedAnymore.update(calculateRepairCost(r.getBlockades()), time);
                 		notBlockedAnymore.markSolved(time);
@@ -864,13 +864,13 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * @param r Road object with current data to be put on the blocked road problem
      */
     private void updateBlockedRoad(int time, Road r) {
-    	BlockedRoad blocked;
+    	BlockedArea blocked;
 		if (blockedRoads.containsKey(r.getID())){
 			blocked = blockedRoads.get(r.getID());
 			blocked.update(calculateRepairCost(r.getBlockades()), time);
 		}
 		else{
-			blocked = new BlockedRoad(r.getID(), calculateRepairCost(r.getBlockades()), time);
+			blocked = new BlockedArea(r.getID(), calculateRepairCost(r.getBlockades()), time);
 			blockedRoads.put(r.getID(), blocked);
 		}
 		problemsToReport.add(blocked);

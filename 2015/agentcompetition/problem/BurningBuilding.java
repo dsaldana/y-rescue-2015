@@ -1,6 +1,6 @@
 package problem;
 
-import message.MessageType;
+import message.MessageTypes;
 import rescuecore2.worldmodel.EntityID;
 
 public class BurningBuilding extends Problem {
@@ -49,7 +49,7 @@ public class BurningBuilding extends Problem {
 	public byte[] encodeReportMessage(EntityID senderID) {
 		String message = String.format(
 			"%d,%d,%d,%d,%d,%d", 
-			MessageType.REPORT_BURNING_BUILDING.ordinal(), senderID.getValue(), buildingID.getValue(), 
+			MessageTypes.REPORT_BURNING_BUILDING.ordinal(), senderID.getValue(), buildingID.getValue(), 
 			brokenness,fieryness,temperature
 		);
 		
@@ -60,7 +60,7 @@ public class BurningBuilding extends Problem {
 	public byte[] encodeEngageMessage(EntityID senderID) {
 		String message = String.format(
 			"%d,%d,%d,%d,%d,%d", 
-			MessageType.ENGAGE_BURNING_BUILDING.ordinal(), senderID.getValue(), buildingID.getValue(),
+			MessageTypes.ENGAGE_BURNING_BUILDING.ordinal(), senderID.getValue(), buildingID.getValue(),
 			brokenness,fieryness,temperature
 		);
 		
@@ -71,7 +71,7 @@ public class BurningBuilding extends Problem {
 	public byte[] encodeSolvedMessage(EntityID senderID) {
 		String message = String.format(
 			"%d,%d,%d", 
-			MessageType.SOLVED_BURNING_BUILDING.ordinal(), senderID.getValue(),buildingID.getValue()
+			MessageTypes.SOLVED_BURNING_BUILDING.ordinal(), senderID.getValue(),buildingID.getValue()
 		);
 		
 		return message.getBytes();

@@ -1,6 +1,6 @@
 package problem;
 
-import message.MessageType;
+import message.MessageTypes;
 import rescuecore2.worldmodel.EntityID;
 
 /**
@@ -67,7 +67,7 @@ public class WoundedHuman extends Problem {
 	public byte[] encodeReportMessage(EntityID senderID) {
 		String message = String.format(
 			"%d,%d,%d,%d,%d,%d,%d", 
-			MessageType.REPORT_WOUNDED_HUMAN.ordinal(), senderID.getValue(), civilianID.getValue(),position.getValue(),
+			MessageTypes.REPORT_WOUNDED_HUMAN.ordinal(), senderID.getValue(), civilianID.getValue(),position.getValue(),
 			buriedness,health,damage
 		);
 		
@@ -78,7 +78,7 @@ public class WoundedHuman extends Problem {
 	public byte[] encodeEngageMessage(EntityID senderID) {
 		String message = String.format(
 			"%d,%d,%d,%d,%d,%d,%d", 
-			MessageType.ENGAGE_WOUNDED_HUMAN.ordinal(), senderID.getValue(), civilianID.getValue(),position.getValue(),
+			MessageTypes.ENGAGE_WOUNDED_HUMAN.ordinal(), senderID.getValue(), civilianID.getValue(),position.getValue(),
 			buriedness,health,damage
 		);
 		
@@ -88,7 +88,7 @@ public class WoundedHuman extends Problem {
 	@Override
 	public byte[] encodeSolvedMessage(EntityID senderID) {
 		String message = String.format(
-			"%d,%d,%d", MessageType.SOLVED_WOUNDED_HUMAN.ordinal(), senderID.getValue(), civilianID.getValue()
+			"%d,%d,%d", MessageTypes.SOLVED_WOUNDED_HUMAN.ordinal(), senderID.getValue(), civilianID.getValue()
 		);
 		
 		return message.getBytes();
