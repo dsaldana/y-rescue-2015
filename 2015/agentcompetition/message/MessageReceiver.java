@@ -64,20 +64,23 @@ public class MessageReceiver {
         //lots of if-else to test message types
         // --- blocked road message types
         if (type == MessageTypes.REPORT_BLOCKED_AREA.ordinal()){
-        	int repairCost = Integer.parseInt(parts[3]);
+        	int x = Integer.parseInt(parts[3]);
+        	int y = Integer.parseInt(parts[4]);
         	
-        	p = new BlockedArea(id, repairCost, cmd.getTime());
+        	p = new BlockedArea(id, x, y, cmd.getTime());
         	t = MessageTypes.REPORT_BLOCKED_AREA;
         }
         else if (type == MessageTypes.ENGAGE_BLOCKED_AREA.ordinal()){
-        	int repairCost = Integer.parseInt(parts[3]);
+        	int x = Integer.parseInt(parts[3]);
+        	int y = Integer.parseInt(parts[4]);
         	
-        	p = new BlockedArea(id, repairCost, cmd.getTime());
+        	p = new BlockedArea(id, x, y, cmd.getTime());
         	t = MessageTypes.ENGAGE_BLOCKED_AREA;
         }
         else if (type == MessageTypes.SOLVED_BLOCKED_AREAS.ordinal()){
-        	
-        	p = new BlockedArea(id, 0, cmd.getTime());
+        	int x = Integer.parseInt(parts[3]);
+        	int y = Integer.parseInt(parts[4]);
+        	p = new BlockedArea(id, x, y, cmd.getTime());
         	p.markSolved(cmd.getTime());
         	t = MessageTypes.SOLVED_BLOCKED_AREAS;
         	

@@ -117,7 +117,7 @@ public class TestMessageReceiver {
 		EntityID me = new EntityID(1);
 		int msgTime = 5;
 		
-		BlockedArea b = new BlockedArea(new EntityID(2), 50, msgTime);
+		BlockedArea b = new BlockedArea(new EntityID(2), 1000, 2000, msgTime);
 		
 		//reportMessage
 		msg = new AKSpeak(me, msgTime, 1, b.encodeReportMessage(me));
@@ -126,7 +126,8 @@ public class TestMessageReceiver {
 		
 		assertEquals(MessageTypes.REPORT_BLOCKED_AREA, received.msgType);
 		assertEquals(b.getEntityID(), decoded.getEntityID());
-		assertEquals(b.repairCost, decoded.repairCost);
+		assertEquals(b.x, decoded.x);
+		assertEquals(b.y, decoded.y);
 		assertEquals(msgTime, decoded.getUpdateTime());
 		
 		//engageMessage
@@ -135,7 +136,8 @@ public class TestMessageReceiver {
 		decoded = (BlockedArea) received.problem;
 		assertEquals(MessageTypes.ENGAGE_BLOCKED_AREA, received.msgType);
 		assertEquals(b.getEntityID(), decoded.getEntityID());
-		assertEquals(b.repairCost, decoded.repairCost);
+		assertEquals(b.x, decoded.x);
+		assertEquals(b.y, decoded.y);
 		assertEquals(msgTime, decoded.getUpdateTime());
 		
 		//solvedMessage

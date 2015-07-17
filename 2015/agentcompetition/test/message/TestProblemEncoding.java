@@ -82,28 +82,28 @@ public class TestProblemEncoding {
 	public void testEncodeBlockedRoad() {
 		EntityID me = new EntityID(1);
 		EntityID roadID = new EntityID(2);
-		int repairCost = 30, lastUpdate = 20;
-		BlockedArea b = new BlockedArea(roadID, repairCost, lastUpdate);
+		int x = 30, y = 2111, lastUpdate = 20;
+		BlockedArea b = new BlockedArea(roadID, x, y, lastUpdate);
 		
 		//report message
 		String reportMsg = String.format(
-			"%d,%d,%d,%d", 
-			MessageTypes.REPORT_BLOCKED_AREA.ordinal(), me.getValue(), roadID.getValue(), repairCost
+			"%d,%d,%d,%d,%d", 
+			MessageTypes.REPORT_BLOCKED_AREA.ordinal(), me.getValue(), roadID.getValue(), x, y
 		);
 		assertArrayEquals(reportMsg.getBytes(), b.encodeReportMessage(me));
 		
 		//engage message
 		String engageMsg = String.format(
-			"%d,%d,%d,%d", 
-			MessageTypes.ENGAGE_BLOCKED_AREA.ordinal(), me.getValue(), roadID.getValue(), repairCost
+			"%d,%d,%d,%d,%d", 
+			MessageTypes.ENGAGE_BLOCKED_AREA.ordinal(), me.getValue(), roadID.getValue(), x, y
 		);
 		assertArrayEquals(engageMsg.getBytes(), b.encodeEngageMessage(me));
 
 
 		//engage message
 		String solvedMsg = String.format(
-			"%d,%d,%d", 
-			MessageTypes.SOLVED_BLOCKED_AREAS.ordinal(), me.getValue(), roadID.getValue()
+			"%d,%d,%d,%d,%d", 
+			MessageTypes.SOLVED_BLOCKED_AREAS.ordinal(), me.getValue(), roadID.getValue(), x, y
 		);
 		assertArrayEquals(solvedMsg.getBytes(), b.encodeSolvedMessage(me));
 	}

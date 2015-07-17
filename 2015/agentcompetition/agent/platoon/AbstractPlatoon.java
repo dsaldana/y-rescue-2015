@@ -764,7 +764,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      */
     private void updateKnowledge(int time, ChangeSet changed){
     	updateBurningBuildings(time, changed);
-    	updateBlockedRoads(time, changed);
+    	//updateBlockedRoads(time, changed);
     	updateWoundedHumans(time, changed);
     }
     
@@ -834,6 +834,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         }
 	}
     
+    /*
     private void updateBlockedRoads(int time, ChangeSet changed) {
     	for(EntityID id : changed.getChangedEntities()){
         	Entity entity = model.getEntity(id);
@@ -850,31 +851,32 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
                 	if(blockedRoads.containsKey(r.getID())){
                 		BlockedArea notBlockedAnymore = blockedRoads.get(r.getID());
                 		
-                		notBlockedAnymore.update(calculateRepairCost(r.getBlockades()), time);
+                		notBlockedAnymore.setUpdateTime(time); //update(calculateRepairCost(r.getBlockades()), time);
                 		notBlockedAnymore.markSolved(time);
                 	}
                 }
         	}
         }
 	}
+	*/
     
     /**
      * Updates blocked road if it exists in HashMap or adds it if it doesn't exist
      * @param time
      * @param r Road object with current data to be put on the blocked road problem
-     */
+     *
     private void updateBlockedRoad(int time, Road r) {
     	BlockedArea blocked;
 		if (blockedRoads.containsKey(r.getID())){
 			blocked = blockedRoads.get(r.getID());
-			blocked.update(calculateRepairCost(r.getBlockades()), time);
+			blocked.setUpdateTime(time);// update(calculateRepairCost(r.getBlockades()), time);
 		}
 		else{
 			blocked = new BlockedArea(r.getID(), calculateRepairCost(r.getBlockades()), time);
 			blockedRoads.put(r.getID(), blocked);
 		}
 		problemsToReport.add(blocked);
-	}
+	}*/
 
 	/**
 	 * Updates human data if exists in HashMap or adds it if it doesn't exist
@@ -982,13 +984,19 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	
     	Pair<Integer, Integer> currentPos = me().getLocation(model);
     	
+    	Logger.debug("Stuckness test - distance from last position:" + Geometry.distance(currentPos, lastPosition));
+    	
+    	if (commandHistory.containsKey(time -1)) {
+    		Logger.debug("Stuckness test - last command:" + commandHistory.get(time - 1));
+    	}
+    	
 		if (commandHistory.containsKey(time -1) && commandHistory.get(time - 1).equals(AgentCommands.MOVE) && 
 				(Geometry.distance(currentPos, lastPosition)  < tolerance)) 
 		{
 			Logger.info("Dammit, I'm stuck!");
 			return true;
 		}
-		Logger.info("Not stuck! Distance from last position: " + Geometry.distance(currentPos, lastPosition));
+		Logger.info("Not stuck!");
 		return false;
     }
     
