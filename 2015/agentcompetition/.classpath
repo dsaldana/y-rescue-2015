@@ -1,67 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="patch/" kind="src" path=""/>
+	<classpathentry excluding="patch/|scenarios/fireonly_test/|scenarios/original_test/|scenarios/" kind="src" path=""/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/clear.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/collapse.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/gis2.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/handy.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/human.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/ignition.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/kernel.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/maps.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/misc.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/rescuecore2.jar" sourcepath="/Users/h3ct0r/Git/roborescue"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/resq-fire.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/sample.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/standard.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/jars/traffic3.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/commons-logging-1.1.1.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/dom4j.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/jaxen-1.1.1.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/jcommon-1.0.16.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/jfreechart-1.0.13.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/jscience-4.3.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/jsi-1.0b2p1.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/jts-1.11.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/junit-4.5.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/log4j-1.2.15.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/rescuecore.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/resq-fire.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/trove-0.1.8.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/uncommons-maths-1.2.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Git/roborescue/lib/xml-0.0.6.jar"/>
-	<classpathentry kind="lib" path="/Users/h3ct0r/Downloads/commons-math3-3.5/commons-math3-3.5.jar"/>
-	<classpathentry kind="lib" path="lib/clear.jar"/>
-	<classpathentry kind="lib" path="lib/collapse.jar"/>
-	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
-	<classpathentry kind="lib" path="lib/dom4j.jar"/>
-	<classpathentry kind="lib" path="lib/gis2.jar"/>
-	<classpathentry kind="lib" path="lib/handy.jar"/>
-	<classpathentry kind="lib" path="lib/human.jar"/>
-	<classpathentry kind="lib" path="lib/ignition.jar"/>
-	<classpathentry kind="lib" path="lib/jaxen-1.1.1.jar"/>
-	<classpathentry kind="lib" path="lib/jcommon-1.0.16.jar"/>
-	<classpathentry kind="lib" path="lib/jfreechart-1.0.13.jar"/>
-	<classpathentry kind="lib" path="lib/jgrapht-core-0.9.1.jar"/>
-	<classpathentry kind="lib" path="lib/jscience-4.3.jar"/>
-	<classpathentry kind="lib" path="lib/jsi-1.0b2p1.jar"/>
-	<classpathentry kind="lib" path="lib/jts-1.11.jar"/>
-	<classpathentry kind="lib" path="lib/junit-4.5.jar"/>
-	<classpathentry kind="lib" path="lib/kernel.jar"/>
-	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
-	<classpathentry kind="lib" path="lib/maps.jar"/>
-	<classpathentry kind="lib" path="lib/misc.jar"/>
-	<classpathentry kind="lib" path="lib/rescuecore.jar"/>
-	<classpathentry kind="lib" path="lib/rescuecore2.jar"/>
-	<classpathentry kind="lib" path="lib/resq-fire-jar.jar"/>
-	<classpathentry kind="lib" path="lib/resq-fire-lib.jar"/>
-	<classpathentry kind="lib" path="lib/sample.jar"/>
-	<classpathentry kind="lib" path="lib/standard.jar"/>
-	<classpathentry kind="lib" path="lib/traffic3.jar"/>
-	<classpathentry kind="lib" path="lib/trove-0.1.8.jar"/>
-	<classpathentry kind="lib" path="lib/uncommons-maths-1.2.jar"/>
-	<classpathentry kind="lib" path="lib/xml-0.0.6.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/xml-0.0.6.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/uncommons-maths-1.2.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/trove-0.1.8.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/traffic3.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/standard.jar" sourcepath="/home/anderson/rcrsim"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/sample.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/resq-fire-lib.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/resq-fire-jar.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/rescuecore2.jar" sourcepath="/home/anderson/rcrsim"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/rescuecore.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/misc.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/maps.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/log4j-1.2.15.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/kernel.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/junit-4.5.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/jts-1.11.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/jsi-1.0b2p1.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/jscience-4.3.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/jfreechart-1.0.13.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/jcommon-1.0.16.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/jaxen-1.1.1.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/ignition.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/human.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/handy.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/gis2.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/dom4j.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/collapse.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/clear.jar"/>
+	<classpathentry kind="lib" path="/home/anderson/y-rescue-2015/2015/agentcompetition/lib/jgrapht-core-0.9.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-collections4-4.0.jar"/>
 	<classpathentry kind="output" path=""/>
 </classpath>

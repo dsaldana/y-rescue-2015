@@ -99,7 +99,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			Logger.info("I had no destination, now it is" + destination);
 			
 		}
-		if (destination.match(location().getID(), me().getX(), me().getY())){
+		if (destination.match(location().getID(), me().getX(), me().getY(), 0)){
 			destination = getDestination();
 			Logger.info("I have arrived to my destination. New destination is" + destination);
 		}
