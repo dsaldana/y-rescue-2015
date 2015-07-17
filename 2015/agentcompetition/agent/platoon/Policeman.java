@@ -1,5 +1,7 @@
 package agent.platoon;
 
+import static rescuecore2.misc.Handy.objectsToIDs;
+
 import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.Shape;
@@ -12,6 +14,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.PriorityQueue;
 import java.util.Random;
+import java.util.Set;
 
 import commands.AgentCommands;
 import rescuecore2.worldmodel.Entity;
@@ -393,7 +396,9 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 				StandardEntityURN.ROAD, StandardEntityURN.HYDRANT, 
 				StandardEntityURN.REFUGE);
 		
-		return ((StandardEntity[])entities.toArray())[new Random().nextInt(entities.size())].getID();
+		Set<EntityID> ids = objectsToIDs(entities);
+		
+		return ids.toArray(new EntityID[1])[new Random().nextInt(entities.size())];
 		
 		//return new EntityID(255);
 	}

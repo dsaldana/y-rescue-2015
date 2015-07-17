@@ -3,6 +3,7 @@ package util;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import rescuecore2.misc.Pair;
 import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Edge;
@@ -52,8 +53,17 @@ public class Geometry {
 		int nodeY = Math.abs(e.getEndY() + e.getStartY()) / 2;
 		
 		return new Point2D(nodeX, nodeY);
-		
-		
+	}
+	
+	/**
+	 * Returns the euclidean distance between two points 
+	 * represented as Pair<Integer, Integer>
+	 * @param p1
+	 * @param p2
+	 * @return
+	 */
+	public static double distance(Pair<Integer, Integer> p1, Pair<Integer, Integer> p2){
+		return Math.hypot(p1.first() - p2.first(), p1.second() - p2.second());
 	}
 
 }

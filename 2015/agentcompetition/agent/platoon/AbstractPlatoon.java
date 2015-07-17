@@ -31,6 +31,8 @@ import rescuecore2.worldmodel.properties.IntArrayProperty;
 import rescuecore2.Constants;
 import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
+import rescuecore2.misc.Pair;
+import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.standard.components.StandardAgent;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Blockade;
@@ -51,6 +53,7 @@ import search.ysearch.YGraphWrapper;
 import search.ysearch.YSearch;
 import statemachine.StateMachine;
 import statemachine.ActionStates;
+import util.Geometry;
 import util.LastVisitSorter;
 
 /**
@@ -82,6 +85,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     
     //the center agents of each type
     protected Collection<StandardEntity> fireStations, policeOffices, hospitals;
+    
+    Pair<Integer, Integer> lastPosition;	//coordinates of last agent position
     
     // Agent state machine
     protected StateMachine stateMachine;
@@ -268,6 +273,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		fireStations.size(), hospitals.size(), policeOffices.size()
     	));
         
+        lastPosition = me().getLocation(model);
         
         useSpeak = config.getValue(Constants.COMMUNICATION_MODEL_KEY).equals(SPEAK_COMMUNICATION_MODEL);
         Logger.debug("Communcation model: " + config.getValue(Constants.COMMUNICATION_MODEL_KEY));
@@ -431,6 +437,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		sendMessages(time);
     		
     		lastLocationID = location().getID();	//updates last location
+    		lastPosition = me().getLocation(model); //updates coordinates of last position
     		Logger.info(String.format("------- END OF TIMESTEP %d -------\n", time));
     	}
     	catch (Exception e){
@@ -959,6 +966,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      */
     protected boolean stuck(){
     	
+    	int tolerance = 10;	//if agent moved less than this, will be considered as stuck
+    	
     	//agents cannot issue move commands in beginning
     	if (time == config.getIntValue(kernel.KernelConstants.IGNORE_AGENT_COMMANDS_KEY)) {
 			return false;
@@ -969,15 +978,17 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	}
     	
     	//quick test to check whether i'm stuck
-		IntArrayProperty positionHist = (IntArrayProperty)changed.getChangedProperty(getID(), "urn:rescuecore2.standard:property:positionhistory");
-		//TODO: positionHist is not reliable (if agent moves only slightly, it is not counting as stuck
+		//IntArrayProperty positionHist = (IntArrayProperty)changed.getChangedProperty(getID(), "urn:rescuecore2.standard:property:positionhistory");
+    	
+    	Pair<Integer, Integer> currentPos = me().getLocation(model);
+    	
 		if (commandHistory.containsKey(time -1) && commandHistory.get(time - 1).equals(AgentCommands.MOVE) && 
-				(! positionHist.isDefined() || positionHist.getValue().length == 0)) 
+				(Geometry.distance(currentPos, lastPosition)  < tolerance)) 
 		{
 			Logger.info("Dammit, I'm stuck!");
 			return true;
 		}
-		Logger.info("Not stuck! PositionHist=" + positionHist + " commandHist="+commandHistory);
+		Logger.info("Not stuck! Distance from last position: " + Geometry.distance(currentPos, lastPosition));
 		return false;
     }
     
