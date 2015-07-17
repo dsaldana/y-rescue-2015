@@ -20,6 +20,7 @@ public class ActionStates {
     public static final State RECRUITMENT_GOING_TO_TARGET = new State("RECRUITMENT_GOING_TO_TARGET"); // Recruitment target chosen, going for it
     public static final State RECRUITMENT_DOING_TASK = new State("RECRUITMENT_DOING_TASK"); // Recruitment target chosen, going for it
     public static final State RECRUITMENT_WAITING_RESPONSE = new State("RECRUITMENT_WAITING_RESPONSE"); // Recruitment target chosen, going for it
+    public static final State RECRUITMENT_NOTHING = new State("RECRUITMENT_NOTHING"); // Recruitment doing nothing
 	
 	
 	public static class FireFighter {
