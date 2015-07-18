@@ -149,7 +149,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
             return;
         }
         // Are we out of water?
-        if (me.isWaterDefined() && me.getWater() < maxPower) {
+        /*if (me.isWaterDefined() && me.getWater() < maxPower) {
             // Head for a refuge
         	stateMachine.setState(ActionStates.FireFighter.OUT_OF_WATER);
         	
@@ -168,7 +168,86 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
                 sendMove(time, pathRefuge);
                 return;
             }
+        }*/
+        // Are we out of water?
+    	if (me.isWaterDefined() && me.getWater() < maxPower) {
+    		stateMachine.setState(ActionStates.FireFighter.OUT_OF_WATER);
+            // Is there some source of water around me that I could use to refill my tank?
+            for (EntityID next : waterSourceIDs) {
+        	    // Check if there's a source of water close (sightRange) to the agent
+                if (model.getDistance(getID(), next) <= sightRange) {
+            		// Check if the source is a hydrant
+            		if(hydrantIDs.contains(next)){
+            			// Check if there's another agent using it
+            			boolean flagAlone = true;
+            			for (StandardEntity agent : firefighters) {
+            				if(model.getDistance(getID(), agent.getID()) <= sightRange){
+                				flagAlone = false;
+                				break;
+                			}
+            			}
+            			if(flagAlone){ // Refill tank
+            				List<EntityID> pathWater = searchStrategy.shortestPath(me().getPosition(), next).getPath();
+            	            if (pathWater != null) {
+            	                Logger.info("Moving to Hydrant");
+            	                sendMove(time, pathWater);
+            	                return;
+            	            }
+            			}else{
+            				// Find a new source of water
+            				waterSourceIDs.remove(next);
+            				List<EntityID> pathWater = searchStrategy.shortestPath(me().getPosition(), waterSourceIDs).getPath();
+            				waterSourceIDs.add(next);
+            	            if (pathWater != null) {
+            	                Logger.info("Moving to water source");
+            	                sendMove(time, pathWater);
+            	                return;
+            	            }else {
+            	                Logger.debug("Couldn't plan a path to the water source.");
+            	                pathWater = randomWalk();
+            	                stateMachine.setState(ActionStates.RANDOM_WALK);
+            	                Logger.info("Moving randomly");
+            	                sendMove(time, pathWater);
+            	                return;
+            	            }
+            			}
+            		}else{ // The water source is the refuge
+               			 List<EntityID> pathWater = searchStrategy.shortestPath(me().getPosition(), next).getPath();
+            			 if (pathWater != null) {
+         	                Logger.info("Moving to Refuge");
+         	                sendMove(time, pathWater);
+         	                return;
+         	            }else {
+        	                Logger.debug("Couldn't plan a path to the water source.");
+        	                pathWater = randomWalk();
+        	                stateMachine.setState(ActionStates.RANDOM_WALK);
+        	                Logger.info("Moving randomly");
+        	                sendMove(time, pathWater);
+        	                return;
+        	            }
+            		}
+            	}
+            }
         }
+    	
+    	// If the agent is on a fire zone and getting damaged, the agent moves to the refuge
+        if (me().getDamage() >= 10){
+        	Logger.debug("Receiving damage");
+        	List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), refugeIDs).getPath();
+            if (path != null) {
+                Logger.info("Moving to refuge");
+                sendMove(time, path);
+                return;
+            }else {
+                Logger.debug("Couldn't plan a path to the refuge.");
+                path = randomWalk();
+                stateMachine.setState(ActionStates.RANDOM_WALK);
+                Logger.info("Moving randomly");
+                sendMove(time, path);
+                return;
+            }
+        }
+        
         // get ID of all buildings on fire that i know 
         Collection<EntityID> all = getBurningBuildings();
         
