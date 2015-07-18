@@ -14,6 +14,7 @@ import java.util.Set;
 import org.apache.log4j.MDC;
 
 import commands.AgentCommands;
+import problem.BlockedArea;
 import problem.BurningBuilding;
 import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
@@ -119,7 +120,9 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         fireSimulator.step();
         
         if(stuck()){
-        	
+        	//instantiates a BlockedArea about this agent
+        	BlockedArea aroundMe = new BlockedArea(location().getID(), me().getX(), me().getY(), time);
+        	problemsToReport.add(aroundMe);
         }
         
         //updates YBuilding data from observation (overrides predicted data)

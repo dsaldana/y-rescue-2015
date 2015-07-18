@@ -16,6 +16,8 @@ import org.apache.log4j.MDC;
 
 import commands.AgentCommand;
 import commands.AgentCommands;
+import commands.ClearBlockadeCommand;
+import commands.ClearDirectionCommand;
 import message.MessageReceiver;
 import message.MessageTypes;
 import message.ReceivedMessage;
@@ -154,7 +156,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * The boolean indicates whether the problem is solved or not.
      * During think(), the agent must update these structures 
      */
-    protected Map<EntityID, BlockedArea> blockedRoads;
+    protected Map<EntityID, BlockedArea> blockedAreas;
     protected Map<EntityID, WoundedHuman> woundedHumans;
     protected Map<EntityID, BurningBuilding> burningBuildings;
     
@@ -173,7 +175,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * Construct an AbstractPlatoon.
      */
     protected AbstractPlatoon() {
-    	blockedRoads = new HashMap<EntityID, BlockedArea>();
+    	blockedAreas = new HashMap<EntityID, BlockedArea>();
     	woundedHumans = new HashMap<EntityID, WoundedHuman>();
     	burningBuildings = new HashMap<EntityID, BurningBuilding>();
     	
@@ -345,7 +347,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     @Override
     protected void sendMove(int time, List<EntityID> path, int destX, int destY){
     	commandHistory.put(time, AgentCommands.MOVE);
-    	if (path.get(0) != getLocation().getID()){
+    	if (path != null && path.get(0) != getLocation().getID()){
     		Logger.debug("Adding current Area " + getLocation().getID() + " to path.");
     		path.add(0, getLocation().getID());
     	}
@@ -388,7 +390,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     
     @Override
     protected void sendClear(int time, EntityID target){
-    	commandHistory.put(time, AgentCommands.Policeman.CLEAR);
+    	commandHistory.put(time, new ClearBlockadeCommand(target));
     	Logger.debug(String.format("Sending CLEAR command with: %s", target));
     	super.sendClear(time, target);
     	commandIssued = true;
@@ -396,7 +398,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     
     @Override
     protected void sendClear(int time, int destX, int destY){
-    	commandHistory.put(time, AgentCommands.Policeman.CLEAR);
+    	commandHistory.put(time, new ClearDirectionCommand(destX, destY));
     	Logger.debug(String.format("Sending CLEAR command with: %d, %d", destX, destY));
     	super.sendClear(time, destX, destY);
     	commandIssued = true;
@@ -533,7 +535,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      * @param heard
      */
     protected void hear(int time, Collection<Command> heard) {
-    	decodeBlockedRoadMessages(heard);
+    	decodeBlockedAreaMessages(heard);
     	decodeBurningBuildingMessages(heard);
     	decodeWoundedHumanMessages(heard);
     	decodeRecruitmentMessage(heard);
@@ -546,13 +548,13 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     protected void sendMessages(int time){
 		Logger.info(("#burning bldgs:" + burningBuildings.size()));
 		Logger.info(("#wounded humans:" + woundedHumans.size()));
-		Logger.info(("#blocked roads:" + blockedRoads.size()));
+		Logger.info(("#blocked roads:" + blockedAreas.size()));
 		//Logger.info(("the blk roads:" + blockedRoads.keySet()));
     	Logger.info("#problemsToReport: " + problemsToReport.size());
     	Logger.info("#recruitment messages: " + recruitmentMsgToSend.size());
     	for(Problem p : problemsToReport){
     		Logger.debug((String.format("%s will communicate problem %s", me(), p)));
-    		byte[] msg = p.encodeReportMessage(getID());
+    		byte[] msg = p.isSolved() ? p.encodeSolvedMessage(getID()) : p.encodeReportMessage(getID());
     		sendSay(time, msg);
     		sendSpeak(time, 1, msg);	//TODO implementar alocacao de canais
     	}
@@ -580,9 +582,17 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	return lastVisit.get(id);
     }
     
-    protected void decodeBlockedRoadMessages(Collection<Command> heard){
+    protected void decodeBlockedAreaMessages(Collection<Command> heard){
     	for(Command next : heard){
-    		ReceivedMessage msg = MessageReceiver.decodeMessage(next);
+    		ReceivedMessage msg = null;
+    		try {
+    			msg = MessageReceiver.decodeMessage(next);
+    		}
+    		catch(Exception e){
+    			Logger.error("An error ocurring while trying to decode message. Will skip: " + next, e);
+    			continue;
+    		}
+    		
     		if (msg == null || !(msg.problem instanceof BlockedArea)) continue; //skips 'broken' and wrong type msgs
     		
     		BlockedArea b = (BlockedArea) msg.problem;
@@ -595,7 +605,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		}
     		else if(msg.msgType == MessageTypes.SOLVED_BLOCKED_AREAS){
     			updateFromMessage(b);
-    			blockedRoads.get(b).markSolved(next.getTime()); //ensures that problem is marked as solved
+    			Logger.info("BB[" + b.areaID +"] " + blockedAreas.get(b) );
+    			blockedAreas.get(b.areaID).markSolved(next.getTime()); //ensures that problem is marked as solved
     		}
     	}
     }
@@ -648,7 +659,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		}
     		else if(msg.msgType == MessageTypes.SOLVED_WOUNDED_HUMAN){
     			updateFromMessage(h);
-    			woundedHumans.get(h).markSolved(next.getTime()); //ensures that problem is marked as solved
+    			woundedHumans.get(h.civilianID).markSolved(next.getTime()); //ensures that problem is marked as solved
     		}
     	}
     }
@@ -670,7 +681,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     		}
     		else if(msg.msgType == MessageTypes.SOLVED_BURNING_BUILDING){
     			updateFromMessage(bb);
-    			burningBuildings.get(bb).markSolved(next.getTime()); //ensures that problem is marked as solved
+    			Logger.info("BB[" + bb.buildingID +"] " + burningBuildings.get(bb) );
+    			burningBuildings.get(bb.buildingID).markSolved(next.getTime()); //ensures that problem is marked as solved
     		}
     	}
     }
@@ -683,15 +695,15 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 	 */
 	private void updateFromMessage(BlockedArea b) {
 		if (model.getDistance(me().getID(), b.getEntityID()) < sightRange){
-			Logger.debug(String.format("Road %s data received, but ignored because it's in sight range.", b.getEntityID()));
+			Logger.debug(String.format("Area %s data received, but ignored because it's in sight range.", b.getEntityID()));
 			return;
 		}
 		
 		//checks whether I already know this problem or if the incoming problem is more recent
-		if(!blockedRoads.containsKey(b) || b.getUpdateTime() > blockedRoads.get(b).getUpdateTime() ){
-			blockedRoads.put(b.getEntityID(), b);
+		if(!blockedAreas.containsKey(b) || b.getUpdateTime() > blockedAreas.get(b).getUpdateTime() ){
+			blockedAreas.put(b.getEntityID(), b);
 			//problemsToReport.add(b);
-			Logger.info(String.format("Added %s to problems to report", b));
+			Logger.info(String.format("Updated information on problem %s.", b));
 		}
 	}
 	
@@ -707,7 +719,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 		if(!woundedHumans.containsKey(h) || h.getUpdateTime() > woundedHumans.get(h).getUpdateTime() ){
 			woundedHumans.put(h.getEntityID(), h);
 			//problemsToReport.add(h);
-			Logger.info(String.format("Added %s list of problems", h));
+			Logger.info(String.format("Added %s to list of problems", h));
 		}
 		Logger.info(""+woundedHumans.keySet());
 	}
@@ -735,7 +747,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
 			*/
 			burningBuildings.put(bb.getEntityID(), bb);
 			//problemsToReport.add(bb);
-			Logger.info(String.format("Added %s to problems to report", bb));
+			Logger.info(String.format("Updated information of problem %s.", bb));
 			
 			//Logger.info(("Updated info of bldg " + b.getID()));
 		}
@@ -968,7 +980,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
      */
     protected boolean stuck(){
     	
-    	int tolerance = 10;	//if agent moved less than this, will be considered as stuck
+    	int tolerance = 500;	//if agent moved less than this, will be considered as stuck
     	
     	//agents cannot issue move commands in beginning
     	if (time == config.getIntValue(kernel.KernelConstants.IGNORE_AGENT_COMMANDS_KEY)) {
@@ -978,9 +990,6 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	if (commandHistory.size() == 0) {
     		return false;
     	}
-    	
-    	//quick test to check whether i'm stuck
-		//IntArrayProperty positionHist = (IntArrayProperty)changed.getChangedProperty(getID(), "urn:rescuecore2.standard:property:positionhistory");
     	
     	Pair<Integer, Integer> currentPos = me().getLocation(model);
     	

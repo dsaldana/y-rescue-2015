@@ -13,6 +13,7 @@ import java.util.Set;
 import message.MessageTypes;
 import message.RecruitmentMsgUtil;
 import message.TaskType;
+import problem.BlockedArea;
 import problem.Recruitment;
 import problem.WoundedHuman;
 import rescuecore2.worldmodel.Entity;
@@ -129,6 +130,12 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 		}
 
 		updateUnexploredBuildings(changed);
+		
+		if(stuck()){
+        	//instantiates a BlockedArea about this agent
+        	BlockedArea aroundMe = new BlockedArea(location().getID(), me().getX(), me().getY(), time);
+        	problemsToReport.add(aroundMe);
+        }
 
 		String statusString = "HP:" + me().getHP() + " Total HP:" + totalHP
 				+ " pos:" + me().getPosition() + " Damage:" + me().getDamage()

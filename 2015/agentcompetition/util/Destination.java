@@ -1,6 +1,8 @@
 package util;
 
+import rescuecore2.log.Logger;
 import rescuecore2.misc.Pair;
+import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.worldmodel.EntityID;
 
 public class Destination {
@@ -8,7 +10,7 @@ public class Destination {
 	Pair<Integer, Integer> destPoint;
 	
 	/**
-	 * If you don't want to inform x and y, use negative values
+	 * If you don't want to inform specific x and y, use the area centroid
 	 * @param destArea
 	 * @param destX
 	 * @param destY
@@ -19,7 +21,7 @@ public class Destination {
 	}
 	
 	/**
-	 * If you don't want to inform x and y, use negative values
+	 * If you don't want to inform specific x and y, use the area centroid
 	 * @param destArea
 	 * @param destX
 	 * @param destY
@@ -39,7 +41,6 @@ public class Destination {
 	 */
 	public boolean match(EntityID areaID, int destX, int destY, int tolerance){
 		return match(areaID, new Pair<Integer, Integer>(destX, destY), tolerance);
-		
 	}
 	
 	/**
@@ -50,13 +51,34 @@ public class Destination {
 	 */
 	public boolean match(EntityID areaID, Pair<Integer, Integer> point, int tolerance){
 		if (! destinationArea.equals(areaID)){
+			Logger.debug(String.format("Areas %s and %s are different, This is not destination", destinationArea, areaID));
 			return false;
 		}
 		
-		if (destPoint.first() < 0 || destPoint.second() < 0) return true;
+		if (destPoint.first() < 0 || destPoint.second() < 0) {
+			Logger.debug(String.format("At destination and point check won't be performed", destinationArea, areaID));
+			return true;
+		}
 		
-		return Geometry.distance(destPoint, point) < tolerance;
+		if (Geometry.distance(destPoint, point) < tolerance){
+			Logger.debug(String.format("At destination. Distance to point checked"));
+			return true;
+		}
+		else {
+			Logger.debug(
+				String.format(
+					"At destination area but distance to point %.3f is greater than tolerance %d", 
+					Geometry.distance(destPoint, point), tolerance
+				)
+			);
+			
+			return false;
+		}
 		
+	}
+	
+	public Point2D getCoordinatesAsPoint2D(){
+		return new Point2D(destPoint.first(), destPoint.second());
 	}
 	
 	/**

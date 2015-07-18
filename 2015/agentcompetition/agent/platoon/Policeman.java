@@ -7,16 +7,23 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.PathIterator;
 import java.awt.geom.Rectangle2D;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.Set;
 
+import problem.BlockedArea;
+import commands.AgentCommand;
 import commands.AgentCommands;
+import commands.ClearBlockadeCommand;
+import commands.ClearDirectionCommand;
 import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
 import rescuecore2.worldmodel.ChangeSet;
@@ -43,6 +50,12 @@ import util.Destination;
 import util.DistanceSorter;
 import util.Geometry;
 
+/**
+ * 
+ * TODO: implementar blockedPathProblem: o policial tem que limpar o caminho 
+ * inteiro de uma origem ate um destino
+ *
+ */
 public class Policeman extends AbstractPlatoon<PoliceForce> {
 	private static final String DISTANCE_KEY = "clear.repair.distance";
 	private static final String WIDTH_KEY = "clear.repair.rad";
@@ -50,7 +63,9 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 
 	private int clearRange,	//range that first clear method can reach 
 		clearWidth,				//width of the 'shot' to clear road 
-		clearRate;				//clear rate in square meters per timestep 
+		clearRate;				//clear rate in square meters per timestep
+	
+	boolean randomDestination; //indicates whether policeman is answering call for help or not
 
 	// testing dav
 	private boolean moving;
@@ -74,6 +89,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		
 		destination = null;
 		currentPath = null;
+		randomDestination = true;
 	}
 
 	@Override
@@ -84,30 +100,87 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			// Subscribe to channel 1
 			sendSubscribe(time, 1);
 		}
-		/*for (Command next : heard) {
-			Logger.debug("Heard " + next);
-		}*/
-		
 		
 		if(stuck()){
-			Logger.info("STUCK!");
-			doClear(time);
+			Logger.info("STUCK! Going failsafe...");
+			failsafe(); //doClear(time);
+			return;
+		}
+		
+		if(stuckInLoop()){
+			Logger.warn("STUCK IN CLEAR/MOVE LOOP! Goin' failsafe...");
+			failsafe();
+			return;
 		}
 		
 		if (destination == null){
-			destination = getDestination();
+			destination = chooseDestination();
 			Logger.info("I had no destination, now it is" + destination);
+		}
+		
+		if (destination.match(location().getID(), me().getX(), me().getY(), 250)){
 			
-		}
-		if (destination.match(location().getID(), me().getX(), me().getY(), 0)){
-			destination = getDestination();
+			BlockedArea solved = blockedAreas.get(destination.getAreaID());
+			solved.markSolved(time);
+			problemsToReport.add(solved);
+			destination = chooseDestination();
+			
 			Logger.info("I have arrived to my destination. New destination is" + destination);
+			Logger.info("Added solved" + solved + " to problemsToReport.");
 		}
+		
+		if (randomDestination && blockedAreas.size() > 0){
+			destination = chooseDestination();
+			Logger.info("I had a random destination, now I selected one from list of problems: " + destination);
+		}
+		
 		Logger.info("Planning path from " + location().getID() + " to " + destination);
 		currentPath = searchStrategy.shortestPath(location().getID(), destination.getAreaID()).getPath();
 		
 		if (currentPath == null){
-			Logger.warn("Could not plan a path to destination. Going failsafe.");
+			/*
+			 * TODO: this happens when agent in area of destination, but not in coordinate
+			 * Need to test this and make it move to point; clearing blockades in the way.
+			 */
+			if (location().getID().equals(destination.getAreaID())){
+				Logger.info("I'm in destination area, but not in intended coordinates yet.");
+				
+				Point2D target = destination.getCoordinatesAsPoint2D();
+				
+				if (blockadeOnWayTo(target)){
+				
+					Logger.info(String.format(
+						"Blockade found on way to target. Attempting to clear from %d,%d to %s.", 
+						me().getX(), me().getY(), destination.getCoordinatesAsPoint2D()
+					));
+					
+					//Point2D origin = new Point2D(me().getX(), me().getY());
+					
+					//Edge frontier = Geometry.findSmallestEdgeConnecting((Area)location(), (Area)model.getEntity(currentPath.get(0)));
+					//Point2D target = Geometry.midpoint(frontier);
+					
+				    Vector2D v = target.minus(new Point2D(me().getX(), me().getY()));
+				    v = v.normalised().scale(1000000);
+				    sendClear(time, (int)(me().getX() + v.getX()), (int)(me().getY() + v.getY()));
+					return;
+				}
+				else {
+					Logger.info(String.format(
+						"Blockade not found on way to target. Attempting to move from %d,%d to %s.", 
+						me().getX(), me().getY(), destination.getCoordinatesAsPoint2D()
+					));
+					//creates a dummy path with only current area in it
+					List<EntityID> path = new LinkedList<>();
+					path.add(location().getID());
+					sendMove(time, path, (int)target.getX(), (int)target.getY());
+					return;
+				}
+			}
+			
+			Logger.warn(String.format(
+					"Could not plan a path to destination %s. I'm at %s, not at destination area. WEIRD! Going failsafe.",
+					destination.getAreaID(), location().getID()
+			));
 			failsafe();
 			return;
 		}
@@ -123,6 +196,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		    Vector2D v = target.minus(new Point2D(me().getX(), me().getY()));
 		    v = v.normalised().scale(1000000);
 		    sendClear(time, (int)(me().getX() + v.getX()), (int)(me().getY() + v.getY()));
+		    return;
 			
 			//sendClear(time, x, y);
 			
@@ -132,6 +206,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		else { //move!
 			Logger.info(String.format("No blockade on way to %s. Will follow path %s", currentPath.get(0), currentPath));
 			sendMove(time, currentPath);
+			return;
 		}
 		
 		//int targetEntity = 254;
@@ -158,6 +233,75 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		if (path != null && path.size() > 0) {
 			clearPath(path);
 		}*/
+	}
+
+	/**
+	 * Tests whether 4 among the 8 last commands were clear commands
+	 * Attempts to prevent when agent always clears in same place
+	 * @return
+	 */
+	private boolean stuckInLoop() {
+		if(commandHistory.size() < 8){
+			return false;
+		}
+		
+		Map<AgentCommand, Integer> cmdCount = new HashMap<>(); 
+				
+		for(int lookedAt = 0; lookedAt < 8; lookedAt++){
+			int index = time - lookedAt; //reads most recent command, then second most recent and so on
+			AgentCommand cmd = commandHistory.get(index);
+			
+			//ignores non-clear or move commands
+			if (!(cmd instanceof ClearBlockadeCommand) || 
+				!(cmd instanceof ClearDirectionCommand) || 
+				cmd != AgentCommands.MOVE) {
+				continue;
+			}
+			
+			if (cmdCount.containsKey(cmd)){
+				//increments value if found
+				cmdCount.put(cmd, cmdCount.get(cmd) + 1);
+				if (cmdCount.get(cmd) >= 4) {
+					Logger.info("Found 4 or more instances of command " + cmd);
+					return true;
+				}
+			}
+			else {
+				//initializes value if not found
+				cmdCount.put(cmd, 0);
+			}
+		}
+		
+		return false;
+		/*
+		for (int count : cmdCount.values()){
+			if(count >= 4) return true;
+		}*/
+		
+		/*
+		//Logger.info("CommandHistory " + commandHistory);
+		int sameClearCount = 0;
+		boolean lastWasClear = false;
+		for(int lookedAt = 0; lookedAt < 6; lookedAt++){
+			int index = time - lookedAt; //reads most recent command, then second most recent and so on
+			if (commandHistory.get(index).equals(AgentCommands.Policeman.CLEAR)) {
+				if(lastWasClear) {
+					sameClearCount++;
+				}
+				else {
+					lastWasClear = true;
+				}
+			}
+			else {
+				lastWasClear = false;
+				sameClearCount = 0;
+			}
+		}
+		
+		Logger.info("From last 6 commands, " + sameClearCount + " were repeated clear.");
+		//Logger.info("Stuck in clear loop?");
+		return sameClearCount >= 4;
+		*/
 	}
 
 	/**
@@ -188,6 +332,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		    Vector2D v = bestPoint.minus(new Point2D(me().getX(), me().getY()));
 		    v = v.normalised().scale(1000000);
 		    sendClear(time, (int)(me().getX() + v.getX()), (int)(me().getY() + v.getY()));
+		    return;
 		}
 		
 	}
@@ -218,6 +363,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		    Vector2D v = bestPoint.minus(new Point2D(me().getX(), me().getY()));
 		    v = v.normalised().scale(1000000);
 		    sendClear(time, (int)(me().getX() + v.getX()), (int)(me().getY() + v.getY()));
+		    return;
 		}
 	}
 
@@ -246,6 +392,35 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		ArrayList<Blockade> blockList = new ArrayList<Blockade>(getBlockadesInRange(me().getX(), me().getY(), clearRange));
 		Logger.debug("Blockade list " + blockList + " in range " + clearRange);
 		if (anyBlockadeInClearArea(blockList, target))
+			return true;
+		return false;
+	}
+	
+	/**
+	 * Returns whether there is a blockade in range of clearance on way 
+	 * to a point. The point must be in the same Area of the agent.
+	 * @param coords
+	 * @return
+	 */
+	private boolean blockadeOnWayTo(Point2D coords) {
+		
+		Logger.debug("Will check blockades on way to " + coords);
+		
+		/*if (! neighbours.get(location().getID()).contains(dest)){
+			Logger.warn(String.format("Destination %s is not neighbor of current location %s. Will calculate a path", dest, location().getID()));
+			List<EntityID> path = searchStrategy.shortestPath(location().getID(), dest).getPath();
+			dest = path.get(0);
+		}
+		Edge frontier = Geometry.findSmallestEdgeConnecting((Area)location(), (Area)model.getEntity(dest));
+		
+		Point2D target = Geometry.midpoint(frontier);
+		
+		Logger.debug("Will check blockades on way to " + dest);
+		*/
+		
+		ArrayList<Blockade> blockList = new ArrayList<Blockade>(getBlockadesInRange(me().getX(), me().getY(), clearRange));
+		Logger.debug("Blockade list " + blockList + " in range " + clearRange);
+		if (anyBlockadeInClearArea(blockList, coords))
 			return true;
 		return false;
 	}
@@ -391,17 +566,43 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		return new java.awt.geom.Area(new Polygon(xPoints, yPoints, points.length));
 	}
 
-	private Destination getDestination() {
-		//TODO: better target selection
+	private Destination chooseDestination() {
+		
+		//goes to closest destination in blockedAreas
+		BlockedArea closest = null;
+		
+		for(BlockedArea b : blockedAreas.values()){
+			if(b.isSolved()) continue;
+			
+			if (closest == null || model.getDistance(me().getID(), b.areaID) < model.getDistance(me().getID(), closest.areaID)){
+				closest = b; 
+			}
+		}
+		
+		if (closest != null) {
+			Logger.info("Chosen destination: " + closest);
+			randomDestination = false;
+			return new Destination(closest.areaID, closest.x, closest.y);
+		}
+		
+		Logger.info(
+			String.format(
+				"No destination chosen from blockedAreas map of size %d. Will choose randomly.", 
+				blockedAreas.size()
+			) 
+		);
+		
+		
 		Collection<StandardEntity> entities = model.getEntitiesOfType(StandardEntityURN.BUILDING, 
 				StandardEntityURN.ROAD, StandardEntityURN.HYDRANT, 
 				StandardEntityURN.REFUGE);
 		
 		Set<EntityID> ids = objectsToIDs(entities);
 		EntityID destID = ids.toArray(new EntityID[1])[new Random().nextInt(entities.size())];
-		return new Destination(destID, -1, -1);
-		
-		//return new EntityID(255);
+		StandardEntity d = model.getEntity(destID);
+		Logger.info("Chosen destination: " + d);
+		randomDestination = true;
+		return new Destination(destID, d.getLocation(model));	//coordinates will be centroid of area
 	}
 
 	private List<EntityID> computePath(EntityID entityId) {
@@ -659,6 +860,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		// TODO speak
 		// sendSpeak(time, 1, ("Clearing " + target).getBytes());
 		sendClear(time, (int) targetx, (int) targety);
+		return;
 
 	}
 
@@ -814,6 +1016,7 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
         Logger.debug("Couldn't plan a path to a blocked road");
         Logger.info("Moving randomly");
         sendMove(time, randomWalk());
+        return;
 		/*if (time == config.getIntValue(kernel.KernelConstants.IGNORE_AGENT_COMMANDS_KEY)) {
             // Subscribe to channel 1
             sendSubscribe(time, 1);
