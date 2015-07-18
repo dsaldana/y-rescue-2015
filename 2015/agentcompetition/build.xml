@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- WARNING: Eclipse auto-generated file.
+              Any modifications will be overwritten.
+              To include a user specific buildfile here, simply create one in the same
+              directory with the processing instruction <?eclipse.ant.import?>
+              as the first entry and export the buildfile again. --><project basedir="." default="build" name="y-rescue2015">
+    <property environment="env"/>
+    <property name="junit.output.dir" value="junit"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.7"/>
+    <property name="source" value="1.7"/>
+    <path id="y-rescue2015.classpath">
+        <pathelement location="."/>
+        <pathelement location="lib/xml-0.0.6.jar"/>
+        <pathelement location="lib/uncommons-maths-1.2.jar"/>
+        <pathelement location="lib/trove-0.1.8.jar"/>
+        <pathelement location="lib/traffic3.jar"/>
+        <pathelement location="lib/standard.jar"/>
+        <pathelement location="lib/sample.jar"/>
+        <pathelement location="lib/resq-fire-lib.jar"/>
+        <pathelement location="lib/resq-fire-jar.jar"/>
+        <pathelement location="lib/rescuecore2.jar"/>
+        <pathelement location="lib/rescuecore.jar"/>
+        <pathelement location="lib/misc.jar"/>
+        <pathelement location="lib/maps.jar"/>
+        <pathelement location="lib/log4j-1.2.15.jar"/>
+        <pathelement location="lib/kernel.jar"/>
+        <pathelement location="lib/junit-4.5.jar"/>
+        <pathelement location="lib/jts-1.11.jar"/>
+        <pathelement location="lib/jsi-1.0b2p1.jar"/>
+        <pathelement location="lib/jscience-4.3.jar"/>
+        <pathelement location="lib/jfreechart-1.0.13.jar"/>
+        <pathelement location="lib/jcommon-1.0.16.jar"/>
+        <pathelement location="lib/jaxen-1.1.1.jar"/>
+        <pathelement location="lib/ignition.jar"/>
+        <pathelement location="lib/human.jar"/>
+        <pathelement location="lib/handy.jar"/>
+        <pathelement location="lib/gis2.jar"/>
+        <pathelement location="lib/dom4j.jar"/>
+        <pathelement location="lib/commons-logging-1.1.1.jar"/>
+        <pathelement location="lib/collapse.jar"/>
+        <pathelement location="lib/clear.jar"/>
+        <pathelement location="lib/jgrapht-core-0.9.1.jar"/>
+        <pathelement location="lib/commons-collections4-4.0.jar"/>
+    </path>
+    <target name="init">
+        <copy includeemptydirs="false" todir=".">
+            <fileset dir=".">
+                <exclude name="**/*.java"/>
+                <exclude name="patch/"/>
+                <exclude name="scenarios/fireonly_test/"/>
+                <exclude name="scenarios/original_test/"/>
+                <exclude name="scenarios/"/>
+                <exclude name="bin/"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete>
+            <fileset dir="." includes="**/*.class"/>
+        </delete>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="." includeantruntime="false" source="${source}" target="${target}">
+            <src path="."/>
+            <exclude name="patch/"/>
+            <exclude name="scenarios/fireonly_test/"/>
+            <exclude name="scenarios/original_test/"/>
+            <exclude name="scenarios/"/>
+            <exclude name="bin/"/>
+            <classpath refid="y-rescue2015.classpath"/>
+        </javac>
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
+        <copy todir="${ant.library.dir}">
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </copy>
+        <unzip dest="${ant.library.dir}">
+            <patternset includes="jdtCompilerAdapter.jar"/>
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </unzip>
+    </target>
+    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
+        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
+        <antcall target="build"/>
+    </target>
+    <target name="TestMessageReceiver">
+        <mkdir dir="${junit.output.dir}"/>
+        <junit fork="yes" printsummary="withOutAndErr">
+            <formatter type="xml"/>
+            <test name="test.message.TestMessageReceiver" todir="${junit.output.dir}"/>
+            <classpath refid="y-rescue2015.classpath"/>
+        </junit>
+    </target>
+    <target name="LaunchAgents (1)">
+        <java classname="main.LaunchAgents" failonerror="true" fork="yes">
+            <classpath refid="y-rescue2015.classpath"/>
+        </java>
+    </target>
+    <target name="TestProblemEncoding">
+        <mkdir dir="${junit.output.dir}"/>
+        <junit fork="yes" printsummary="withOutAndErr">
+            <formatter type="xml"/>
+            <test name="test.message.TestProblemEncoding" todir="${junit.output.dir}"/>
+            <classpath refid="y-rescue2015.classpath"/>
+        </junit>
+    </target>
+    <target name="TestClearCommands">
+        <mkdir dir="${junit.output.dir}"/>
+        <junit fork="yes" printsummary="withOutAndErr">
+            <formatter type="xml"/>
+            <test name="test.agentcommand.TestClearCommands" todir="${junit.output.dir}"/>
+            <classpath refid="y-rescue2015.classpath"/>
+        </junit>
+    </target>
+    <target name="junitreport">
+        <junitreport todir="${junit.output.dir}">
+            <fileset dir="${junit.output.dir}">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report format="frames" todir="${junit.output.dir}"/>
+        </junitreport>
+    </target>
+</project>
