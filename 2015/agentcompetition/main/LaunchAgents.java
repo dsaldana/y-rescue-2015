@@ -130,7 +130,9 @@ public final class LaunchAgents {
 		} catch (ComponentConnectionException e) {
 			Logger.info("failed: " + e.getMessage());
 		}
-		
-		System.out.println("Y-Rescue agents launched.");
+		System.out.println();
+		System.out.println("*****************************");
+		System.out.println("* Y-Rescue agents launched. *");
+		System.out.println("*****************************");
 	}
 }

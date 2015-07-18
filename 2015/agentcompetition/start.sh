@@ -5,17 +5,17 @@ classpath=.:lib/clear.jar:lib/jfreechart-1.0.13.jar:lib/rescuecore2.jar:lib/coll
 
 if [ "$#" -ne 7 ]; then
     echo "Wrong parameters. Usage:"
-    echo "./startxterms.sh [f] [a] [p] [F] [A] [P] host"
+    echo "./startxterms.sh [f] [F] [a] [A] [p] [P] host"
     echo "[f]: number of firefighters, [a]: number of ambulances, [p]: number of policemen."
     echo "[F]: number of Fire Stations, [A]: number of Ambulance Centers, [P]: number of  Police Offices."
     echo "[h]: server host"
     exit
 fi
 
-echo "Will start $1 Firefighters, $2 Ambulances and $3 Policemen."
-echo "Will start $4 Fire Stations, $5 Ambulance Centers and $6 Police Offices."
+echo "Will start $1 Firefighters, $3 Ambulances and $5 Policemen."
+echo "Will start $2 Fire Stations, $4 Ambulance Centers and $6 Police Offices."
 
-java -Xms1G -Xmx2G -classpath $classpath main.LaunchAgents -fb $1 -at $2 -pf $3 -h $7 
+java -Xms1G -Xmx2G -classpath $classpath main.LaunchAgents -fb $1 -at $3 -pf $5 -h $7 
 
 #trap 'kill $(jobs -p); exit' SIGHUP SIGINT SIGTERM EXIT
 

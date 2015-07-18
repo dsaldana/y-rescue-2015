@@ -339,7 +339,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
             if (model.getDistance(getID(), next) <= maxDistance) {
                 Logger.info("Extinguishing " + next);
                 sendExtinguish(time, next, maxPower);
-                sendSpeak(time, 1, ("Extinguishing " + next).getBytes());
+                //sendSpeak(time, 1, ("Extinguishing " + next).getBytes());
                 return;
             }
         }
