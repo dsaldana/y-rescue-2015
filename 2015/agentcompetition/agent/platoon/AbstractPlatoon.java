@@ -18,6 +18,8 @@ import commands.AgentCommand;
 import commands.AgentCommands;
 import commands.ClearBlockadeCommand;
 import commands.ClearDirectionCommand;
+import commands.MoveToAreaCommand;
+import commands.MoveToCoordsCommand;
 import message.MessageReceiver;
 import message.MessageTypes;
 import message.ReceivedMessage;
@@ -334,7 +336,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     
     @Override
     protected void sendMove(int time, List<EntityID> path){
-    	commandHistory.put(time, AgentCommands.MOVE);
+    	commandHistory.put(time, new MoveToAreaCommand(path));
     	if (path.get(0) != getLocation().getID()){
     		Logger.debug("Adding current Area " + getLocation().getID() + " to path.");
     		path.add(0, getLocation().getID());
@@ -346,7 +348,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     
     @Override
     protected void sendMove(int time, List<EntityID> path, int destX, int destY){
-    	commandHistory.put(time, AgentCommands.MOVE);
+    	commandHistory.put(time, new MoveToCoordsCommand(path, destX, destY));
     	if (path != null && path.get(0) != getLocation().getID()){
     		Logger.debug("Adding current Area " + getLocation().getID() + " to path.");
     		path.add(0, getLocation().getID());
@@ -996,14 +998,17 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	Logger.debug("Stuckness test - distance from last position:" + Geometry.distance(currentPos, lastPosition));
     	
     	if (commandHistory.containsKey(time -1)) {
-    		Logger.debug("Stuckness test - last command:" + commandHistory.get(time - 1));
-    	}
-    	
-		if (commandHistory.containsKey(time -1) && commandHistory.get(time - 1).equals(AgentCommands.MOVE) && 
-				(Geometry.distance(currentPos, lastPosition)  < tolerance)) 
-		{
-			Logger.info("Dammit, I'm stuck!");
-			return true;
+    		AgentCommand cmd = commandHistory.get(time -1);
+    		
+    		Logger.debug("Stuckness test - last command:" + cmd);
+    		
+    		//if move command was issue and I traversed small distance, I'm stuck
+    		if ( (cmd instanceof MoveToAreaCommand || cmd instanceof MoveToCoordsCommand) && 
+				(Geometry.distance(currentPos, lastPosition)  < tolerance)) {
+		
+				Logger.info("Dammit, I'm stuck!");
+				return true;
+    		}
 		}
 		Logger.info("Not stuck!");
 		return false;

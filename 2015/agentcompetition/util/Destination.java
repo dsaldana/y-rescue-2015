@@ -52,6 +52,12 @@ public class Destination {
 	public boolean match(EntityID areaID, Pair<Integer, Integer> point, int tolerance){
 		if (! destinationArea.equals(areaID)){
 			Logger.debug(String.format("Areas %s and %s are different, This is not destination", destinationArea, areaID));
+			
+			if (Geometry.distance(destPoint, point) < tolerance){
+				Logger.debug("Different areas, but distance is inside tolerance.");
+				return true;
+			}
+			Logger.debug("Different areas, and distance is greater than tolerance.");
 			return false;
 		}
 		
@@ -67,8 +73,8 @@ public class Destination {
 		else {
 			Logger.debug(
 				String.format(
-					"At destination area but distance to point %.3f is greater than tolerance %d", 
-					Geometry.distance(destPoint, point), tolerance
+					"At destination area but distance of point %s to dest. %s is %.3f, greater than tolerance %d.", 
+					point, destPoint, Geometry.distance(destPoint, point), tolerance
 				)
 			);
 			

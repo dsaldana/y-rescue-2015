@@ -24,6 +24,8 @@ import commands.AgentCommand;
 import commands.AgentCommands;
 import commands.ClearBlockadeCommand;
 import commands.ClearDirectionCommand;
+import commands.MoveToAreaCommand;
+import commands.MoveToCoordsCommand;
 import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
 import rescuecore2.worldmodel.ChangeSet;
@@ -101,15 +103,15 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			sendSubscribe(time, 1);
 		}
 		
-		if(stuck()){
-			Logger.info("STUCK! Going failsafe...");
-			failsafe(); //doClear(time);
-			return;
-		}
-		
 		if(stuckInLoop()){
 			Logger.warn("STUCK IN CLEAR/MOVE LOOP! Goin' failsafe...");
 			failsafe();
+			return;
+		}
+		
+		if(stuck()){
+			Logger.info("STUCK! Attempting a clear...");
+			doClear(time);
 			return;
 		}
 		
@@ -121,11 +123,16 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 		if (destination.match(location().getID(), me().getX(), me().getY(), 250)){
 			
 			BlockedArea solved = blockedAreas.get(destination.getAreaID());
-			solved.markSolved(time);
-			problemsToReport.add(solved);
-			destination = chooseDestination();
 			
-			Logger.info("I have arrived to my destination. New destination is" + destination);
+			Logger.debug("Solved problem " + solved);
+			
+			if (solved != null) {
+				solved.markSolved(time);
+				problemsToReport.add(solved);
+				destination = chooseDestination();
+			}
+			
+			Logger.info("I have arrived to my d estination. New destination is" + destination);
 			Logger.info("Added solved" + solved + " to problemsToReport.");
 		}
 		
@@ -251,14 +258,20 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			int index = time - lookedAt; //reads most recent command, then second most recent and so on
 			AgentCommand cmd = commandHistory.get(index);
 			
-			//ignores non-clear or move commands
-			if (!(cmd instanceof ClearBlockadeCommand) || 
-				!(cmd instanceof ClearDirectionCommand) || 
-				cmd != AgentCommands.MOVE) {
+			Logger.debug("Analysing command " + cmd);
+			
+			//ignores non- clear or move commands
+			if (! (cmd instanceof ClearBlockadeCommand || 
+				cmd instanceof ClearDirectionCommand ||
+				cmd instanceof MoveToAreaCommand ||
+				cmd instanceof MoveToCoordsCommand) )
+				 {
+				Logger.debug("Ignoring command " + cmd);
 				continue;
 			}
 			
 			if (cmdCount.containsKey(cmd)){
+				Logger.debug("Counting command " + cmd);
 				//increments value if found
 				cmdCount.put(cmd, cmdCount.get(cmd) + 1);
 				if (cmdCount.get(cmd) >= 4) {
@@ -268,10 +281,10 @@ public class Policeman extends AbstractPlatoon<PoliceForce> {
 			}
 			else {
 				//initializes value if not found
-				cmdCount.put(cmd, 0);
+				cmdCount.put(cmd, 1);
 			}
 		}
-		
+		Logger.debug("Command count was " + cmdCount);
 		return false;
 		/*
 		for (int count : cmdCount.values()){
