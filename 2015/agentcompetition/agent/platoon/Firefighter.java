@@ -261,11 +261,10 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         // Can we extinguish any right now?
         for (EntityID next : all) {
             if (model.getDistance(getID(), next) <= sightRange) {
-            	//////////////////////////////////////////////////////
             	YBuilding yb = yBuildings.get(next);
             	if (yb != null){	//this means that ID refers to a building
             		Logger.info("////////////////////////////////////////////////");
-            		// Clone build to test if it will be necessary to recruit others to extinguish the fire on it
+            		// Cloned build to test if it will be necessary to recruit others to extinguish the fire
             		YBuilding temp = new YBuilding(yb);            		
             		temp.addWater(maxPower);
             		fireSimulator.stepOneBuilding(temp);
@@ -274,7 +273,6 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
             		}
             		Logger.info("////////////////////////////////////////////////");
             	}
-            	//////////////////////////////////////////////////////
             	stateMachine.setState(ActionStates.FireFighter.EXTINGUISHING);
             	Logger.info("Extinguishing " + next);
                 sendExtinguish(time, next, maxPower);
@@ -346,15 +344,18 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         //Collection<StandardEntity> e = model.getEntitiesOfType(StandardEntityURN.BUILDING);
         List<Building> result = new ArrayList<Building>();
         
-        
-        for (BurningBuilding next : burningBuildings.values()) {
-            //if (next instanceof Building) {
-            //    Building b = (Building)next;
-            //    if (b.isOnFire()) {
-            //        result.add(b);
-            //    }
-            //}
-        	
+        for (BurningBuilding next : burningBuildings.values()) {        	
+        	// Is the building visible by the agent?
+        	if (model.getDistance(getID(), next.getEntityID()) <= sightRange) {
+        		if (model.getEntity(next.getEntityID()) instanceof Building) {
+	        		Building yb = (Building) model.getEntity(next.getEntityID());
+	                if (yb != null && ( yb.isOnFire() && yb.getBrokenness() < 90)) {
+	                	result.add(yb);
+	                }
+	                continue;
+        		}
+        	}   	
+        	// Is it solved?
         	if (! next.isSolved()) {
         		Building b = (Building) model.getEntity(next.getEntityID());
         		result.add(b);
