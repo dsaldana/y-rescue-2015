@@ -63,6 +63,7 @@ import util.LastVisitSorter;
 /**
    Abstract base class for sample agents.
    @param <E> The subclass of StandardEntity this agent wants to control.
+   TODO: fall back to fail safe search WHENEVER a search fails
  */
 public abstract class AbstractPlatoon<E extends StandardEntity> extends StandardAgent<E> {
     private static final int RANDOM_WALK_LENGTH = 60;
@@ -598,29 +599,33 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     
     protected void decodeBlockedAreaMessages(Collection<Command> heard){
     	for(Command next : heard){
-    		ReceivedMessage msg = null;
-    		try {
-    			msg = MessageReceiver.decodeMessage(next);
-    		}
-    		catch(Exception e){
-    			Logger.error("An error ocurring while trying to decode message. Will skip: " + next, e);
-    			continue;
-    		}
-    		
-    		if (msg == null || !(msg.problem instanceof BlockedArea)) continue; //skips 'broken' and wrong type msgs
-    		
-    		BlockedArea b = (BlockedArea) msg.problem;
-    		
-    		//if-elses to filter message by type
-    		if(msg.msgType == MessageTypes.REPORT_BLOCKED_AREA){
-    			
-    			updateFromMessage(b);
-    			//else discards message (incoming problem is older than the one I know
-    		}
-    		else if(msg.msgType == MessageTypes.SOLVED_BLOCKED_AREAS){
-    			updateFromMessage(b);
-    			Logger.info("BB[" + b.areaID +"] " + blockedAreas.get(b) );
-    			blockedAreas.get(b.areaID).markSolved(next.getTime()); //ensures that problem is marked as solved
+    		try{
+	    		ReceivedMessage msg = null;
+	    		try {
+	    			msg = MessageReceiver.decodeMessage(next);
+	    		}
+	    		catch(Exception e){
+	    			Logger.error("An error ocurring while trying to decode message. Will skip: " + next, e);
+	    			continue;
+	    		}
+	    		
+	    		if (msg == null || !(msg.problem instanceof BlockedArea)) continue; //skips 'broken' and wrong type msgs
+	    		
+	    		BlockedArea b = (BlockedArea) msg.problem;
+	    		
+	    		//if-elses to filter message by type
+	    		if(msg.msgType == MessageTypes.REPORT_BLOCKED_AREA){
+	    			
+	    			updateFromMessage(b);
+	    			//else discards message (incoming problem is older than the one I know
+	    		}
+	    		else if(msg.msgType == MessageTypes.SOLVED_BLOCKED_AREAS){
+	    			updateFromMessage(b);
+	    			Logger.info("BB[" + b.areaID +"] " + blockedAreas.get(b) );
+	    			blockedAreas.get(b.areaID).markSolved(next.getTime()); //ensures that problem is marked as solved
+	    		}
+    		} catch (Exception e) {
+    			Logger.error("Error while decoding msg "+ next, e);
     		}
     	}
     }
@@ -660,43 +665,51 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     
     protected void decodeWoundedHumanMessages(Collection<Command> heard){
     	for(Command next : heard){
-    		ReceivedMessage msg = MessageReceiver.decodeMessage(next);
-    		if (msg == null || !(msg.problem instanceof WoundedHuman)) continue; //skips 'broken' and wrong type msgs
-    		
-    		WoundedHuman h = (WoundedHuman) msg.problem;
-    		Logger.debug("Received wounded human " + h);
-    		//if-elses to filter message by type
-    		if(msg.msgType == MessageTypes.REPORT_WOUNDED_HUMAN){
-    			Logger.info("Will update from message " + h);
-    			updateFromMessage(h);
-    			//else discards message (incoming problem is older than the one I know
-    		}
-    		else if(msg.msgType == MessageTypes.SOLVED_WOUNDED_HUMAN){
-    			updateFromMessage(h);
-    			woundedHumans.get(h.civilianID).markSolved(next.getTime()); //ensures that problem is marked as solved
+    		try {
+	    		ReceivedMessage msg = MessageReceiver.decodeMessage(next);
+	    		if (msg == null || !(msg.problem instanceof WoundedHuman)) continue; //skips 'broken' and wrong type msgs
+	    		
+	    		WoundedHuman h = (WoundedHuman) msg.problem;
+	    		Logger.debug("Received wounded human " + h);
+	    		//if-elses to filter message by type
+	    		if(msg.msgType == MessageTypes.REPORT_WOUNDED_HUMAN){
+	    			Logger.info("Will update from message " + h);
+	    			updateFromMessage(h);
+	    			//else discards message (incoming problem is older than the one I know
+	    		}
+	    		else if(msg.msgType == MessageTypes.SOLVED_WOUNDED_HUMAN){
+	    			updateFromMessage(h);
+	    			woundedHumans.get(h.civilianID).markSolved(next.getTime()); //ensures that problem is marked as solved
+	    		}
+    		} catch (Exception e) {
+    			Logger.error("Error while decoding msg "+ next, e);
     		}
     	}
     }
     
     protected void decodeBurningBuildingMessages(Collection<Command> heard){
     	for(Command next : heard){
-    		ReceivedMessage msg = MessageReceiver.decodeMessage(next);
-    		if (msg == null || !(msg.problem instanceof BurningBuilding)) continue; //skips 'broken' and wrong type msgs
-    		
-    		Logger.info((String.format("received msg %s", msg)));
-    		
-    		BurningBuilding bb = (BurningBuilding) msg.problem;
-    		
-    		//if-elses to filter message by type
-    		if(msg.msgType == MessageTypes.REPORT_BURNING_BUILDING){
-    			
-    			updateFromMessage(bb);
-    			//else discards message (incoming problem is older than the one I know
-    		}
-    		else if(msg.msgType == MessageTypes.SOLVED_BURNING_BUILDING){
-    			updateFromMessage(bb);
-    			Logger.info("BB[" + bb.buildingID +"] " + burningBuildings.get(bb) );
-    			burningBuildings.get(bb.buildingID).markSolved(next.getTime()); //ensures that problem is marked as solved
+    		try{
+	    		ReceivedMessage msg = MessageReceiver.decodeMessage(next);
+	    		if (msg == null || !(msg.problem instanceof BurningBuilding)) continue; //skips 'broken' and wrong type msgs
+	    		
+	    		Logger.info((String.format("received msg %s", msg)));
+	    		
+	    		BurningBuilding bb = (BurningBuilding) msg.problem;
+	    		
+	    		//if-elses to filter message by type
+	    		if(msg.msgType == MessageTypes.REPORT_BURNING_BUILDING){
+	    			
+	    			updateFromMessage(bb);
+	    			//else discards message (incoming problem is older than the one I know
+	    		}
+	    		else if(msg.msgType == MessageTypes.SOLVED_BURNING_BUILDING){
+	    			updateFromMessage(bb);
+	    			Logger.info("BB[" + bb.buildingID +"] " + burningBuildings.get(bb) );
+	    			burningBuildings.get(bb.buildingID).markSolved(next.getTime()); //ensures that problem is marked as solved
+	    		}
+    		} catch (Exception e) {
+    			Logger.error("Error while decoding msg "+ next, e);
     		}
     	}
     }
