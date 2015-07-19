@@ -16,10 +16,12 @@ import org.apache.log4j.MDC;
 import commands.AgentCommands;
 import problem.BlockedArea;
 import problem.BurningBuilding;
+import problem.Recruitment;
 import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.FireBrigade;
+import rescuecore2.standard.entities.Hydrant;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityURN;
@@ -39,7 +41,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     private static final String MAX_POWER_KEY = "fire.extinguish.max-sum";
     private static final String REFUGE_REFILL_RATE = "fire.tank.refill-rate";
     private static final String HYDRANT_REFILL_RATE = "fire.tank.refill_hydrant_rate";
-
+    
     private int maxWater;		//water capacity
     private int maxDistance;	//max distance that water reaches
     private int maxPower;		//max amount of water launched by timestep
@@ -51,6 +53,8 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     private YFireSimulator fireSimulator;
     private Map<EntityID, YBuilding> yBuildings;
     
+    private Map<EntityID, Integer> waterSourceBlockedIDs;
+    private EntityID currentTarget; 
 
     @Override
     public String toString() {
@@ -101,6 +105,8 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         //second, creates the fire simulator
         fireSimulator = new YFireSimulator(model, yBuildings);
         
+        waterSourceBlockedIDs = new HashMap<EntityID, Integer>(); 
+        
         Logger.info("Fire simulator created.");
         
     }
@@ -141,92 +147,64 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         }
         
         FireBrigade me = me();
+        
+        // Check and update the water sources blocked
+        for (Map.Entry<EntityID, Integer> entry : waterSourceBlockedIDs.entrySet()) {
+    		if(time-entry.getValue() >= (maxWater/hydrantRefillRate)){
+    			waterSourceIDs.add(entry.getKey());
+    			waterSourceBlockedIDs.remove(entry);
+    		}
+    	}
+        
         // Are we currently filling with water?
+        if (me.isWaterDefined() && me.getWater() < maxWater && stateMachine.currentState() == ActionStates.FireFighter.REFILLING_WATER) {
+        	Logger.info("Filling with water at " + location());
+            sendRest(time);
+            return;
+        }
+        // Just got at the Refuge
         if (me.isWaterDefined() && me.getWater() < maxWater && location() instanceof Refuge) {
         	stateMachine.setState(ActionStates.FireFighter.REFILLING_WATER);
             Logger.info("Filling with water at " + location());
             sendRest(time);
             return;
         }
-        // Are we out of water?
-        /*if (me.isWaterDefined() && me.getWater() < maxPower) {
-            // Head for a refuge
-        	stateMachine.setState(ActionStates.FireFighter.OUT_OF_WATER);
-        	
-            List<EntityID> pathRefuge = searchStrategy.shortestPath(me().getPosition(), waterSourceIDs).getPath();
-            
-            if (pathRefuge != null) {
-                Logger.info("Moving to water source");
-                sendMove(time, pathRefuge);
-                return;
-            }
-            else {
-                Logger.debug("Couldn't plan a path to a refuge.");
-                pathRefuge = randomWalk();
-                stateMachine.setState(ActionStates.RANDOM_WALK);
-                Logger.info("Moving randomly");
-                sendMove(time, pathRefuge);
-                return;
-            }
-        }*/
+        // Just got at the Hydrant
+        if (me.isWaterDefined() && me.getWater() < maxPower && location() instanceof Hydrant) {
+        	boolean flagAlone = true;
+        	for (StandardEntity agent : firefighters) { 
+        		if(agent.getID().getValue() > me.getID().getValue()){
+        			if( model.getDistance(me.getID(), agent.getID()) < sightRange ){ 
+						flagAlone = false;
+    				}
+        			if(flagAlone){
+        				stateMachine.setState(ActionStates.FireFighter.REFILLING_WATER);
+			            Logger.info("Filling with water at " + location());
+			            sendRest(time);
+			            return;
+        			}
+        		}
+			}
+			// Find a new source of water
+			if(waterSourceIDs.contains(location().getID())){ 
+				waterSourceIDs.remove(location().getID());
+				waterSourceBlockedIDs.put(location().getID(),time);
+				List<EntityID> pathWater = searchStrategy.shortestPath(me().getPosition(), waterSourceIDs).getPath();
+    	        if (pathWater != null) {
+    	            Logger.info("Moving to a new water source");
+    	            sendMove(time, pathWater);
+    	            return;
+    	        }
+			}
+        }
         // Are we out of water?
     	if (me.isWaterDefined() && me.getWater() < maxPower) {
     		stateMachine.setState(ActionStates.FireFighter.OUT_OF_WATER);
-            // Is there some source of water around me that I could use to refill my tank?
-            for (EntityID next : waterSourceIDs) {
-        	    // Check if there's a source of water close (sightRange) to the agent
-                if (model.getDistance(getID(), next) <= sightRange) {
-            		// Check if the source is a hydrant
-            		if(hydrantIDs.contains(next)){
-            			// Check if there's another agent using it
-            			boolean flagAlone = true;
-            			for (StandardEntity agent : firefighters) {
-            				if(model.getDistance(getID(), agent.getID()) <= sightRange){
-                				flagAlone = false;
-                				break;
-                			}
-            			}
-            			if(flagAlone){ // Refill tank
-            				List<EntityID> pathWater = searchStrategy.shortestPath(me().getPosition(), next).getPath();
-            	            if (pathWater != null) {
-            	                Logger.info("Moving to Hydrant");
-            	                sendMove(time, pathWater);
-            	                return;
-            	            }
-            			}else{
-            				// Find a new source of water
-            				waterSourceIDs.remove(next);
-            				List<EntityID> pathWater = searchStrategy.shortestPath(me().getPosition(), waterSourceIDs).getPath();
-            				waterSourceIDs.add(next);
-            	            if (pathWater != null) {
-            	                Logger.info("Moving to water source");
-            	                sendMove(time, pathWater);
-            	                return;
-            	            }else {
-            	                Logger.debug("Couldn't plan a path to the water source.");
-            	                pathWater = randomWalk();
-            	                stateMachine.setState(ActionStates.RANDOM_WALK);
-            	                Logger.info("Moving randomly");
-            	                sendMove(time, pathWater);
-            	                return;
-            	            }
-            			}
-            		}else{ // The water source is the refuge
-               			 List<EntityID> pathWater = searchStrategy.shortestPath(me().getPosition(), next).getPath();
-            			 if (pathWater != null) {
-         	                Logger.info("Moving to Refuge");
-         	                sendMove(time, pathWater);
-         	                return;
-         	            }else {
-        	                Logger.debug("Couldn't plan a path to the water source.");
-        	                pathWater = randomWalk();
-        	                stateMachine.setState(ActionStates.RANDOM_WALK);
-        	                Logger.info("Moving randomly");
-        	                sendMove(time, pathWater);
-        	                return;
-        	            }
-            		}
-            	}
+            List<EntityID> pathWater = searchStrategy.shortestPath(me().getPosition(), waterSourceIDs).getPath();
+            if (pathWater != null) {
+                Logger.info("Moving to water source");
+                sendMove(time, pathWater);
+                return;
             }
         }
     	
@@ -247,7 +225,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
                 return;
             }
         }
-        
+                
         // get ID of all buildings on fire that i know 
         Collection<EntityID> all = getBurningBuildings();
         
@@ -261,18 +239,6 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         // Can we extinguish any right now?
         for (EntityID next : all) {
             if (model.getDistance(getID(), next) <= sightRange) {
-            	YBuilding yb = yBuildings.get(next);
-            	if (yb != null){	//this means that ID refers to a building
-            		Logger.info("////////////////////////////////////////////////");
-            		// Cloned build to test if it will be necessary to recruit others to extinguish the fire
-            		YBuilding temp = new YBuilding(yb);            		
-            		temp.addWater(maxPower);
-            		fireSimulator.stepOneBuilding(temp);
-            		if(temp.getPredictedTemperature() > 1){
-            			Logger.info("I need help to extinguish the fire!" + next);            			
-            		}
-            		Logger.info("////////////////////////////////////////////////");
-            	}
             	stateMachine.setState(ActionStates.FireFighter.EXTINGUISHING);
             	Logger.info("Extinguishing " + next);
                 sendExtinguish(time, next, maxPower);
@@ -282,14 +248,40 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
             Logger.info(String.format("Target %s out of sight range. Dist=%d", next, model.getDistance(getID(), next)));
         }
         
+        // Going to a target
+        if(stateMachine.currentState() == ActionStates.GOING_TO_TARGET){
+        	if(model.getDistance(me.getID(), currentTarget) <= sightRange ){
+        		Building yb = (Building) model.getEntity(currentTarget);
+                if (yb != null && yb.isOnFire()) {
+                	stateMachine.setState(ActionStates.FireFighter.EXTINGUISHING);
+                	Logger.info("Extinguishing " + currentTarget);
+                    sendExtinguish(time, currentTarget, maxPower);
+                    return;
+                }else{
+                	currentTarget = null;
+                	stateMachine.setState(ActionStates.RANDOM_WALK);
+                }
+        	}else{
+        		List<EntityID> path = searchStrategy.shortestPath(me().getPosition(), currentTarget).getPath();
+                if (path != null) {
+                    Logger.info("Moving to the target");
+                    path.remove(path.size()-1);
+                    sendMove(time, path);
+                    return;
+                }	
+        	}
+        }
+        
         
         // Plan a path to a fire
         for (EntityID next : all) {
-            List<EntityID> path = planPathToFire(next);
+            List<EntityID> path = planPathToFire(next); 
             if (path != null) {
             	stateMachine.setState(ActionStates.GOING_TO_TARGET);
+            	path.remove(path.size()-1);
                 Logger.info("Moving to target " + next + " path " + path);
                 sendMove(time, path);
+                currentTarget = next;
                 return;
             }
         }
