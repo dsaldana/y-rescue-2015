@@ -557,6 +557,18 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	for(Problem p : problemsToReport){
     		Logger.debug((String.format("%s will communicate problem %s", me(), p)));
     		byte[] msg = p.isSolved() ? p.encodeSolvedMessage(getID()) : p.encodeReportMessage(getID());
+    		
+    		//DEAD CONNECTION TEST
+    		/*Logger.info("sleepin'");
+    		try {
+    		    Thread.sleep(20000);                 //1000 milliseconds is one second.
+    		} catch(InterruptedException ex) {
+    		    Thread.currentThread().interrupt();
+    		    Logger.error("InterruptionException: ", ex);
+    		}
+    		Logger.info("wakin'");*/
+    		//END OF DEAD CONNECTION TEST
+    		
     		sendSay(time, msg);
     		sendSpeak(time, 1, msg);	//TODO implementar alocacao de canais
     	}

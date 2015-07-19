@@ -33,7 +33,7 @@ import util.DistanceSorter;
 import yworld.YBuilding;
 import yworld.YFireSimulator;
 /**
- *  RoboFire agent. Implements a simple scheme to fight fires.
+ *  Y-Rescue Firefighter agent.
  */
 public class Firefighter extends AbstractPlatoon<FireBrigade> {
     private static final String MAX_WATER_KEY = "fire.tank.maximum";
@@ -50,8 +50,8 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     
     private boolean refugeRefillRateIsCorrect; 	//indicates whether I have read or calculated refill rate
     
-    private YFireSimulator fireSimulator;
-    private Map<EntityID, YBuilding> yBuildings;
+    //private YFireSimulator fireSimulator;
+    //private Map<EntityID, YBuilding> yBuildings;
     
     private Map<EntityID, Integer> waterSourceBlockedIDs;
     private EntityID currentTarget; 
@@ -96,14 +96,14 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         Logger.info("Creating own fire simulator...");
 
         //first, creates an YBuilding for each Building and populates the map
-        yBuildings = new HashMap<EntityID, YBuilding>();
+        /*yBuildings = new HashMap<EntityID, YBuilding>();
         for(StandardEntity s : model.getEntitiesOfType(StandardEntityURN.BUILDING, StandardEntityURN.REFUGE)){
         	YBuilding y = new YBuilding((Building)s);
         	yBuildings.put(s.getID(), y);
         }
         
         //second, creates the fire simulator
-        fireSimulator = new YFireSimulator(model, yBuildings);
+        fireSimulator = new YFireSimulator(model, yBuildings);*/
         
         waterSourceBlockedIDs = new HashMap<EntityID, Integer>(); 
         
@@ -123,7 +123,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         }*/
         
         //calculates next step of fire simulation
-        fireSimulator.step();
+        //fireSimulator.step();
         
         if(stuck()){
         	//instantiates a BlockedArea about this agent
@@ -132,7 +132,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         }
         
         //updates YBuilding data from observation (overrides predicted data)
-        for (EntityID id : changed.getChangedEntities()){
+        /*for (EntityID id : changed.getChangedEntities()){
         	YBuilding yb = yBuildings.get(id);
         	
         	if (yb != null){	//this means that ID refers to a building
@@ -141,16 +141,18 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         			Logger.error("While updating YBuildings: Building "+id+" not found or has undefined temperature/fieryness");
         			continue;
         		}
-        		yb.updateFromObservation(time, b.getTemperature(), b.getFieryness());
-        		Logger.info("Updating " + yb + " from observation.");
+        		if(b.isTemperatureDefined() && b.isFierynessDefined()){ 
+        			yb.updateFromObservation(time, b.getTemperature(), b.getFieryness());
+        			Logger.info("Updating " + yb + " from observation.");
+        		}
         	}
-        }
+        }*/
         
         FireBrigade me = me();
         
         // Check and update the water sources blocked
         for (Map.Entry<EntityID, Integer> entry : waterSourceBlockedIDs.entrySet()) {
-    		if(time-entry.getValue() >= (maxWater/hydrantRefillRate)){
+    		if(time - entry.getValue() >= (maxWater/hydrantRefillRate)){
     			waterSourceIDs.add(entry.getKey());
     			waterSourceBlockedIDs.remove(entry);
     		}
@@ -158,14 +160,14 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         
         // Are we currently filling with water?
         if (me.isWaterDefined() && me.getWater() < maxWater && stateMachine.currentState() == ActionStates.FireFighter.REFILLING_WATER) {
-        	Logger.info("Filling with water at " + location());
+        	Logger.info("Filling with water at " + location() + ". Now I have " + me().getWater());
             sendRest(time);
             return;
         }
         // Just got at the Refuge
         if (me.isWaterDefined() && me.getWater() < maxWater && location() instanceof Refuge) {
         	stateMachine.setState(ActionStates.FireFighter.REFILLING_WATER);
-            Logger.info("Filling with water at " + location());
+            Logger.info("Filling water at " + location()+ ". Now I have " + me().getWater());
             sendRest(time);
             return;
         }
@@ -179,7 +181,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     				}
         			if(flagAlone){
         				stateMachine.setState(ActionStates.FireFighter.REFILLING_WATER);
-			            Logger.info("Filling with water at " + location());
+			            Logger.info("Filling water at " + location() + ". Now I have " + me().getWater());
 			            sendRest(time);
 			            return;
         			}
@@ -383,7 +385,7 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
         FireBrigade me = me();
         // Are we currently filling with water?
         if (me.isWaterDefined() && me.getWater() < maxWater && location() instanceof Refuge) {
-            Logger.info("Filling with water at " + location());
+            Logger.info("Filling water at " + location()+ ". Now I have " + me().getWater());
             sendRest(time);
             return;
         }
