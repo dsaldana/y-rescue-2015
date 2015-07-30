@@ -39,7 +39,8 @@ public class Firefighter extends AbstractPlatoon<FireBrigade> {
     private static final String MAX_WATER_KEY = "fire.tank.maximum";
     private static final String MAX_DISTANCE_KEY = "fire.extinguish.max-distance";
     private static final String MAX_POWER_KEY = "fire.extinguish.max-sum";
-    private static final String REFUGE_REFILL_RATE = "fire.tank.refill-rate";
+    //private static final String REFUGE_REFILL_RATE = "fire.tank.refill-rate";
+    private static final String REFUGE_REFILL_RATE = "fire.tank.water_refill_rate";
     private static final String HYDRANT_REFILL_RATE = "fire.tank.refill_hydrant_rate";
     
     private int maxWater;		//water capacity

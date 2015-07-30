@@ -51,6 +51,7 @@ import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.kernel.comms.ChannelCommunicationModel;
 import rescuecore2.standard.kernel.comms.StandardCommunicationModel;
 import search.NeighborhoodGraph;
+import search.SafeSearch;
 import search.SearchStrategy;
 import search.sample.SampleSearch;
 import search.ysearch.YGraphWrapper;
@@ -101,8 +102,11 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     // The search strategy
     protected SearchStrategy searchStrategy;
     
+    protected YSearch ySearch;
+    
     // The "failsafe' sample search stratety
     protected SampleSearch failSafeSearch;
+    
     
     /**
        The search algorithm.
@@ -251,8 +255,8 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         failSafeSearch = new SampleSearch(neighbours);
         
         try {
-        	searchStrategy = new YSearch(model);
-        	Logger.info("Using YSearch strategy");
+        	ySearch = new YSearch(model);
+        	Logger.info("YSearch instantiation successful");
         	//searchStrategy = new SampleSearch(neighbours);
         	
         	/*Logger.info("TEST!");
@@ -261,12 +265,11 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         	*/
         }
         catch (Exception e) {
-        	//falls back to safe, simpler SampleSearch
         	Logger.error("Could not create YSearch instance.", e);
-        	searchStrategy = failSafeSearch;
-        	Logger.info("Using fail-safe SampleSearch");
         }
         //Logger.info("\n"+searchGraph.dumpNodes());
+        
+        searchStrategy = new SafeSearch(ySearch, failSafeSearch);
         
         Logger.info(String.format(
     		"I can count %d firefighters, %d ambulances and %d policemen", 

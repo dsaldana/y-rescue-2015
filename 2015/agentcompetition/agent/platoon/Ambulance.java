@@ -94,7 +94,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 			sb.append(" ");
 		}
 
-		System.out.println("Area ids : " + sb.toString());
+		Logger.info("Area ids : " + sb.toString());
 
 		totalHP = me().getHP();
 		assignedBuildingNumber = unexploredBuildings.size();
@@ -141,7 +141,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 				+ " pos:" + me().getPosition() + " Damage:" + me().getDamage()
 				+ " Stamina:" + me().getStamina() + " unexploredBuildings:"
 				+ unexploredBuildings.size();
-		System.out.println(statusString);
+		Logger.info(statusString);
 
 		// Am I transporting a civilian to a refuge?
 		if (someoneOnBoard()) {
@@ -264,7 +264,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 		// Go through targets (sorted by distance) and check for things we can
 		// do
 		List<WoundedHuman> humanList = getTargets();
-		System.out.println("HumanList size: " + humanList.size());
+		Logger.info("HumanList size: " + humanList.size());
 		if (processTargets(humanList))
 			return; // If processTargets is going to process something, stop
 					// further processing
@@ -283,7 +283,14 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 				path = searchStrategy.shortestPath(me().getPosition(),
 						entityIDList).getPath();
 			} catch (Exception e) {
-				Logger.error("Path search exception:", e);
+				Logger.error("Path search exception, will try failsafe search:", e);
+				
+				try{
+					path = failSafeSearch.shortestPath(me().getPosition(), entityIDList).getPath();
+				}
+				catch (Exception wow) {
+					Logger.error("Failsafe search failed:", e);
+				}
 			}
 
 			if (path != null) {
@@ -653,7 +660,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 					}
 				}
 				List<WoundedHuman> humanList = getTargets();
-				System.out.println("HumanList size: " + humanList.size());
+				Logger.debug("HumanList size: " + humanList.size());
 
 				for (WoundedHuman next : humanList) {
 					if (next.position.getValue() == me().getPosition()
