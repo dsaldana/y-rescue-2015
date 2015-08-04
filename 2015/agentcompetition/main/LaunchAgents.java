@@ -24,7 +24,7 @@ import rescuecore2.standard.entities.StandardPropertyFactory;
 import rescuecore2.standard.messages.StandardMessageFactory;
 
 /**
- * Robot Launcher. This will launch as many instances of each of the
+ * Y-Rescue agent Launcher. This will launch as many instances of each of the
  * agents as possible, all using one connection.
  */
 public final class LaunchAgents {
@@ -46,6 +46,7 @@ public final class LaunchAgents {
 	 */
 	public static void main(String[] args) {
 		Logger.setLogContext("sample");
+		System.out.println("LAUNCHING Y-RESCUE AGENTS...");
 		try {
 			Registry.SYSTEM_REGISTRY
 					.registerEntityFactory(StandardEntityFactory.INSTANCE);
@@ -95,28 +96,24 @@ public final class LaunchAgents {
 		int i = 0;
 		try {
 			while (fb-- != 0) {
-				//Logger.info("Connecting Firefighter " + (i++) + "...");
-				//launcher.connect(new Firefighter());
 				LaunchAgent.connect(Firefighter.class, launcher, config);
-				//Logger.info("success");
+				System.out.println("Connected Firefighter " + (i++) + "...");
 			}
 		} catch (ComponentConnectionException e) {
 			Logger.info("failed: " + e.getMessage());
 		}
 		try {
 			while (pf-- != 0) {
-				//Logger.info("Connecting Policeman " + (i++) + "...");
 				LaunchAgent.connect(Policeman.class, launcher, config);
-				//Logger.info("success");
+				System.out.println("Connected Policeman " + (i++) + "...");
 			}
 		} catch (ComponentConnectionException e) {
 			Logger.info("failed: " + e.getMessage());
 		}
 		try {
 			while (at-- != 0) {
-				//Logger.info("Connecting Ambulance " + (i++) + "...");
 				LaunchAgent.connect(Ambulance.class, launcher, config);
-				//Logger.info("success");
+				System.out.println("Connected Ambulance " + (i++) + "...");
 			}
 		} catch (ComponentConnectionException e) {
 			Logger.info("failed: " + e.getMessage());

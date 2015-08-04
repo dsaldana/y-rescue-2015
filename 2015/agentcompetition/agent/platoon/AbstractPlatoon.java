@@ -320,7 +320,7 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
     	}
     	catch (Exception e){
     		Logger.error(String.format("Cannot read config key %s. Will return default: %d", key, value), e);
-    		Logger.info("Check the keys: " + config.getAllKeys());
+    		Logger.trace("Check the keys: " + config.getAllKeys());
     	}
     	
     	return value;
@@ -830,11 +830,11 @@ public abstract class AbstractPlatoon<E extends StandardEntity> extends Standard
         		//else, mark it as solved if it was on knowledge base
                 if (b.isOnFire()) {
                     updateBurningBuilding(time, b);
-                    Logger.info(String.format("%s burning, updating info.", b));
+                    Logger.debug(String.format("%s burning, updating info.", b));
                 }
                 else {
                 	//mark as solved if exists (since it is not on fire)
-                	System.out.println((String.format("%s is not burning anymore.", b)));
+                	Logger.debug((String.format("%s is not burning anymore.", b)));
                 	if(burningBuildings.containsKey(b.getID())){
                 		BurningBuilding notBurningAnymore = burningBuildings.get(b.getID());
                 		notBurningAnymore.update(b.getBrokenness(), b.getFieryness(), b.getTemperature(), time);
