@@ -10,9 +10,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import message.MessageType;
+import message.MessageTypes;
 import message.RecruitmentMsgUtil;
 import message.TaskType;
+import problem.BlockedArea;
 import problem.Recruitment;
 import problem.WoundedHuman;
 import rescuecore2.worldmodel.Entity;
@@ -93,7 +94,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 			sb.append(" ");
 		}
 
-		System.out.println("Area ids : " + sb.toString());
+		Logger.info("Area ids : " + sb.toString());
 
 		totalHP = me().getHP();
 		assignedBuildingNumber = unexploredBuildings.size();
@@ -129,12 +130,18 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 		}
 
 		updateUnexploredBuildings(changed);
+		
+		if(stuck()){
+        	//instantiates a BlockedArea about this agent
+        	BlockedArea aroundMe = new BlockedArea(location().getID(), me().getX(), me().getY(), time);
+        	problemsToReport.add(aroundMe);
+        }
 
 		String statusString = "HP:" + me().getHP() + " Total HP:" + totalHP
 				+ " pos:" + me().getPosition() + " Damage:" + me().getDamage()
 				+ " Stamina:" + me().getStamina() + " unexploredBuildings:"
 				+ unexploredBuildings.size();
-		System.out.println(statusString);
+		Logger.info(statusString);
 
 		// Am I transporting a civilian to a refuge?
 		if (someoneOnBoard()) {
@@ -230,7 +237,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 					recruitmentMsgToSend.add(new Recruitment(me().getID(), me()
 							.getID(), humanTarget.getPosition(),
 							TaskType.AMBULANCE_UNBURY,
-							MessageType.RECRUITMENT_REQUEST, time));
+							MessageTypes.RECRUITMENT_REQUEST, time));
 				}
 				return;
 			} else {
@@ -257,7 +264,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 		// Go through targets (sorted by distance) and check for things we can
 		// do
 		List<WoundedHuman> humanList = getTargets();
-		System.out.println("HumanList size: " + humanList.size());
+		Logger.info("HumanList size: " + humanList.size());
 		if (processTargets(humanList))
 			return; // If processTargets is going to process something, stop
 					// further processing
@@ -276,7 +283,14 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 				path = searchStrategy.shortestPath(me().getPosition(),
 						entityIDList).getPath();
 			} catch (Exception e) {
-				Logger.error("Path search exception:", e);
+				Logger.error("Path search exception, will try failsafe search:", e);
+				
+				try{
+					path = failSafeSearch.shortestPath(me().getPosition(), entityIDList).getPath();
+				}
+				catch (Exception wow) {
+					Logger.error("Failsafe search failed:", e);
+				}
 			}
 
 			if (path != null) {
@@ -527,11 +541,11 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 							&& r.getTaskType() == currentTask) {
 						if (agentsRecruited >= RECRUITMENT_LIMIT) {
 							recruitmentUtil.responseCommit(r, me().getID(),
-									MessageType.RECRUITMENT_RELEASE, me()
+									MessageTypes.RECRUITMENT_RELEASE, me()
 											.getPosition(), time);
 						} else {
 							recruitmentUtil.responseCommit(r, me().getID(),
-									MessageType.RECRUITMENT_ENGAGE, me()
+									MessageTypes.RECRUITMENT_ENGAGE, me()
 											.getPosition(), time);
 							agentsRecruited++;
 						}
@@ -567,7 +581,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 							stateMachine
 									.setState(ActionStates.RECRUITMENT_WAITING_RESPONSE);
 							recruitmentUtil.responseRequest(r, me().getID(),
-									MessageType.RECRUITMENT_COMMIT, me()
+									MessageTypes.RECRUITMENT_COMMIT, me()
 											.getPosition(), time);
 							break;
 						}
@@ -576,7 +590,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 									.getValue()) {
 						currentTask = TaskType.AMBULANCE_UNBURY;
 						recruitmentUtil.responseRequest(r, me().getID(),
-								MessageType.RECRUITMENT_COMMIT, me()
+								MessageTypes.RECRUITMENT_COMMIT, me()
 										.getPosition(), time);
 						stateMachine
 								.setState(ActionStates.RECRUITMENT_WAITING_RESPONSE);
@@ -646,7 +660,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 					}
 				}
 				List<WoundedHuman> humanList = getTargets();
-				System.out.println("HumanList size: " + humanList.size());
+				Logger.debug("HumanList size: " + humanList.size());
 
 				for (WoundedHuman next : humanList) {
 					if (next.position.getValue() == me().getPosition()
@@ -728,7 +742,7 @@ public class Ambulance extends AbstractPlatoon<AmbulanceTeam> {
 						recruitmentMsgToSend.add(new Recruitment(me().getID(),
 								me().getID(), next.position,
 								TaskType.AMBULANCE_UNBURY,
-								MessageType.RECRUITMENT_REQUEST, time));
+								MessageTypes.RECRUITMENT_REQUEST, time));
 					}
 					return true;
 				}

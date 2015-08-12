@@ -80,9 +80,9 @@ public class LaunchAgent {
 		
 		try {
 			String className = agentClass.getSimpleName();
-			Logger.info("Connecting " + className +"...");
+			//Logger.info("Connecting " + className +"...");
 			launcher.connect(agentClass.newInstance());
-			Logger.info(className + " connected");
+			System.out.println(className + " connected");
 			
 		} 
 		catch (InstantiationException | IllegalAccessException e) {

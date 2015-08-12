@@ -3,7 +3,7 @@ package message;
 import java.io.UnsupportedEncodingException;
 
 import message.misc.BroadCastRefillRateMessage;
-import problem.BlockedRoad;
+import problem.BlockedArea;
 import problem.BurningBuilding;
 import problem.Problem;
 import problem.Recruitment;
@@ -36,7 +36,7 @@ public class MessageReceiver {
         String[] parts = msg.split(",");
         int type = Integer.parseInt(parts[0]);
         
-        if (type == MessageType.BROADCAST_REFILL_RATE.ordinal()){
+        if (type == MessageTypes.BROADCAST_REFILL_RATE.ordinal()){
         	return decodeBroadCastRefillRateMessage(cmd, parts);
         }
         
@@ -55,7 +55,7 @@ public class MessageReceiver {
         //String[] parts = msg.split(",");
         
         Problem p = null;
-        MessageType t = null;
+        MessageTypes t = null;
         
         int type = Integer.parseInt(parts[0]);
         EntityID senderID = new EntityID(Integer.parseInt(parts[1])); //not used by now
@@ -63,80 +63,83 @@ public class MessageReceiver {
         
         //lots of if-else to test message types
         // --- blocked road message types
-        if (type == MessageType.REPORT_BLOCKED_ROAD.ordinal()){
-        	int repairCost = Integer.parseInt(parts[3]);
+        if (type == MessageTypes.REPORT_BLOCKED_AREA.ordinal()){
+        	int x = Integer.parseInt(parts[3]);
+        	int y = Integer.parseInt(parts[4]);
         	
-        	p = new BlockedRoad(id, repairCost, cmd.getTime());
-        	t = MessageType.REPORT_BLOCKED_ROAD;
+        	p = new BlockedArea(id, x, y, cmd.getTime());
+        	t = MessageTypes.REPORT_BLOCKED_AREA;
         }
-        else if (type == MessageType.ENGAGE_BLOCKED_ROAD.ordinal()){
-        	int repairCost = Integer.parseInt(parts[3]);
+        else if (type == MessageTypes.ENGAGE_BLOCKED_AREA.ordinal()){
+        	int x = Integer.parseInt(parts[3]);
+        	int y = Integer.parseInt(parts[4]);
         	
-        	p = new BlockedRoad(id, repairCost, cmd.getTime());
-        	t = MessageType.ENGAGE_BLOCKED_ROAD;
+        	p = new BlockedArea(id, x, y, cmd.getTime());
+        	t = MessageTypes.ENGAGE_BLOCKED_AREA;
         }
-        else if (type == MessageType.SOLVED_BLOCKED_ROAD.ordinal()){
-        	
-        	p = new BlockedRoad(id, 0, cmd.getTime());
+        else if (type == MessageTypes.SOLVED_BLOCKED_AREAS.ordinal()){
+        	int x = Integer.parseInt(parts[3]);
+        	int y = Integer.parseInt(parts[4]);
+        	p = new BlockedArea(id, x, y, cmd.getTime());
         	p.markSolved(cmd.getTime());
-        	t = MessageType.SOLVED_BLOCKED_ROAD;
+        	t = MessageTypes.SOLVED_BLOCKED_AREAS;
         	
         }
         
         //--- wounded human message types
         EntityID position;
-        if (type == MessageType.REPORT_WOUNDED_HUMAN.ordinal()){
+        if (type == MessageTypes.REPORT_WOUNDED_HUMAN.ordinal()){
         	position = new EntityID(Integer.parseInt(parts[3]));
         	int buriedness = Integer.parseInt(parts[4]);
         	int health = Integer.parseInt(parts[5]);
         	int damage = Integer.parseInt(parts[6]);
         	
         	p = new WoundedHuman(id, position, buriedness, health, damage, cmd.getTime());
-        	t = MessageType.REPORT_WOUNDED_HUMAN;
+        	t = MessageTypes.REPORT_WOUNDED_HUMAN;
         }
-        else if (type == MessageType.ENGAGE_WOUNDED_HUMAN.ordinal()){
+        else if (type == MessageTypes.ENGAGE_WOUNDED_HUMAN.ordinal()){
         	position = new EntityID(Integer.parseInt(parts[3]));
         	int buriedness = Integer.parseInt(parts[4]);
         	int health = Integer.parseInt(parts[5]);
         	int damage = Integer.parseInt(parts[6]);
         	
         	p = new WoundedHuman(id, position, buriedness, health, damage, cmd.getTime());
-        	t = MessageType.ENGAGE_WOUNDED_HUMAN;
+        	t = MessageTypes.ENGAGE_WOUNDED_HUMAN;
         }
-        else if (type == MessageType.SOLVED_WOUNDED_HUMAN.ordinal()){
+        else if (type == MessageTypes.SOLVED_WOUNDED_HUMAN.ordinal()){
         	
         	p = new WoundedHuman(id, null, 0, 10000, 0, cmd.getTime());
         	p.markSolved(cmd.getTime());
-        	t = MessageType.SOLVED_WOUNDED_HUMAN;
+        	t = MessageTypes.SOLVED_WOUNDED_HUMAN;
         	
         }
         
         // --- burning building message types
-        if (type == MessageType.REPORT_BURNING_BUILDING.ordinal()){
+        if (type == MessageTypes.REPORT_BURNING_BUILDING.ordinal()){
         	int brokenness = Integer.parseInt(parts[3]);
         	int fieryness = Integer.parseInt(parts[4]);
         	int temperature = Integer.parseInt(parts[5]);
         	
         	p = new BurningBuilding(id, brokenness, fieryness, temperature, cmd.getTime());
-        	t = MessageType.REPORT_BURNING_BUILDING;
+        	t = MessageTypes.REPORT_BURNING_BUILDING;
         }
-        else if (type == MessageType.ENGAGE_BURNING_BUILDING.ordinal()){
+        else if (type == MessageTypes.ENGAGE_BURNING_BUILDING.ordinal()){
         	int brokenness = Integer.parseInt(parts[3]);
         	int fieryness = Integer.parseInt(parts[4]);
         	int temperature = Integer.parseInt(parts[5]);
         	
         	p = new BurningBuilding(id, brokenness, fieryness, temperature, cmd.getTime());
-        	t = MessageType.ENGAGE_BURNING_BUILDING;
+        	t = MessageTypes.ENGAGE_BURNING_BUILDING;
         }
-        else if (type == MessageType.SOLVED_BURNING_BUILDING.ordinal()){
+        else if (type == MessageTypes.SOLVED_BURNING_BUILDING.ordinal()){
         	
         	p = new BurningBuilding(id, 0, Fieryness.WATER_DAMAGE.ordinal(), 0, cmd.getTime());
         	p.markSolved(cmd.getTime());
-        	t = MessageType.SOLVED_BURNING_BUILDING;
+        	t = MessageTypes.SOLVED_BURNING_BUILDING;
         }
         
         // --- Recruitment message types
-        if (type == MessageType.RECRUITMENT_REQUEST.ordinal()){
+        if (type == MessageTypes.RECRUITMENT_REQUEST.ordinal()){
         	int taskType = Integer.parseInt(parts[3]);
         	position = new EntityID(Integer.parseInt(parts[4]));
         	
@@ -146,10 +149,10 @@ public class MessageReceiver {
         		return null;
         	}
         	
-        	p = new Recruitment(senderID, id, position, enumTaskType, MessageType.RECRUITMENT_REQUEST, cmd.getTime());
-        	t = MessageType.RECRUITMENT_REQUEST;
+        	p = new Recruitment(senderID, id, position, enumTaskType, MessageTypes.RECRUITMENT_REQUEST, cmd.getTime());
+        	t = MessageTypes.RECRUITMENT_REQUEST;
         }
-        else if (type == MessageType.RECRUITMENT_COMMIT.ordinal()){
+        else if (type == MessageTypes.RECRUITMENT_COMMIT.ordinal()){
         	int taskType = Integer.parseInt(parts[3]);
         	position = new EntityID(Integer.parseInt(parts[4]));
         	
@@ -159,10 +162,10 @@ public class MessageReceiver {
         		return null;
         	}
         	
-        	p = new Recruitment(senderID, id, position, enumTaskType, MessageType.RECRUITMENT_COMMIT, cmd.getTime());
-        	t = MessageType.RECRUITMENT_COMMIT;
+        	p = new Recruitment(senderID, id, position, enumTaskType, MessageTypes.RECRUITMENT_COMMIT, cmd.getTime());
+        	t = MessageTypes.RECRUITMENT_COMMIT;
         }
-        else if (type == MessageType.RECRUITMENT_RELEASE.ordinal()){
+        else if (type == MessageTypes.RECRUITMENT_RELEASE.ordinal()){
         	int taskType = Integer.parseInt(parts[3]);
         	position = new EntityID(Integer.parseInt(parts[4]));
         	
@@ -172,10 +175,10 @@ public class MessageReceiver {
         		return null;
         	}
         	
-        	p = new Recruitment(senderID, id, position, enumTaskType, MessageType.RECRUITMENT_RELEASE, cmd.getTime());
-        	t = MessageType.RECRUITMENT_RELEASE;
+        	p = new Recruitment(senderID, id, position, enumTaskType, MessageTypes.RECRUITMENT_RELEASE, cmd.getTime());
+        	t = MessageTypes.RECRUITMENT_RELEASE;
         }
-        else if (type == MessageType.RECRUITMENT_ENGAGE.ordinal()){
+        else if (type == MessageTypes.RECRUITMENT_ENGAGE.ordinal()){
         	int taskType = Integer.parseInt(parts[3]);
         	position = new EntityID(Integer.parseInt(parts[4]));
         	
@@ -185,11 +188,11 @@ public class MessageReceiver {
         		return null;
         	}
         	
-        	p = new Recruitment(senderID, id, position, enumTaskType, MessageType.RECRUITMENT_ENGAGE, cmd.getTime());
-        	t = MessageType.RECRUITMENT_ENGAGE;
+        	p = new Recruitment(senderID, id, position, enumTaskType, MessageTypes.RECRUITMENT_ENGAGE, cmd.getTime());
+        	t = MessageTypes.RECRUITMENT_ENGAGE;
         	
         }
-        else if (type == MessageType.RECRUITMENT_TIMEOUT.ordinal()){
+        else if (type == MessageTypes.RECRUITMENT_TIMEOUT.ordinal()){
         	int taskType = Integer.parseInt(parts[3]);
         	position = new EntityID(Integer.parseInt(parts[4]));
         	
@@ -199,8 +202,8 @@ public class MessageReceiver {
         		return null;
         	}
         	
-        	p = new Recruitment(senderID, id, position, enumTaskType, MessageType.RECRUITMENT_TIMEOUT, cmd.getTime());
-        	t = MessageType.RECRUITMENT_TIMEOUT;
+        	p = new Recruitment(senderID, id, position, enumTaskType, MessageTypes.RECRUITMENT_TIMEOUT, cmd.getTime());
+        	t = MessageTypes.RECRUITMENT_TIMEOUT;
 
         }
         

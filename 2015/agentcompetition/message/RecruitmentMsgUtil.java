@@ -52,19 +52,19 @@ public class RecruitmentMsgUtil {
 		for(Recruitment r : recruitmentMessages){
 			if(r == null) continue;
 			if(!this.validTasks.contains(r.getTaskType())) continue;
-			if(r.getMessageType() == MessageType.RECRUITMENT_COMMIT){
+			if(r.getMessageType() == MessageTypes.RECRUITMENT_COMMIT){
 				this.commitList.add(r);
 			}
-			else if(r.getMessageType() == MessageType.RECRUITMENT_ENGAGE){
+			else if(r.getMessageType() == MessageTypes.RECRUITMENT_ENGAGE){
 				this.engageList.add(r);
 			}
-			else if(r.getMessageType() == MessageType.RECRUITMENT_RELEASE){
+			else if(r.getMessageType() == MessageTypes.RECRUITMENT_RELEASE){
 				this.releaseList.add(r);
 			}
-			else if(r.getMessageType() == MessageType.RECRUITMENT_REQUEST){
+			else if(r.getMessageType() == MessageTypes.RECRUITMENT_REQUEST){
 				this.requestList.add(r);
 			}
-			else if(r.getMessageType() == MessageType.RECRUITMENT_TIMEOUT){
+			else if(r.getMessageType() == MessageTypes.RECRUITMENT_TIMEOUT){
 				this.timeoutList.add(r);
 			}
 		}
@@ -120,7 +120,7 @@ public class RecruitmentMsgUtil {
 	 * @param time
 	 * @return
 	 */
-	public boolean responseRequest(Recruitment originalMessage, EntityID responseEntityID, MessageType response, EntityID responsePosition, int time){
+	public boolean responseRequest(Recruitment originalMessage, EntityID responseEntityID, MessageTypes response, EntityID responsePosition, int time){
 		Recruitment r = new Recruitment(originalMessage.getEntityID(), responseEntityID, responsePosition, originalMessage.getTaskType(), response, time);
 		return this.sendMessages.add(r);
 	}
@@ -135,7 +135,7 @@ public class RecruitmentMsgUtil {
 	 * @param time
 	 * @return
 	 */
-	public boolean responseCommit(Recruitment originalMessage, EntityID responseEntityID, MessageType response, EntityID responsePosition, int time){
+	public boolean responseCommit(Recruitment originalMessage, EntityID responseEntityID, MessageTypes response, EntityID responsePosition, int time){
 		Recruitment r = new Recruitment(originalMessage.getEntityID(), responseEntityID, responsePosition, originalMessage.getTaskType(), response, time);
 		return this.sendMessages.add(r);
 	}
