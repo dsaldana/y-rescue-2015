@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="library/rescue/core/adf-util.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/clear.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/collapse.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/gis2.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/handy.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/human.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/ignition.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/kernel.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/maps.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/misc.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/rescuecore2.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/resq-fire.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/sample.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/standard.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/traffic3.jar"/>
+	<classpathentry kind="lib" path="library/util/guava-18.0.jar"/>
+	<classpathentry kind="lib" path="library/util/default/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="library/util/default/dom4j.jar"/>
+	<classpathentry kind="lib" path="library/util/default/jaxen-1.1.1.jar"/>
+	<classpathentry kind="lib" path="library/util/default/jcommon-1.0.16.jar"/>
+	<classpathentry kind="lib" path="library/util/default/jfreechart-1.0.13.jar"/>
+	<classpathentry kind="lib" path="library/util/default/jscience-4.3.jar"/>
+	<classpathentry kind="lib" path="library/util/default/jsi-1.0b2p1.jar"/>
+	<classpathentry kind="lib" path="library/util/default/jts-1.11.jar"/>
+	<classpathentry kind="lib" path="library/util/default/junit-4.5.jar"/>
+	<classpathentry kind="lib" path="library/util/default/log4j-1.2.15.jar"/>
+	<classpathentry kind="lib" path="library/util/default/rescuecore.jar"/>
+	<classpathentry kind="lib" path="library/util/default/resq-fire-core.jar"/>
+	<classpathentry kind="lib" path="library/util/default/resq-fire.jar"/>
+	<classpathentry kind="lib" path="library/util/default/trove-0.1.8.jar"/>
+	<classpathentry kind="lib" path="library/util/default/uncommons-maths-1.2.jar"/>
+	<classpathentry kind="lib" path="library/util/default/xml-0.0.6.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.launching.macosx.MacOSXType/Java SE 8"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
