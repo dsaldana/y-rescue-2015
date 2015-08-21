@@ -19,8 +19,8 @@ import java.util.List;
 public abstract class BasicTacticsAmbulance extends TacticsAmbulance implements RouteSearcherProvider, VictimSelectorProvider {
 
     public VictimSelector victimSelector;
-
     public RouteSearcher routeSearcher;
+    private final int EXPLORE_TIME_STEP_TRESH = 10;
 
     @Override
     public void preparation(Config config, MessageManager messageManager) {
@@ -46,52 +46,63 @@ public abstract class BasicTacticsAmbulance extends TacticsAmbulance implements 
 
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
-        //情報の整理
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
-        //自分の状態チェック
+        
+        System.out.println("Time:" + currentTime + " Id:" + this.agentID.getValue());
+        
+        // Basic state check
         if(this.me.getBuriedness() > 0) {
             this.target = null;
-            //自分自身をRescueできるのか？？
-            //return new ActionRest(this);
             return new ActionRescue(this, this.agentID);
         }
-        //人を載せているか or 回復中
+        
+        // Refugee actions
         if(this.location instanceof Refuge) {
-            this.target = null;
             if(this.someoneOnBoard()) {
+            	this.target = null;
                 return new ActionUnload(this);
             }
             if(this.me.getDamage() > 0) {
+            	this.target = null;
                 return new ActionRest(this);
             }
         }
-        //避難所への移動条件
-        if(this.someoneOnBoard() || this.me.getDamage() >= 300) {
+        
+        // Movement conditions to shelter
+        if(this.someoneOnBoard() || this.me.getDamage() >= 50) {
             return this.moveRefuge(currentTime);
         }
-        //対象の選択・切り替え
+        
+        if(currentTime < EXPLORE_TIME_STEP_TRESH){
+        	return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
+        }
+        
+        // Selecting and switching target
         this.target = this.target == null ? this.victimSelector.getNewTarget(currentTime) : this.victimSelector.updateTarget(currentTime, this.target);
         if(this.target == null) {
             return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
         }
-        //救助開始
+        
+        // Begin rescue
         do {
             Human victim = (Human) this.world.getEntity(this.target);
             if (victim.getPosition().getValue() != this.location.getID().getValue()) {
                 return this.moveTarget(currentTime);
             }
+            
             if (victim.getBuriedness() > 0) {
                 return new ActionRescue(this, this.target);
             }
-            //救助済みの場合
-            //市民
+            
+            // In the case of rescue already
             if (victim instanceof Civilian) {
                 Civilian civilian = (Civilian) victim;
                 manager.addSendMessage(new MessageCivilian(civilian));
                 this.victimSelector.remove(civilian);
                 return new ActionLoad(this, this.target);
             }
-            //災害救助エージェント
+            
+            // Disaster relief agent
             if (victim instanceof AmbulanceTeam) {
                 AmbulanceTeam ambulanceTeam = (AmbulanceTeam) victim;
                 manager.addSendMessage(new MessageAmbulanceTeam(ambulanceTeam, MessageAmbulanceTeam.ACTION_REST, null));
@@ -105,14 +116,15 @@ public abstract class BasicTacticsAmbulance extends TacticsAmbulance implements 
                 manager.addSendMessage(new MessagePoliceForce(policeForce, MessagePoliceForce.ACTION_REST, null));
                 this.victimSelector.remove(policeForce);
             }
-            //対象が救助済み．または対象外の場合
+            // The target has already been rescued. Or in the case of excluded
             this.target = this.victimSelector.getNewTarget(currentTime);
         }while (this.target != null);
+        
         return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
     }
 
     public boolean someoneOnBoard() {
-        return this.target != null && ((Human)this.world.getEntity(this.target)).getPosition().getValue() == this.agentID.getValue();
+        return this.target != null && ((Human)this.world.getEntity(this.target)).getPosition().getValue() == this.me.getID().getValue();
     }
 
     public Action moveRefuge(int currentTime) {
@@ -124,7 +136,13 @@ public abstract class BasicTacticsAmbulance extends TacticsAmbulance implements 
     public Action moveTarget(int currentTime) {
         List<EntityID> path = null;
         if(this.target != null) {
-            path = this.routeSearcher.getPath(currentTime, this.me, this.target);
+        	if(this.world.getEntity(this.target) instanceof Human){
+        		Human humanTarget = (Human) this.world.getEntity(this.target);
+        		path = this.routeSearcher.getPath(currentTime, this.me.getPosition(), humanTarget.getPosition());
+        	}
+        	else{
+        		path = this.routeSearcher.getPath(currentTime, this.me.getPosition(), this.target);
+        	}
         }
         return new ActionMove(this, path != null ? path : this.routeSearcher.noTargetMove(currentTime, this.me));
     }
