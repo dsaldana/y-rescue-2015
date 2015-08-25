@@ -1,8 +1,5 @@
 package adk.team;
 
-import adk.team.yrescue.control.YRescueControlAmbulance;
-import adk.team.yrescue.control.YRescueControlFire;
-import adk.team.yrescue.control.YRescueControlPolice;
 import adk.team.control.ControlAmbulance;
 import adk.team.control.ControlFire;
 import adk.team.control.ControlPolice;
@@ -10,6 +7,9 @@ import adk.team.precompute.*;
 import adk.team.tactics.TacticsAmbulance;
 import adk.team.tactics.TacticsFire;
 import adk.team.tactics.TacticsPolice;
+import yrescue.control.YRescueControlAmbulance;
+import yrescue.control.YRescueControlFire;
+import yrescue.control.YRescueControlPolice;
 
 public abstract class Team {
 	public abstract String getTeamName();

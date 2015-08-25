@@ -5,15 +5,18 @@ import adk.team.precompute.*;
 import adk.team.tactics.TacticsAmbulance;
 import adk.team.tactics.TacticsFire;
 import adk.team.tactics.TacticsPolice;
-import adk.team.yrescue.tactics.YRescueTacticsAmbulance;
-import adk.team.yrescue.tactics.YRescueTacticsFire;
-import adk.team.yrescue.tactics.YRescueTacticsPolice;
+import yrescue.precompute.YRescuePrecomputeAmbulance;
+import yrescue.precompute.YRescuePrecomputeFire;
+import yrescue.precompute.YRescuePrecomputePolice;
+import yrescue.tactics.YRescueTacticsAmbulance;
+import yrescue.tactics.YRescueTacticsFire;
+import yrescue.tactics.YRescueTacticsPolice;
 
 public class YRescueTeam extends Team {
 
     @Override
     public String getTeamName() {
-        return "Yrescue";
+        return "Y-Rescue";
     }
 
     @Override
@@ -33,17 +36,17 @@ public class YRescueTeam extends Team {
 
     @Override
     public PrecomputeAmbulance getAmbulancePrecompute() {
-        return null;
+        return new YRescuePrecomputeAmbulance();
     }
 
     @Override
     public PrecomputeFire getFirePrecompute() {
-        return null;
+        return new YRescuePrecomputeFire();
     }
 
     @Override
     public PrecomputePolice getPolicePrecompute() {
-        return null;
+        return new YRescuePrecomputePolice();
     }
 
 }

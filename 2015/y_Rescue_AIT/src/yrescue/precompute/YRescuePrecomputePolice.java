@@ -36,6 +36,6 @@ public class YRescuePrecomputePolice extends PrecomputePolice implements RouteSe
 
     @Override
     public String getTacticsName() {
-        return "Sample";
+    	return "Y-Rescue pre-processing";
     }
 }

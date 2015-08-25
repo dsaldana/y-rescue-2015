@@ -37,6 +37,6 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
 
     @Override
     public String getTacticsName() {
-        return "Sample";
+        return "Y-Rescue pre-processing";
     }
 }

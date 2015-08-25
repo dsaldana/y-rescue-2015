@@ -1,4 +1,4 @@
-package adk.team.yrescue.tactics;
+package yrescue.tactics;
 
 import adk.sample.basic.event.BasicAmbulanceEvent;
 import adk.sample.basic.event.BasicCivilianEvent;
@@ -32,7 +32,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	
     @Override
     public String getTacticsName() {
-        return "Yrescue System";
+        return "Y-Rescue Ambulance";
     }
 
     @Override

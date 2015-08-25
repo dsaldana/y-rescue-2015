@@ -36,6 +36,6 @@ public class YRescuePrecomputeFire extends PrecomputeFire implements RouteSearch
 
     @Override
     public String getTacticsName() {
-        return "Sample";
+    	return "Y-Rescue pre-processing";
     }
 }

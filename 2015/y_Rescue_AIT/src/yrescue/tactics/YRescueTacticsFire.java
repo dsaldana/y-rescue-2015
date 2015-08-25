@@ -1,4 +1,4 @@
-package adk.team.yrescue.tactics;
+package yrescue.tactics;
 
 import adk.sample.basic.event.BasicBuildingEvent;
 import adk.sample.basic.util.BasicBuildingSelector;
@@ -17,7 +17,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 
     @Override
     public String getTacticsName() {
-        return "Yrescue System";
+        return "Y-Rescue Firefighter";
     }
 
     @Override

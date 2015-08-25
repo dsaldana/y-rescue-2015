@@ -1,4 +1,4 @@
-package adk.team.yrescue.tactics;
+package yrescue.tactics;
 
 import adk.sample.basic.event.BasicRoadEvent;
 import adk.sample.basic.tactics.NewTacticsPolice;
@@ -21,7 +21,7 @@ public class YRescueTacticsPolice extends NewTacticsPolice {
 
     @Override
     public String getTacticsName() {
-        return "Yrescue System";
+        return "Y-Rescue Policeman";
     }
 
     @Override
