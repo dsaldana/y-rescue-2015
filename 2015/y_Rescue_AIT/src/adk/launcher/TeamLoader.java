@@ -1,7 +1,7 @@
 package adk.launcher;
 
 import adk.team.Team;
-import adk.team.yrescue.YrescueTeam;
+import adk.team.yrescue.YRescueTeam;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,7 +28,7 @@ public class TeamLoader {
         this.teamMap = new HashMap<>();
         this.teamNameList = new ArrayList<>();
         this.random = new Random((new Date()).getTime());
-        this.default_team = new YrescueTeam();
+        this.default_team = new YRescueTeam();
         this.load(loadFile);
     }
 

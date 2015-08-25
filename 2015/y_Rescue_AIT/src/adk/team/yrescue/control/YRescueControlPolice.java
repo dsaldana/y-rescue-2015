@@ -1,11 +1,11 @@
 package adk.team.yrescue.control;
 
-import adk.team.control.ControlFire;
+import adk.team.control.ControlPolice;
 import comlib.manager.MessageManager;
 import rescuecore2.config.Config;
 import rescuecore2.worldmodel.ChangeSet;
 
-public class YrescueControlFire extends ControlFire {
+public class YRescueControlPolice extends ControlPolice {
     @Override
     public String getControlName() {
         return "Yrescue System";

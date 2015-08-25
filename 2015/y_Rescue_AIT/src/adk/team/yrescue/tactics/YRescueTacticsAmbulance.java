@@ -26,7 +26,7 @@ import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
 
-public class YrescueTacticsAmbulance extends BasicTacticsAmbulance {
+public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
 	protected final int EXPLORE_TIME_STEP_TRESH = 10;
 	
@@ -80,7 +80,7 @@ public class YrescueTacticsAmbulance extends BasicTacticsAmbulance {
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
         
-        System.out.println("Yrescue Time:" + currentTime + " Id:" + this.agentID.getValue());
+        System.out.println("Y-Rescue Time:" + currentTime + " Id:" + this.agentID.getValue());
         
         // Basic state check
         if(this.me.getBuriedness() > 0) {

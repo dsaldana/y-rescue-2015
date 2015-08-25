@@ -5,11 +5,11 @@ import adk.team.precompute.*;
 import adk.team.tactics.TacticsAmbulance;
 import adk.team.tactics.TacticsFire;
 import adk.team.tactics.TacticsPolice;
-import adk.team.yrescue.tactics.YrescueTacticsAmbulance;
-import adk.team.yrescue.tactics.YrescueTacticsFire;
-import adk.team.yrescue.tactics.YrescueTacticsPolice;
+import adk.team.yrescue.tactics.YRescueTacticsAmbulance;
+import adk.team.yrescue.tactics.YRescueTacticsFire;
+import adk.team.yrescue.tactics.YRescueTacticsPolice;
 
-public class YrescueTeam extends Team {
+public class YRescueTeam extends Team {
 
     @Override
     public String getTeamName() {
@@ -18,17 +18,17 @@ public class YrescueTeam extends Team {
 
     @Override
     public TacticsAmbulance getAmbulanceTeamTactics() {
-        return new YrescueTacticsAmbulance();
+        return new YRescueTacticsAmbulance();
     }
 
     @Override
     public TacticsFire getFireBrigadeTactics() {
-        return new YrescueTacticsFire();
+        return new YRescueTacticsFire();
     }
 
     @Override
     public TacticsPolice getPoliceForceTactics() {
-        return new YrescueTacticsPolice();
+        return new YRescueTacticsPolice();
     }
 
     @Override

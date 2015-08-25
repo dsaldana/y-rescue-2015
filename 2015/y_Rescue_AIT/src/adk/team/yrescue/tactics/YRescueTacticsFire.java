@@ -13,7 +13,7 @@ import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
 
-public class YrescueTacticsFire extends BasicTacticsFire {
+public class YRescueTacticsFire extends BasicTacticsFire {
 
     @Override
     public String getTacticsName() {

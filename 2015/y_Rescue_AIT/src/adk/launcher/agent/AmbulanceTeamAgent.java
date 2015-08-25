@@ -12,7 +12,7 @@ public class AmbulanceTeamAgent extends TacticsAgent<AmbulanceTeam> {
     private TacticsAmbulance ta;
     
     public AmbulanceTeamAgent(TacticsAmbulance tacticsAmbulance, boolean pre) {
-        super(tacticsAmbulance, pre);
+    	super(tacticsAmbulance, pre);
         this.ta = tacticsAmbulance;
     }
     

@@ -17,7 +17,7 @@ import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
 
-public class YrescueTacticsPolice extends NewTacticsPolice {
+public class YRescueTacticsPolice extends NewTacticsPolice {
 
     @Override
     public String getTacticsName() {
