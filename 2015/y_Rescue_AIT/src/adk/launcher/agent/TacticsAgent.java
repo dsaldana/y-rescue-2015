@@ -69,6 +69,7 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
         Action action = this.tactics.think(time, changed, this.manager);
         Message message = action == null ? new AKRest(this.getID(), time) : action.getCommand(this.getID(), time);
         //System.out.println(message.getClass());
+        System.out.println(action.getClass());
         this.send(message);
     }
 

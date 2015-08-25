@@ -1,7 +1,7 @@
 package adk.launcher;
 
-import adk.sample.dummy.DummyTeam;
 import adk.team.Team;
+import adk.team.yrescue.YrescueTeam;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,13 +22,13 @@ public class TeamLoader {
     //team module
     private Map<String, Team> teamMap;
     private List<String> teamNameList;
-    private Team dummy;
+    private Team default_team;
     
     public TeamLoader(File loadFile) {
         this.teamMap = new HashMap<>();
         this.teamNameList = new ArrayList<>();
         this.random = new Random((new Date()).getTime());
-        this.dummy = new DummyTeam();
+        this.default_team = new YrescueTeam();
         this.load(loadFile);
     }
 
@@ -48,8 +48,8 @@ public class TeamLoader {
         return teamNameList.size();
     }
 
-    public Team getDummy() {
-        return this.dummy;
+    public Team getDefaultTeam() {
+        return this.default_team;
     }
 
     private void load(File loadFile) {
@@ -71,8 +71,8 @@ public class TeamLoader {
         this.loadJar(loadFile, loader, list);
         this.loadTeam(loader, list);
         if(this.teamNameList.isEmpty()) {
-            String name = this.dummy.getTeamName();
-            this.teamMap.put(name, this.dummy);
+            String name = this.default_team.getTeamName();
+            this.teamMap.put(name, this.default_team);
             this.teamNameList.add(name);
         }
         System.out.println("[END  ] Load Jar");

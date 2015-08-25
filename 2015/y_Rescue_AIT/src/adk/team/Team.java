@@ -1,8 +1,8 @@
 package adk.team;
 
-import adk.sample.dummy.control.DummyControlAmbulance;
-import adk.sample.dummy.control.DummyControlFire;
-import adk.sample.dummy.control.DummyControlPolice;
+import adk.team.yrescue.control.YrescueControlAmbulance;
+import adk.team.yrescue.control.YrescueControlFire;
+import adk.team.yrescue.control.YrescueControlPolice;
 import adk.team.control.ControlAmbulance;
 import adk.team.control.ControlFire;
 import adk.team.control.ControlPolice;
@@ -23,15 +23,15 @@ public abstract class Team {
 	//control
 
 	public ControlAmbulance getAmbulanceCentreControl() {
-		return new DummyControlAmbulance();
+		return new YrescueControlAmbulance();
 	}
 
 	public ControlFire getFireStationControl() {
-		return new DummyControlFire();
+		return new YrescueControlFire();
 	}
 
 	public ControlPolice getPoliceOfficeControl() {
-		return new DummyControlPolice();
+		return new YrescueControlPolice();
 	}
 
 	public abstract PrecomputeAmbulance getAmbulancePrecompute();

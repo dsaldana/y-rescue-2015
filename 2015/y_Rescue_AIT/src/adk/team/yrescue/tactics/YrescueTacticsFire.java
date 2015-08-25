@@ -1,4 +1,4 @@
-package adk.sample.dummy.tactics;
+package adk.team.yrescue.tactics;
 
 import adk.sample.basic.event.BasicBuildingEvent;
 import adk.sample.basic.util.BasicBuildingSelector;
@@ -13,11 +13,11 @@ import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
 
-public class DummyTacticsFire extends BasicTacticsFire {
+public class YrescueTacticsFire extends BasicTacticsFire {
 
     @Override
     public String getTacticsName() {
-        return "Dummy System";
+        return "Yrescue System";
     }
 
     @Override

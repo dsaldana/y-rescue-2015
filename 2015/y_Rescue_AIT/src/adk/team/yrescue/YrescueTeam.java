@@ -1,34 +1,34 @@
-package adk.sample.dummy;
+package adk.team.yrescue;
 
-import adk.sample.dummy.tactics.DummyTacticsAmbulance;
-import adk.sample.dummy.tactics.DummyTacticsFire;
-import adk.sample.dummy.tactics.DummyTacticsPolice;
 import adk.team.Team;
 import adk.team.precompute.*;
 import adk.team.tactics.TacticsAmbulance;
 import adk.team.tactics.TacticsFire;
 import adk.team.tactics.TacticsPolice;
+import adk.team.yrescue.tactics.YrescueTacticsAmbulance;
+import adk.team.yrescue.tactics.YrescueTacticsFire;
+import adk.team.yrescue.tactics.YrescueTacticsPolice;
 
-public class DummyTeam extends Team {
+public class YrescueTeam extends Team {
 
     @Override
     public String getTeamName() {
-        return "dummy";
+        return "Yrescue";
     }
 
     @Override
     public TacticsAmbulance getAmbulanceTeamTactics() {
-        return new DummyTacticsAmbulance();
+        return new YrescueTacticsAmbulance();
     }
 
     @Override
     public TacticsFire getFireBrigadeTactics() {
-        return new DummyTacticsFire();
+        return new YrescueTacticsFire();
     }
 
     @Override
     public TacticsPolice getPoliceForceTactics() {
-        return new DummyTacticsPolice();
+        return new YrescueTacticsPolice();
     }
 
     @Override

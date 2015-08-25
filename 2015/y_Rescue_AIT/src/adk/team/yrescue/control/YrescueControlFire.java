@@ -1,25 +1,28 @@
-package adk.sample.dummy.control;
+package adk.team.yrescue.control;
 
-import adk.team.control.ControlAmbulance;
+import adk.team.control.ControlFire;
 import comlib.manager.MessageManager;
 import rescuecore2.config.Config;
 import rescuecore2.worldmodel.ChangeSet;
 
-public class DummyControlAmbulance extends ControlAmbulance {
+public class YrescueControlFire extends ControlFire {
     @Override
     public String getControlName() {
-        return "Dummy System";
+        return "Yrescue System";
     }
 
     @Override
     public void preparation(Config config) {
+
     }
 
     @Override
     public void registerEvent(MessageManager manager) {
+
     }
 
     @Override
     public void think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
+
     }
 }

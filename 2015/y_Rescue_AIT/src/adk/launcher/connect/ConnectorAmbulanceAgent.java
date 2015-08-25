@@ -32,9 +32,9 @@ public class ConnectorAmbulanceAgent implements Connector {
                 }
             }
             if(team == null) {
-                if (config.getBooleanValue(ConfigKey.KEY_DUMMY_SYSTEM, false)) {
-                    System.out.println("[INFO ] Load Dummy System");
-                    team = loader.getDummy();
+                if (config.getBooleanValue(ConfigKey.KEY_RUN_DEFAULT_SYSTEM, false)) {
+                    System.out.println("[INFO ] Load Default System");
+                    team = loader.getDefaultTeam();
                 } else {
                     System.out.println("[ERROR] Cannot Load Team !!");
                     System.out.println("[END  ] Connect Ambulance (success:0)");
@@ -54,9 +54,9 @@ public class ConnectorAmbulanceAgent implements Connector {
                 }
             }
             if(team.getAmbulanceTeamTactics() == null) {
-                if (config.getBooleanValue(ConfigKey.KEY_DUMMY_SYSTEM, false)) {
-                    System.out.println("[INFO ] Load Dummy System");
-                    team = loader.getDummy();
+                if (config.getBooleanValue(ConfigKey.KEY_RUN_DEFAULT_SYSTEM, false)) {
+                    System.out.println("[INFO ] Load Default System");
+                    team = loader.getDefaultTeam();
                 } else {
                     System.out.println("[END  ] Connect Ambulance (success:0)");
                     return;

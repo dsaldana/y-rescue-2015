@@ -47,7 +47,7 @@ public class ConfigInitializer {
         registerOption(options, new OptionHost());
         registerOption(options, new OptionPort());
         registerOption(options, new OptionRetry());
-        registerOption(options, new OptionDummy());
+        registerOption(options, new OptionDefaultSystem());
         registerOption(options, new OptionTeam());
         registerOption(options, new OptionAmbulance());
         registerOption(options, new OptionFire());
