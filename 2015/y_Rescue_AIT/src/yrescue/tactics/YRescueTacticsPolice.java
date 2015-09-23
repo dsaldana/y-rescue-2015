@@ -1,7 +1,6 @@
 package yrescue.tactics;
 
 import adk.sample.basic.event.BasicRoadEvent;
-import adk.sample.basic.tactics.NewTacticsPolice;
 import adk.sample.basic.util.BasicImpassableSelector;
 import adk.sample.basic.tactics.BasicTacticsPolice;
 import adk.sample.basic.util.BasicRouteSearcher;
@@ -17,7 +16,7 @@ import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
 
-public class YRescueTacticsPolice extends NewTacticsPolice {
+public class YRescueTacticsPolice extends BasicTacticsPolice {
 
     @Override
     public String getTacticsName() {
