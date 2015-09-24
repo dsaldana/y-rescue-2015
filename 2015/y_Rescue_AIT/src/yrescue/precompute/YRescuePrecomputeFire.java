@@ -9,8 +9,8 @@ import adk.team.util.graph.RouteManager;
 import comlib.manager.MessageManager;
 import rescuecore2.config.Config;
 import rescuecore2.standard.entities.FireBrigade;
+import yrescue.search.YRescueRouteSearcher;
 import yrescue.util.YRescueBuildingSelector;
-import yrescue.util.YRescueRouteSearcher;
 
 public class YRescuePrecomputeFire extends PrecomputeFire implements RouteSearcherProvider, BuildingSelectorProvider {
 

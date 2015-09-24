@@ -12,6 +12,7 @@ import comlib.message.information.MessageRoad;
 import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
+import yrescue.search.*;
 
 public class YRescueTacticsFire extends BasicTacticsFire {
 

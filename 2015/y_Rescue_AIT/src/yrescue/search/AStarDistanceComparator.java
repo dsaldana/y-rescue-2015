@@ -1,4 +1,4 @@
-package yrescue.util;
+package yrescue.search;
 
 import adk.team.util.graph.PositionUtil;
 import adk.team.util.graph.RouteNode;

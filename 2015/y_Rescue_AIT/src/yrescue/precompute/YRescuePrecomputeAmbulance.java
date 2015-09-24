@@ -10,7 +10,7 @@ import adk.team.util.graph.RouteManager;
 import comlib.manager.MessageManager;
 import rescuecore2.config.Config;
 import rescuecore2.standard.entities.AmbulanceTeam;
-import yrescue.util.YRescueRouteSearcher;
+import yrescue.search.YRescueRouteSearcher;
 import yrescue.util.YRescueVictimSelector;
 
 public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements RouteSearcherProvider, VictimSelectorProvider {

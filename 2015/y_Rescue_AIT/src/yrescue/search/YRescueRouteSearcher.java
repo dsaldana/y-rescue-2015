@@ -1,4 +1,4 @@
-package yrescue.util;
+package yrescue.search;
 
 import adk.team.util.RouteSearcher;
 import adk.team.util.graph.RouteEdge;
@@ -29,7 +29,8 @@ public class YRescueRouteSearcher implements RouteSearcher {
 
     @Override
     public List<EntityID> getPath(int time, EntityID startID, EntityID goalID) {
-        StandardWorldModel world = this.provider.getWorld();
+    	 System.out.println("In getPath");
+    	StandardWorldModel world = this.provider.getWorld();
         RouteGraph graph = this.routeManager.getPassableGraph();
         // check
         if(startID.getValue() == goalID.getValue()) {
