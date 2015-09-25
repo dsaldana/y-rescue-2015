@@ -11,6 +11,8 @@ public class ActionStates {
 	 */
 	private ActionStates() {}
 	
+	public static final ActionState MOVING_TO_TARGET = new ActionState("MOVING_TO_TARGET");
+	
 	
 	public static class FireFighter {
 		public static final ActionState EXTINGUISHING = new ActionState("EXTINGUISHING");		//throwing water in building

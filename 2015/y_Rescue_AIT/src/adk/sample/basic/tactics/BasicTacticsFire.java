@@ -51,6 +51,7 @@ public abstract class BasicTacticsFire extends TacticsFire implements RouteSearc
 
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
+    	
         //情報の整理
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
         //状態の確認

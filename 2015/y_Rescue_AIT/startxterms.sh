@@ -26,21 +26,21 @@ function launchagents {
 		
 		if [ "$1" = "firefighter" ];then
 			echo "launching $1 #$i"
-			xterm -hold -geometry 120x32 -T $1 -e "java -Xms1G -Xmx2G -classpath $classpath adk.Main -fb:1 2>&1" &
+			xterm -hold -geometry 120x32 -T $1 -e "java -Xms1G -Xmx2G -classpath $classpath adk.Main -fb:1 -at:0 -pf:0  2>&1" &
 			PIDS="$PIDS $!"
 			i=$[$i + 1]
 		fi
 
 		if [ "$1" = "ambulance" ];then
 			echo "launching $1 #$i"
-			xterm -hold -geometry 120x32 -T $1 -e "java -Xms1G -Xmx2G -classpath $classpath adk.Main -at:1 2>&1" &
+			xterm -hold -geometry 120x32 -T $1 -e "java -Xms1G -Xmx2G -classpath $classpath adk.Main -at:1 -fb:0 -pf:0 2>&1" &
 			PIDS="$PIDS $!"
 			i=$[$i + 1]
 		fi
 
 		if [ "$1" = "policeman" ];then
 			echo "launching $1 #$i"
-			xterm -hold -geometry 120x32 -T $1 -e "java -Xms1G -Xmx2G -classpath $classpath adk.Main -pf:1 2>&1" &
+			xterm -hold -geometry 120x32 -T $1 -e "java -Xms1G -Xmx2G -classpath $classpath adk.Main -pf:1 -at:0 -fb:0 2>&1" &
 			PIDS="$PIDS $!"
 			i=$[$i + 1]
 		fi
