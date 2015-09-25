@@ -32,6 +32,9 @@ import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
+import yrescue.statemachine.ActionStates;
+import yrescue.statemachine.StateMachine;
+import yrescue.statemachine.StatusStates;
 import yrescue.util.YRescueDistanceSorter;
 import adk.sample.basic.event.BasicRoadEvent;
 import adk.sample.basic.util.*;
@@ -42,6 +45,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.PriorityQueue;
+
+import com.sun.org.apache.xpath.internal.SourceTree;
 
 public class YRescueTacticsPolice extends BasicTacticsPolice {
 
@@ -56,6 +61,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
 
     private int clearRange;
     private int clearWidth;
+    
+    private StateMachine actionStateMachine;
+    private StateMachine statusStateMachine;
 
    
     @Override
@@ -111,10 +119,13 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
         this.posInit = true;
         clearRange = 10000;
         clearWidth = 1200;
+        this.actionStateMachine = new StateMachine(ActionStates.Policeman.AWAITING_ORDERS);
+        this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
     }
 
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
+    	System.out.println("\nTimestep:" + currentTime);
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
         
         
@@ -126,7 +137,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
         
         // Update target Destination
         EntityID oldTarget;
-        this.target = new EntityID(262);
+        this.target = new EntityID(297);
         /*if(this.target != null) {
         	oldTarget = this.target;
             this.target = this.impassableSelector.updateTarget(currentTime, this.target);
@@ -141,7 +152,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
         } else {
         	path = this.routeSearcher.getPath(currentTime, this.me, this.target);
         }
-        
+        System.out.println(path);
         
         /***************************************
          * 
@@ -150,18 +161,39 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
          */
         
         // There is a blockage on the way
-        if(path !=null && path.size() > 1 && checkBlockadeOnWayTo(path)){
+        if(path != null && path.size() > 0 && checkBlockadeOnWayTo(path)){
     		
     		Area area0 = (Area) this.world.getEntity(this.location.getID());
     		Area area1 = (Area) this.world.getEntity(path.get(0));
     		
-    		Edge frontier = area0.getEdgeTo(area1.getID());
+    		Point2D target;
     		
-    		Point2D target = new Point2D(frontier.getStartX() + (frontier.getEndX() - frontier.getStartX())/2,
+    		if(area0 == area1) {
+    			target = new Point2D(area0.getX(), area0.getY());
+    		}
+    		else{
+    			Edge frontier = area0.getEdgeTo(area1.getID());
+    		
+    			target = new Point2D(frontier.getStartX() + (frontier.getEndX() - frontier.getStartX())/2,
     									 frontier.getStartY() + (frontier.getEndY() - frontier.getStartY())/2);
+    		}
+    		
+    		//CHECK IF DISTANCE TO FRONTIER IS SHORT
+    		Vector2D agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
+    		System.out.println("Distance to midpoint: " + agentToTarget.getLength());
+    		if (agentToTarget.getLength() < 1000){
+    			System.out.println("Mid point of frontier is very close, will aim to next area's centroid");
+    			target = new Point2D(area1.getX(), area1.getY());
+    		}
         	
+    		
+    		actionStateMachine.setState(ActionStates.Policeman.CLEARING);
+    		statusStateMachine.setState(StatusStates.ACTING);
         	return new ActionClear(this, (int)target.getX(), (int)target.getY());
         }else{
+        	System.out.println("blockade on way? " + checkBlockadeOnWayTo(path));
+        	actionStateMachine.setState(ActionStates.MOVING_TO_TARGET);
+    		statusStateMachine.setState(StatusStates.ACTING);
         	return new ActionMove(this, path);
         }
             
@@ -175,16 +207,32 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
 		Area area0 = (Area) this.world.getEntity(this.location.getID());
 		Area area1 = (Area) this.world.getEntity(dest_path.get(0));
 		
-		if(area0 == area1) return false;
+		System.out.println(""+area0 + " - " + area1);
+		Point2D target;
 		
-		Edge frontier = area0.getEdgeTo(area1.getID());
+		//TODO: melhorar o calculo do alvo (modularizar)
+		if(area0 == area1) {
+			target = new Point2D(area0.getX(), area0.getY());
+		}
+		else{
+			Edge frontier = area0.getEdgeTo(area1.getID());
 		
-		Point2D target = new Point2D(frontier.getStartX() + (frontier.getEndX() - frontier.getStartX())/2,
+			target = new Point2D(frontier.getStartX() + (frontier.getEndX() - frontier.getStartX())/2,
 									 frontier.getStartY() + (frontier.getEndY() - frontier.getStartY())/2);
-
+		}
 		
+		//CHECK IF DISTANCE TO FRONTIER IS SHORT
+		Vector2D agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
+		System.out.println("Distance to midpoint: " + agentToTarget.getLength());
+		if (agentToTarget.getLength() < 1000){
+			System.out.println("Mid point of frontier is very close, will aim to next area's centroid");
+			target = new Point2D(area1.getX(), area1.getY());
+		}
+		
+		//System.out.println("frontier: " + frontier);
+		System.out.println("target: " + target);
 		ArrayList<Blockade> blockList = new ArrayList<Blockade>(getBlockadesInRange(me().getX(), me().getY(), clearRange));
-		
+		System.out.println("blocklist: " + blockList);
 		if (anyBlockadeInClearArea(blockList, target))
 			return true;
 		return false;
