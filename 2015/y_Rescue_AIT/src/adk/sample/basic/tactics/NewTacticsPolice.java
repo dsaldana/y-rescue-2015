@@ -23,6 +23,12 @@ import rescuecore2.worldmodel.EntityID;
 import java.util.ArrayList;
 import java.util.List;
 
+
+/**
+ * It seems that BasicTacticsPolice performs better than this one.
+ * Marked as Deprecated by Anderson.
+ */
+@Deprecated
 public abstract class NewTacticsPolice extends TacticsPolice implements RouteSearcherProvider, ImpassableSelectorProvider {
 
     public ImpassableSelector impassableSelector;
