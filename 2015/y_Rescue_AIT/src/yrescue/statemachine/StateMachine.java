@@ -24,4 +24,8 @@ public class StateMachine {
 	public State currentState(){
 		return current;
 	}
+	
+	public State getCurrentState(){
+		return currentState();
+	}
 }

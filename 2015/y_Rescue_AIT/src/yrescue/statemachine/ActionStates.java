@@ -21,11 +21,15 @@ public class ActionStates {
 	}
 	
 	public static class Ambulance {
-        public static final ActionState UNBURYING = new ActionState("UNBURYING");		//removing debris from person
+        public static final ActionState RESCUING = new ActionState("RESCUING");		//removing debris from person
 		public static final ActionState LOADING = new ActionState("LOADING");			//getting someone aboard
 		public static final ActionState UNLOADING = new ActionState("UNLOADING");		//getting someone off-board
 		public static final ActionState CARRYING_WOUNDED = new ActionState("CARRYING_WOUNDED");	//transporting a person
-		public static final ActionState SEARCHING_BUILDINGS = new ActionState("SEARCHING_BUILDINGS");		
+		public static final ActionState SEARCHING_BUILDINGS = new ActionState("SEARCHING_BUILDINGS");
+		public static final ActionState EXPLORING = new ActionState("EXPLORING");
+		public static final ActionState GOING_TO_TARGET = new ActionState("GOING_TO_TARGET");
+		public static final ActionState GOING_TO_REFUGE = new ActionState("GOING_TO_REFUGE");
+		public static final ActionState SELECT_NEW_TARGET = new ActionState("SELECT_NEW_TARGET");
 		
 		private Ambulance() {}
 	}
