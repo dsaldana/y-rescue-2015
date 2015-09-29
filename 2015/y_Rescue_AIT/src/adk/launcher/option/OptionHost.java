@@ -12,8 +12,10 @@ public class OptionHost extends Option {
 
     @Override
     public void setValue(Config config, String[] datas) {
+    	//System.out.println("length: " + datas.length);
         if (datas.length == 2) {
-            config.setValue(Constants.KERNEL_HOST_NAME_KEY, datas[1]);
+        	//System.out.println("Host - here");
+        	config.setValue(Constants.KERNEL_HOST_NAME_KEY, datas[1]);
         }
     }
 }

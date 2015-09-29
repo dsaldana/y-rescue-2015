@@ -36,6 +36,7 @@ import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
 import yrescue.util.YRescueDistanceSorter;
+import yrescue.util.YRescueImpassableSelector;
 import adk.sample.basic.event.BasicRoadEvent;
 import adk.sample.basic.util.*;
 
@@ -79,7 +80,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
 
     @Override
     public ImpassableSelector initImpassableSelector() {
-        return new BasicImpassableSelector(this);
+        return new YRescueImpassableSelector(this);
     }
 
     @Override
@@ -137,13 +138,15 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
         
         // Update target Destination
         EntityID oldTarget;
-        this.target = new EntityID(297);
-        /*if(this.target != null) {
+        //this.target = new EntityID(262);
+        
+        if(this.target != null) {
         	oldTarget = this.target;
             this.target = this.impassableSelector.updateTarget(currentTime, this.target);
         } else { // Select a new Target Destination
         	this.target = this.impassableSelector.getNewTarget(currentTime);
-        }*/
+        }
+        
         
         // Determines the path to be followed
         List<EntityID> path;
@@ -152,7 +155,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
         } else {
         	path = this.routeSearcher.getPath(currentTime, this.me, this.target);
         }
-        System.out.println(path);
+        //System.out.println(path);
         
         /***************************************
          * 
@@ -180,7 +183,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
     		
     		//CHECK IF DISTANCE TO FRONTIER IS SHORT
     		Vector2D agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
-    		System.out.println("Distance to midpoint: " + agentToTarget.getLength());
+    		//System.out.println("Distance to midpoint: " + agentToTarget.getLength());
     		if (agentToTarget.getLength() < 1000){
     			System.out.println("Mid point of frontier is very close, will aim to next area's centroid");
     			target = new Point2D(area1.getX(), area1.getY());
@@ -191,7 +194,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
     		statusStateMachine.setState(StatusStates.ACTING);
         	return new ActionClear(this, (int)target.getX(), (int)target.getY());
         }else{
-        	System.out.println("blockade on way? " + checkBlockadeOnWayTo(path));
+        	//System.out.println("blockade on way? " + checkBlockadeOnWayTo(path));
         	actionStateMachine.setState(ActionStates.MOVING_TO_TARGET);
     		statusStateMachine.setState(StatusStates.ACTING);
         	return new ActionMove(this, path);
