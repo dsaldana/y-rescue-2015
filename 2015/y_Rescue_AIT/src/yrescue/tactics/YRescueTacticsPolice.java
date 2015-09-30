@@ -244,7 +244,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
 			System.out.println("Mid point of frontier is very close, will aim to next area's centroid");
 			target = new Point2D(area1.getX(), area1.getY());
 		}
-		
+		Vector2D normalagentToTarget = agentToTarget.normalised();
+		Vector2D escalar = normalagentToTarget.scale(clearRange);
+		target = new Point2D(me.getX() + escalar.getX(),me.getY() + escalar.getY());
 		//System.out.println("frontier: " + frontier);
 		System.out.println("target: " + target);
 		ArrayList<Blockade> blockList = new ArrayList<Blockade>(getBlockadesInRange(me().getX(), me().getY(), clearRange));
