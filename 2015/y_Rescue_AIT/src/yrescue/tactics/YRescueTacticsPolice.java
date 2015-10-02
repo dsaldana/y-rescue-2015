@@ -138,11 +138,11 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
         
         // Update target Destination
         EntityID oldTarget;
-        this.target = new EntityID(974);
+        //this.target = new EntityID(256);
         
         if(this.target != null) {
         	oldTarget = this.target;
-            this.target = this.impassableSelector.updateTarget(currentTime, this.target);
+            this.target = this.impassableSelector.updateTarget(currentTime, this.target);    
         } else { // Select a new Target Destination
         	this.target = this.impassableSelector.getNewTarget(currentTime);
         }
@@ -190,20 +190,13 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
     			agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
     		}
     		
-    		//CHECK IF RANGE WILL BE MAXIMUM
-        	if(agentToTarget.getLength() < 10000){
-        		
-        		List<Edge> edges = area1.getEdges();
-        		System.out.println("Edge: " + edges);
-        		Vector2D normalagentToTarget = agentToTarget.normalised();
-        		Vector2D escalar = normalagentToTarget.scale(clearRange);
-        		target = new Point2D(me.getX() + escalar.getX(),me.getY() + escalar.getY());
-        		System.out.println("Pouca distância entre o target.");
-        	}
+    		//MAKES SURE THE AGENT WILL SHOOT AT THE MAXIMUM RANGE
+    		Vector2D normalagentToTarget = agentToTarget.normalised();
+        	Vector2D escalar = normalagentToTarget.scale(clearRange);
+        	target = new Point2D(me.getX() + escalar.getX(),me.getY() + escalar.getY());
     		
     		actionStateMachine.setState(ActionStates.Policeman.CLEARING);
     		statusStateMachine.setState(StatusStates.ACTING);
-    		System.out.println("Saiu.");
         	return new ActionClear(this, (int)target.getX(), (int)target.getY());
         }else{
         	//System.out.println("blockade on way? " + checkBlockadeOnWayTo(path));
@@ -223,7 +216,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
 		Area area1 = (Area) this.world.getEntity(dest_path.get(0));
 		
 		
-		System.out.println(""+area0 + " - " + area1);
+		//System.out.println(""+area0 + " - " + area1);
 		Point2D target;
 		
 		//TODO: melhorar o calculo do alvo (modularizar)
@@ -243,6 +236,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
 		if (agentToTarget.getLength() < 1000){
 			System.out.println("Mid point of frontier is very close, will aim to next area's centroid");
 			target = new Point2D(area1.getX(), area1.getY());
+			agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
 		}
 		Vector2D normalagentToTarget = agentToTarget.normalised();
 		Vector2D escalar = normalagentToTarget.scale(clearRange);
@@ -251,8 +245,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
 		System.out.println("target: " + target);
 		ArrayList<Blockade> blockList = new ArrayList<Blockade>(getBlockadesInRange(me().getX(), me().getY(), clearRange));
 		System.out.println("blocklist: " + blockList);
-		if (anyBlockadeInClearArea(blockList, target))
-			return true;
+		if (anyBlockadeInClearArea(blockList, target)){
+			System.out.println("TRUE");
+			return true;}
 		return false;
 	}
     

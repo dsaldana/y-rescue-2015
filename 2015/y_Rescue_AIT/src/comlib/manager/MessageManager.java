@@ -278,7 +278,7 @@ public class MessageManager
 
 		this.sendMessages.add(msg);
 		int msgID = msg.getMessageID();
-		//		System.out.println("msgID:" + msgID);
+				System.out.println("msgID:" + msgID);
 		// TODO: need cutting data
 		this.providerList[msgID].write(this, bitOutputStreamList[msgID], msg);
 	}

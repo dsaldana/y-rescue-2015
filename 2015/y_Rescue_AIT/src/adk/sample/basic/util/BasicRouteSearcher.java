@@ -49,9 +49,11 @@ public class BasicRouteSearcher implements RouteSearcher {
 
     @Override
     public List<EntityID> noTargetMove(int time, EntityID from) {
+
         List<EntityID> result = new ArrayList<>(50);
         Set<EntityID> seen = new HashSet<>();
         EntityID current = from;//this.provider.getOwner().getPosition();
+        System.out.println("Entrou aqui.");
         for (int i = 0; i < 50; ++i) {
             result.add(current);
             seen.add(current);
