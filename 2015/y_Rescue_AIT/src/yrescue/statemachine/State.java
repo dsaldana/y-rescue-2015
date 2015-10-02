@@ -19,7 +19,7 @@ public class State {
 	@Override
 	public boolean equals(Object other){
 		if (other instanceof State){
-			return stateName == ((State)other).getName();
+			return stateName.equals(((State)other).getName());
 		}
 		return false;
 	}

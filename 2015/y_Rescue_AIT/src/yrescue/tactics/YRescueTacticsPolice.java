@@ -4,14 +4,9 @@ import adk.team.action.Action;
 import adk.team.action.ActionClear;
 import adk.team.action.ActionMove;
 import adk.team.action.ActionRest;
-import adk.team.tactics.TacticsPolice;
 import adk.team.util.ImpassableSelector;
 import adk.team.util.RouteSearcher;
-import adk.team.util.graph.PositionUtil;
-import adk.team.util.provider.ImpassableSelectorProvider;
-import adk.team.util.provider.RouteSearcherProvider;
 import adk.sample.basic.event.BasicRoadEvent;
-import adk.sample.basic.util.BasicImpassableSelector;
 import adk.sample.basic.tactics.BasicTacticsPolice;
 import adk.sample.basic.util.BasicRouteSearcher;
 import comlib.manager.MessageManager;
@@ -37,7 +32,6 @@ import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
 import yrescue.util.YRescueDistanceSorter;
 import yrescue.util.YRescueImpassableSelector;
-import adk.sample.basic.event.BasicRoadEvent;
 import adk.sample.basic.util.*;
 
 import java.awt.Polygon;
@@ -46,8 +40,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.PriorityQueue;
-
-import com.sun.org.apache.xpath.internal.SourceTree;
 
 public class YRescueTacticsPolice extends BasicTacticsPolice {
 
@@ -129,6 +121,25 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
     	System.out.println("\nTimestep:" + currentTime);
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
         
+        //if I am buried, send a message and attempt to clear the entrance to my building
+        if(this.me.getBuriedness() > 0) {
+            this.beforeMove = false;
+            statusStateMachine.setState(StatusStates.BURIED);
+            actionStateMachine.setState(ActionStates.IDLE);
+            manager.addSendMessage(new MessagePoliceForce(this.me, MessagePoliceForce.ACTION_REST, this.agentID));
+            List<EntityID> neighbours = ((Area)this.location).getNeighbours();
+            if(neighbours.isEmpty()) {
+                return new ActionRest(this);
+            }
+            if(this.count <= 0) {
+                this.count = neighbours.size();
+            }
+            this.count--;
+            Area area = (Area)this.world.getEntity(neighbours.get(this.count));
+            Vector2D vector = (new Point2D(area.getX(), area.getY())).minus(this.agentPoint[0]).normalised().scale(1000000);
+            actionStateMachine.setState(ActionStates.Policeman.CLEARING);
+            return new ActionClear(this, (int) (this.me.getX() + vector.getX()), (int) (this.me.getY() + vector.getY()));
+        }
         
         /***************************************
          * 
@@ -146,6 +157,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
         } else { // Select a new Target Destination
         	this.target = this.impassableSelector.getNewTarget(currentTime);
         }
+        
         
         
         // Determines the path to be followed

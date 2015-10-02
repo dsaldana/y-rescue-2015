@@ -11,6 +11,7 @@ public class ActionStates {
 	 */
 	private ActionStates() {}
 	
+	public static final ActionState IDLE = new ActionState("IDLE");
 	public static final ActionState MOVING_TO_TARGET = new ActionState("MOVING_TO_TARGET");
 	
 	
