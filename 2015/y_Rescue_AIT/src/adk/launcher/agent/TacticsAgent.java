@@ -12,6 +12,7 @@ import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.standard.messages.AKRest;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -47,6 +48,8 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
         this.setAgentUniqueValue();
         this.setAgentEntity();
         this.tactics.preparation(this.config, manager);
+        
+        this.commandHistory = new HashMap<Integer, Action>();
     }
 
     protected abstract void setAgentUniqueValue();
