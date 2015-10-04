@@ -13,6 +13,7 @@ import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.standard.messages.AKRest;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public abstract class TacticsAgent<E extends StandardEntity> extends CommunicationAgent<E> {
@@ -20,7 +21,10 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     public static final String LOS_MAX_DISTANCE_KEY = "perception.los.max-distance";
     
     protected Tactics tactics;
+    protected Action action;						//current action of this agent
+    protected Map<Integer, Action> commandHistory;	//history of commands
     public int ignoreTime;
+    
 
     public TacticsAgent(Tactics t, boolean pre) {
         super();
@@ -66,10 +70,10 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
             this.tactics.ignoreTimeThink(time, changed, this.manager);
             return;
         }
-        Action action = this.tactics.think(time, changed, this.manager);
-        Message message = action == null ? new AKRest(this.getID(), time) : action.getCommand(this.getID(), time);
+        this.action = this.tactics.think(time, changed, this.manager);
+        Message message = this.action == null ? new AKRest(this.getID(), time) : this.action.getCommand(this.getID(), time);
         //System.out.println(message.getClass());
-        System.out.println(action.getClass());
+        System.out.println(this.action.getClass());
         this.send(message);
     }
 
@@ -85,6 +89,8 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
 
     @Override
     public void sendAfterEvent(int time, ChangeSet changed) {
+    	//added by Anderson: registers the current action in history
+    	this.commandHistory.put(time, this.action);
     }
 
     @Override

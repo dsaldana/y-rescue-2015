@@ -116,6 +116,10 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
         this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
     }
 
+    public void ignoreTimeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
+    	
+    }
+    
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
     	System.out.println("\nTimestep:" + currentTime);
@@ -140,6 +144,8 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
             actionStateMachine.setState(ActionStates.Policeman.CLEARING);
             return new ActionClear(this, (int) (this.me.getX() + vector.getX()), (int) (this.me.getY() + vector.getY()));
         }
+        
+        
         
         /***************************************
          * 
