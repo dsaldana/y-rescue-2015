@@ -12,6 +12,7 @@ import comlib.util.BitStreamReader;
 
 import rescuecore2.Constants;
 import rescuecore2.config.Config;
+import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
 import rescuecore2.messages.Message;
 import rescuecore2.standard.kernel.comms.ChannelCommunicationModel;
@@ -240,8 +241,10 @@ public class MessageManager
 						bitOutputStreamList[this.getBitOutputStreamNumber(priority, kind)];
 					if (bos.size() <= 0)
 					{ continue; }
-					if ((sentMessageSize + bos.size()) > getMaxBandWidth(ch))
-					{ continue; }
+					if ((sentMessageSize + bos.size()) > getMaxBandWidth(ch)) { 
+						Logger.warn("Message does not fit in bandwidth");		
+						continue;
+					}
 					sentMessageSize += bos.size();
 					messages.add(
 							new AKSpeak(agentID, this.getTime(), ch, bos.toByteArray())
@@ -262,7 +265,6 @@ public class MessageManager
 		// StringBuilder sb = new StringBuilder();
 		// for (CommunicationMessage msg : this.sendMessages)
 		// { this.providerList[msg.getMessageID()].write(this, sb, msg); }
-
 		return messages;
 	}
 
@@ -275,10 +277,11 @@ public class MessageManager
 	{
 		if (priority < 0 || PRIORITY_DEPTH <= priority)
 		{ throw new IllegalArgumentException(); }
-
+		
 		this.sendMessages.add(msg);
 		int msgID = msg.getMessageID();
-				System.out.println("msgID:" + msgID);
+				
+		Logger.trace("Adding message to 'queue' with ID: " + msgID + " with priority " + priority);
 		// TODO: need cutting data
 		this.providerList[msgID].write(this, bitOutputStreamList[msgID], msg);
 	}

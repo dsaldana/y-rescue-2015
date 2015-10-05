@@ -2,7 +2,12 @@ package yrescue.tactics;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import org.apache.log4j.MDC;
+
 import java.util.Collection;
+import java.util.HashSet;
 
 import adk.sample.basic.event.BasicBuildingEvent;
 import adk.sample.basic.util.BasicBuildingSelector;
@@ -19,11 +24,16 @@ import comlib.manager.MessageManager;
 import comlib.message.information.MessageBuilding;
 import comlib.message.information.MessageCivilian;
 import comlib.message.information.MessageRoad;
+import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
+import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.action.ActionRefill;
+import yrescue.statemachine.ActionStates;
+import yrescue.statemachine.StateMachine;
+import yrescue.statemachine.StatusStates;
 
 public class YRescueTacticsFire extends BasicTacticsFire {
 
@@ -47,15 +57,30 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     public void registerEvent(MessageManager manager) {
         manager.registerEvent(new BasicBuildingEvent(this, this));
     }
+    
+    @Override
+    public void preparation(Config config, MessageManager messageManager) {
+        this.routeSearcher = this.initRouteSearcher();
+        this.buildingSelector = this.initBuildingSelector();
+        MDC.put("agent", this);
+        MDC.put("location", location());
+    }
 
     @Override
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
+    	
+    	Set<EntityID> reportedRoads = new HashSet<>(); 
+    	
         for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);
             if(entity instanceof Building) {
             	Building b = (Building) entity;
-                this.buildingSelector.add(b);
-                manager.addSendMessage(new MessageBuilding(b));		//report to other firefighters the building i've seen
+                this.getBuildingSelector().add(b);
+                if (b.isOnFire()) {
+                	manager.addSendMessage(new MessageBuilding(b));		//report to other firefighters the building i've seen
+                    Logger.trace("Added outgoin' msg about burning building: " + b);
+                }
+                
             }
             else if(entity instanceof Civilian) {
                 Civilian civilian = (Civilian)entity;
@@ -65,14 +90,25 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             }
             else if(entity instanceof Blockade) {
                 Blockade blockade = (Blockade) entity;
-                manager.addSendMessage(new MessageRoad((Road)this.world.getEntity(blockade.getPosition()), blockade, false));
+                
+                if (! reportedRoads.contains(blockade.getPosition())) {
+	                manager.addSendMessage(new MessageRoad((Road) this.world.getEntity(blockade.getPosition()), blockade, false));
+	                Logger.trace("Added outgoin' msg about blockade:" + blockade + " in road " + this.world.getEntity(blockade.getPosition()));
+	                
+	                reportedRoads.add(blockade.getPosition());
+                }
             }
         }
+    }
+    
+    public void ignoreTimeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
+    	Logger.debug("\nRadio channel: " + manager.getRadioConfig().getChannel());
     }
 
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
+        MDC.put("location", location());
         
         System.out.println("Y-Rescue Time:" + currentTime + " Id:" + this.agentID.getValue() + " - FireBrigade agent");
 
@@ -140,5 +176,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             this.target = null;
         }
         return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
+    }
+    
+    public String toString(){
+    	return "Firefighter:" + this.getID();
     }
 }

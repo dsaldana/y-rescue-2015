@@ -41,6 +41,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import org.apache.log4j.MDC;
+
 public class YRescueTacticsPolice extends BasicTacticsPolice {
 
     public ImpassableSelector impassableSelector;
@@ -79,15 +81,24 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
     public RouteSearcher initRouteSearcher() {
         return new BasicRouteSearcher(this);
     }
+    
+    @Override
+    public ImpassableSelector getImpassableSelector(){
+    	if (this.impassableSelector == null) {
+    		this.impassableSelector = initImpassableSelector();
+    		Logger.warn("Warning, impassable selector was null, now a new one was instantiated");
+    	}
+    	return this.impassableSelector;
+    }
 
     @Override
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
         for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);
-            if(entity instanceof Blockade) {
+            /*if(entity instanceof Blockade) {
                 this.impassableSelector.add((Blockade) entity);
             }
-            else if(entity instanceof Civilian) {
+            else*/ if(entity instanceof Civilian) {
                 Civilian civilian = (Civilian)entity;
                 if(civilian.getBuriedness() > 0) {
                     manager.addSendMessage(new MessageCivilian(civilian));
@@ -114,16 +125,28 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
         clearWidth = 1200;
         this.actionStateMachine = new StateMachine(ActionStates.Policeman.AWAITING_ORDERS);
         this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
+        
+        MDC.put("agent", this);
+        MDC.put("location", location());
+        
+        Logger.info("Preparation complete!");
     }
 
     public void ignoreTimeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
-    	
+    	Logger.debug("\nRadio channel: " + manager.getRadioConfig().getChannel());
     }
     
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
-    	System.out.println("\nTimestep:" + currentTime);
+    	Logger.info("\nTimestep:" + currentTime);
+    	Logger.debug("Radio channel: " + manager.getRadioConfig().getChannel());
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
+        
+        MDC.put("location", location());
+        
+        Logger.trace("The received message: " + manager.getReceivedMessage());
+        
+        
         
         //if I am buried, send a message and attempt to clear the entrance to my building
         if(this.me.getBuriedness() > 0) {
@@ -156,6 +179,8 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
         // Update target Destination
         EntityID oldTarget;
         //this.target = new EntityID(256);
+        YRescueImpassableSelector yis = (YRescueImpassableSelector) this.impassableSelector;
+        Logger.debug(String.format("I know %d blocked roads ", yis.impassableRoadList.size()));
         
         if(this.target != null) {
         	oldTarget = this.target;
@@ -340,5 +365,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
 			}			
 		}
 		return result;
+    }
+    
+    public String toString(){
+    	return "Police:" + this.getID();
     }
 }

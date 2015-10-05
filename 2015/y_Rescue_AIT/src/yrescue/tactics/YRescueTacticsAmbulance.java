@@ -1,6 +1,7 @@
 package yrescue.tactics;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -28,6 +29,7 @@ import comlib.message.information.MessageFireBrigade;
 import comlib.message.information.MessagePoliceForce;
 import comlib.message.information.MessageRoad;
 import rescuecore2.config.Config;
+import rescuecore2.log.Logger;
 import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.ChangeSet;
@@ -80,6 +82,9 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
     @Override
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
+    	
+    	Set<EntityID> reportedRoads = new HashSet<>();
+    	
         for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);
             if(entity instanceof Civilian) {
@@ -96,7 +101,11 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             }
             else if(entity instanceof Blockade) {
                 Blockade blockade = (Blockade) entity;
-                manager.addSendMessage(new MessageRoad((Road)this.world.getEntity(blockade.getPosition()), blockade, false));
+                
+                if (! reportedRoads.contains(blockade.getPosition())) {
+	                manager.addSendMessage(new MessageRoad((Road) this.world.getEntity(blockade.getPosition()), blockade, false));
+	                reportedRoads.add(blockade.getPosition());
+                }
             }
         }
     }
@@ -250,5 +259,9 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         
         System.out.println("Default behaviour, random walk ... ???");
         return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
+    }
+    
+    public String toString(){
+    	return "Ambulance:" + this.getID();
     }
 }
