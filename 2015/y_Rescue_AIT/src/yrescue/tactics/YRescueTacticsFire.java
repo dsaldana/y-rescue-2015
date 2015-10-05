@@ -16,8 +16,10 @@ import adk.team.action.ActionRest;
 import adk.team.util.BuildingSelector;
 import adk.team.util.RouteSearcher;
 import comlib.manager.MessageManager;
+import comlib.message.information.MessageBuilding;
 import comlib.message.information.MessageCivilian;
 import comlib.message.information.MessageRoad;
+import rescuecore2.log.Logger;
 import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
@@ -51,7 +53,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);
             if(entity instanceof Building) {
-                this.buildingSelector.add((Building) entity);
+            	Building b = (Building) entity;
+                this.buildingSelector.add(b);
+                manager.addSendMessage(new MessageBuilding(b));		//report to other firefighters the building i've seen
             }
             else if(entity instanceof Civilian) {
                 Civilian civilian = (Civilian)entity;
@@ -82,6 +86,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         // Max Distance
         this.maxDistance = 15000;
+        BasicBuildingSelector bs = (BasicBuildingSelector) buildingSelector;
+        
+        Logger.info(String.format("I know %d buildings on fire", bs.buildingList.size()));
         
         // Out of Water
         // But it's already refilling then rest
