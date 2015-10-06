@@ -23,7 +23,7 @@ public class YRescueImpassableSelector implements ImpassableSelector {
 
     @Override
     public void add(Road road) {
-        if(!this.passableRoadList.contains(road.getID()) && !road.getBlockades().isEmpty()) {
+        if(/*!this.passableRoadList.contains(road.getID()) &&*/ !road.getBlockades().isEmpty()) {
             this.impassableRoadList.add(road);
         }
     }
