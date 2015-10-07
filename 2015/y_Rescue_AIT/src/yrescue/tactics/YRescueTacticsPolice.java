@@ -27,14 +27,14 @@ import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
-import yrescue.blockade.BlockadeUtil;
 import yrescue.message.event.MessageBlockedAreaEvent;
+import yrescue.problem.blockade.BlockadeUtil;
 import yrescue.problem.blockade.BlockedArea;
+import yrescue.problem.blockade.BlockedAreaSelector;
+import yrescue.problem.blockade.BlockedAreaSelectorProvider;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
-import yrescue.util.BlockedAgentSelectorProvider;
-import yrescue.util.BlockedAreaSelector;
 import yrescue.util.YRescueDistanceSorter;
 import yrescue.util.YRescueImpassableSelector;
 import adk.sample.basic.util.*;
@@ -48,7 +48,7 @@ import java.util.PriorityQueue;
 
 import org.apache.log4j.MDC;
 
-public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedAgentSelectorProvider {
+public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedAreaSelectorProvider {
 
     public ImpassableSelector impassableSelector;
     public RouteSearcher routeSearcher;
@@ -183,6 +183,10 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
             return new ActionClear(this, (int) (this.me.getX() + vector.getX()), (int) (this.me.getY() + vector.getY()));
         }
         
+        if (this.tacticsAgent.stuck(currentTime)){
+        	Logger.info("I'm STUCK! How's that possible?");
+        }
+        
         
         
         /***************************************
@@ -314,45 +318,20 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 		Vector2D escalar = normalagentToTarget.scale(clearRange);
 		target = new Point2D(me.getX() + escalar.getX(),me.getY() + escalar.getY());
 		//System.out.println("frontier: " + frontier);
-		System.out.println("target: " + target);
-		ArrayList<Blockade> blockList = new ArrayList<Blockade>(getBlockadesInSquare(me().getX(), me().getY(), clearRange));
-		System.out.println("blocklist: " + blockList);
+		Logger.trace("target: " + target);
+		ArrayList<Blockade> blockList = new ArrayList<Blockade>(blockadeUtil.getBlockadesInSquare(me().getX(), me().getY(), clearRange));
+		Logger.trace("#blockades in square around agent: " + blockList.size());
+		Logger.trace("They are: " + blockList.size());
+		
 		if (blockadeUtil.anyBlockadeInClearArea(blockList, target)){
-			System.out.println("TRUE");
-			return true;}
+			Logger.trace("There is a blockade in clear area!");
+			return true;
+		}
 		return false;
 	}
     
 	
 
-	/**
-	 * Returns all blockades contained in the square 
-	 * with diagonal from (x - range, y - range) to (x + range, y + range) 
-	 * @param x
-	 * @param y
-	 * @param range
-	 * @return
-	 */
-    public PriorityQueue<Blockade> getBlockadesInSquare(int x, int y, int range) {
-		final PriorityQueue<Blockade> result = new PriorityQueue<Blockade>(20, new YRescueDistanceSorter(me(), model));
-		Rectangle r = new Rectangle(x - range, y - range, x + range, y + range);
-
-		Collection<StandardEntity> entities = model.getObjectsInRectangle(x - range, y - range, x + range, y + range);
-		for(StandardEntity e : entities){
-			if (e instanceof Road){
-				Road road = (Road) e;
-				if (road.isBlockadesDefined()){					
-					for (EntityID blockID : road.getBlockades()){
-						if(model.getDistance(me().getID(), blockID) < range){
-							result.add((Blockade)model.getEntity(blockID));
-						}						
-					}
-				}
-			}			
-		}
-		return result;
-    }
-    
     public String toString(){
     	return "Police:" + this.getID();
     }

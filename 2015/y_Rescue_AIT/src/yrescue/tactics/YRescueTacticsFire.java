@@ -32,7 +32,8 @@ import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.action.ActionRefill;
-import yrescue.blockade.BlockadeUtil;
+import yrescue.message.information.MessageBlockedArea;
+import yrescue.problem.blockade.BlockadeUtil;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
@@ -115,8 +116,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         System.out.println("Y-Rescue Time:" + currentTime + " Id:" + this.agentID.getValue() + " - FireBrigade agent");
         
         if (this.tacticsAgent.stuck (currentTime)){
-        	Logger.info("> I'm stuck. Will report blocked road to Police.");
-    		manager.addSendMessage(new MessageRoad((Road)this.location(), BlockadeUtil.getClosestBlockadeInMyRoad(this), false) );
+        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID()));
+        	Logger.trace("I'm blocked. Added a MessageBlockedArea");
     		return new ActionRest(this);	//does nothing...
     	}
         

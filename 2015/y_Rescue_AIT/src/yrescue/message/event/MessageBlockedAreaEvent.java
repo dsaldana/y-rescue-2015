@@ -4,14 +4,14 @@ import comlib.event.MessageEvent;
 import adk.team.util.provider.WorldProvider;
 import yrescue.message.information.MessageBlockedArea;
 import yrescue.problem.blockade.BlockedArea;
-import yrescue.util.BlockedAgentSelectorProvider;
+import yrescue.problem.blockade.BlockedAreaSelectorProvider;
 
 public class MessageBlockedAreaEvent implements MessageEvent<MessageBlockedArea>{
 
     private WorldProvider<?> provider;
-    private BlockedAgentSelectorProvider basp;
+    private BlockedAreaSelectorProvider basp;
 
-    public MessageBlockedAreaEvent(WorldProvider<?> worldProvider, BlockedAgentSelectorProvider blockedAgentSelectorProvider) {
+    public MessageBlockedAreaEvent(WorldProvider<?> worldProvider, BlockedAreaSelectorProvider blockedAgentSelectorProvider) {
         this.provider = worldProvider;
         this.basp = blockedAgentSelectorProvider;
     }

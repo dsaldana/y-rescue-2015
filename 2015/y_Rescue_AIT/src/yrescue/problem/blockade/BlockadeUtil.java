@@ -1,8 +1,10 @@
-package yrescue.blockade;
+package yrescue.problem.blockade;
 
 import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.PriorityQueue;
 
 import adk.team.tactics.Tactics;
 import adk.team.util.provider.WorldProvider;
@@ -14,8 +16,10 @@ import rescuecore2.standard.entities.Blockade;
 import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
+import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.tactics.YRescueTacticsPolice;
+import yrescue.util.YRescueDistanceSorter;
 
 /**
  * A collection of useful methods to deal with blockades
@@ -100,4 +104,33 @@ public class BlockadeUtil {
 		}
 		return new java.awt.geom.Area(new Polygon(xPoints, yPoints, points.length));
 	}
+	
+	/**
+	 * Returns all blockades contained in the square 
+	 * with diagonal from (x - range, y - range) to (x + range, y + range) 
+	 * @param x
+	 * @param y
+	 * @param range
+	 * @return
+	 */
+    public PriorityQueue<Blockade> getBlockadesInSquare(int x, int y, int range) {
+    	StandardWorldModel model = owner.getWorld();
+		final PriorityQueue<Blockade> result = new PriorityQueue<Blockade>(20, new YRescueDistanceSorter(owner.me(), model));
+		//Rectangle r = new Rectangle(x - range, y - range, x + range, y + range);
+
+		Collection<StandardEntity> entities = model.getObjectsInRectangle(x - range, y - range, x + range, y + range);
+		for(StandardEntity e : entities){
+			if (e instanceof Road){
+				Road road = (Road) e;
+				if (road.isBlockadesDefined()){					
+					for (EntityID blockID : road.getBlockades()){
+						if(model.getDistance(owner.me().getID(), blockID) < range){
+							result.add((Blockade)model.getEntity(blockID));
+						}						
+					}
+				}
+			}			
+		}
+		return result;
+    }
 }

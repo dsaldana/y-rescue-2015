@@ -1,4 +1,4 @@
-package yrescue.util;
+package yrescue.problem.blockade;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,7 +21,6 @@ import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.EntityID;
-import yrescue.problem.blockade.BlockedArea;
 import yrescue.tactics.YRescueTacticsPolice;
 
 public class BlockedAreaSelector {
@@ -39,7 +38,9 @@ public class BlockedAreaSelector {
 	}
 	
 	public void remove(BlockedArea a){
-		blockedAreas.remove(a);
+		blockedAreas.remove(a.areaID);
+		Logger.trace("Removed an item from blockedAreas: " + a );
+		Logger.trace("Status of blockedAreas: " + blockedAreas );
 	}
 	
 	public BlockedArea getNewTarget(int time) {
@@ -57,6 +58,7 @@ public class BlockedAreaSelector {
     	//if policeman has arrived in target position, then problem solved! (tolerance: 1 meter)
     	if (PositionUtil.equalsPoint(tactics.me.getX(), tactics.me.getY(), target.x, target.y, 1000)){	//milimeter is the unit of distance 
     		Logger.debug("Policeman has arrived to target " + target);
+    		this.remove(target);
     		target = getNewTarget(time);
     	}
     	
