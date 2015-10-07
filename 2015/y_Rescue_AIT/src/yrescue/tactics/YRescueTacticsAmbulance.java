@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import adk.launcher.agent.TacticsAgent;
 import adk.sample.basic.event.BasicAmbulanceEvent;
 import adk.sample.basic.event.BasicCivilianEvent;
 import adk.sample.basic.event.BasicFireEvent;
@@ -18,6 +19,7 @@ import adk.team.action.ActionMove;
 import adk.team.action.ActionRescue;
 import adk.team.action.ActionRest;
 import adk.team.action.ActionUnload;
+import adk.team.tactics.Tactics;
 import adk.team.util.RouteSearcher;
 import adk.team.util.VictimSelector;
 import adk.team.util.graph.RouteManager;
@@ -84,6 +86,10 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
     	
     	Set<EntityID> reportedRoads = new HashSet<>();
+    	
+    	if (this.tacticsAgent.stuck (currentTime)){
+    		manager.addSendMessage(new Mes ); //What Message should i send?
+    	}
     	
         for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);

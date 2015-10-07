@@ -1,6 +1,7 @@
 package adk.launcher.agent;
 
 import adk.team.action.Action;
+import adk.team.action.ActionMove;
 import adk.team.tactics.Tactics;
 import comlib.agent.CommunicationAgent;
 import comlib.manager.MessageManager;
@@ -11,6 +12,9 @@ import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.standard.messages.AKRest;
+import rescuecore2.misc.Pair;
+import rescuecore2.log.Logger;
+
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +29,7 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     protected Action action;						//current action of this agent
     protected Map<Integer, Action> commandHistory;	//history of commands
     public int ignoreTime;
+    protected Pair<Integer, Integer> lastPosition;
     
 
     public TacticsAgent(Tactics t, boolean pre) {
@@ -48,6 +53,9 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
         this.setAgentUniqueValue();
         this.setAgentEntity();
         this.tactics.preparation(this.config, manager);
+        this.tactics.registerTacticsAgent(this);
+        
+        lastPosition = me().getLocation(model);
         
         this.commandHistory = new HashMap<Integer, Action>();
     }
@@ -74,6 +82,7 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
             return;
         }
         this.action = this.tactics.think(time, changed, this.manager);
+        lastPosition = me().getLocation(model); //updates lastPosition
         Message message = this.action == null ? new AKRest(this.getID(), time) : this.action.getCommand(this.getID(), time);
         //System.out.println(message.getClass());
         System.out.println(this.action.getClass());
@@ -104,4 +113,48 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     public StandardWorldModel getWorld() {
         return this.model;
     }
+    
+    /**
+	 * Tests whether I tried to move last time and it was not possible
+	 * @return
+	 */
+	public boolean stuck(int time){
+		int tolerance = 500;	//if agent moved less than this, will be considered as stuck
+		double distance;
+		
+		//agents cannot issue move commands in beginning
+		if (time == config.getIntValue(kernel.KernelConstants.IGNORE_AGENT_COMMANDS_KEY)) {
+			return false;
+		}
+	
+		if (commandHistory.size() == 0) {
+			return false;
+		}
+	
+		Pair<Integer, Integer> currentPos = me().getLocation(model);
+		
+		distance = Math.hypot(currentPos.first() - currentPos.first(), lastPosition.second() - lastPosition.second());
+		
+		Logger.debug("Stuckness test - distance from last position:" + distance);
+	
+		if (commandHistory.containsKey(time -1)) {
+			Action cmd = commandHistory.get(time -1); 
+		
+			Logger.debug("Stuckness test - last command:" + cmd);
+		
+			//if move command was issue and I traversed small distance, I'm stuck
+			if ( (cmd instanceof ActionMove) && 
+				 (distance  < tolerance)) {
+					Logger.info("Dammit, I'm stuck!");
+					return true;
+			}
+		}
+		Logger.info("Not stuck!");
+		return false;
+	}
+
+    
 }
+
+
+	
