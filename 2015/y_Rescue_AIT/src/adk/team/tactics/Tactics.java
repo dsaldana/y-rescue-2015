@@ -1,5 +1,6 @@
 package adk.team.tactics;
 
+import adk.launcher.agent.TacticsAgent;
 import adk.team.action.Action;
 import adk.team.util.provider.WorldProvider;
 import comlib.manager.MessageManager;
@@ -17,6 +18,7 @@ public abstract class Tactics<E extends Human> implements WorldProvider<E> {
 
     public boolean pre;
 
+    protected TacticsAgent<?> tacticsAgent;
     public StandardWorldModel world;
     public StandardWorldModel model;
     public Config config;
@@ -45,6 +47,10 @@ public abstract class Tactics<E extends Human> implements WorldProvider<E> {
     }
 
     public void registerProvider(MessageManager manager) {
+    }
+    
+    public void registerTacticsAgent(TacticsAgent<?> t) {
+    	this.tacticsAgent = t;
     }
 
     @Override
