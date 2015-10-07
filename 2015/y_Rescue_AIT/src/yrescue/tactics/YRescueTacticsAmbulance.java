@@ -37,6 +37,7 @@ import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.blockade.BlockadeUtil;
+import yrescue.message.information.MessageBlockedArea;
 import yrescue.search.ExploreRouteSearcher;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
@@ -135,7 +136,9 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         }
         
         if (this.tacticsAgent.stuck (currentTime)){
-    		manager.addSendMessage(new MessageRoad((Road)this.location(), BlockadeUtil.getClosestBlockadeInMyRoad(this), false) );
+    		//manager.addSendMessage(new MessageRoad((Road)this.location(), BlockadeUtil.getClosestBlockadeInMyRoad(this), false) );
+        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID()));
+        	Logger.trace("I'm blocked. Added a MessageBlockedArea");
     		return new ActionRest(this);	//does nothing...
     	}
         

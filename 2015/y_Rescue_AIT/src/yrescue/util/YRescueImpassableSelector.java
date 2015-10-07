@@ -31,9 +31,9 @@ public class YRescueImpassableSelector implements ImpassableSelector {
     @Override
     public void add(Blockade blockade) {
         Road road = (Road)this.provider.getWorld().getEntity(blockade.getPosition());
-        if(!this.passableRoadList.contains(road.getID())) {
-            this.impassableRoadList.add(road);
-        }
+        //if(!this.passableRoadList.contains(road.getID())) {
+        this.impassableRoadList.add(road);
+        //}
     }
 
     @Override
@@ -88,10 +88,10 @@ public class YRescueImpassableSelector implements ImpassableSelector {
 
     @Override
     public EntityID updateTarget(int time, EntityID target) {
-        if(this.passableRoadList.contains(target)) {
+        /*if(this.passableRoadList.contains(target)) {
             System.out.println("problem solved");
         	return this.getNewTarget(time);
-        }
+        }*/
         for(StandardEntity police : this.provider.getWorld().getEntitiesOfType(StandardEntityURN.POLICE_FORCE)) {
             if(target.getValue() == ((PoliceForce)police).getPosition().getValue()) {
             	if(this.provider.getID().getValue() == police.getID().getValue()) {

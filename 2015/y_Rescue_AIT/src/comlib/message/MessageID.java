@@ -12,6 +12,7 @@ public interface MessageID
 
 	int buildingMessage = 4;
 	int roadMessage = 1;
+	int blockedAreaMessage = 5;		//message for reporting a blocked agent
 
 	int reportMessage = 6;
 	int policeCommand = 7;

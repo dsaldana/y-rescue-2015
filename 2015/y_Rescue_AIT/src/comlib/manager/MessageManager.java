@@ -18,6 +18,7 @@ import rescuecore2.messages.Message;
 import rescuecore2.standard.kernel.comms.ChannelCommunicationModel;
 import rescuecore2.standard.messages.AKSpeak;
 import rescuecore2.worldmodel.EntityID;
+import yrescue.message.provider.MessageBlockedAreaProvider;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -330,6 +331,11 @@ public class MessageManager
 				new CommandFireProvider(MessageID.fireCommand));
 		this.registerStandardProvider(
 				new CommandScoutProvider(MessageID.scoutCommand));
+		
+		//adding MessageBlockedArea
+		this.registerStandardProvider(
+			new MessageBlockedAreaProvider(MessageID.blockedAreaMessage)
+		);
 		//this.register(CommunicationMessage.buildingMessageID, new MessageBuildingProvider(this.event));
 		//this.register(CommunicationMessage.blockadeMessageID, new BlockadeMessageProvider(this.event));
 		//this.register(CommunicationMessage.victimMessageID,   new VictimMessageProvider());

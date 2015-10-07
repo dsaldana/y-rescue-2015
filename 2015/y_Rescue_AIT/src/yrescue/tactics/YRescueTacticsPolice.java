@@ -27,9 +27,14 @@ import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
+import yrescue.blockade.BlockadeUtil;
+import yrescue.message.event.MessageBlockedAreaEvent;
+import yrescue.problem.blockade.BlockedArea;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
+import yrescue.util.BlockedAgentSelectorProvider;
+import yrescue.util.BlockedAreaSelector;
 import yrescue.util.YRescueDistanceSorter;
 import yrescue.util.YRescueImpassableSelector;
 import adk.sample.basic.util.*;
@@ -43,22 +48,28 @@ import java.util.PriorityQueue;
 
 import org.apache.log4j.MDC;
 
-public class YRescueTacticsPolice extends BasicTacticsPolice {
+public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedAgentSelectorProvider {
 
     public ImpassableSelector impassableSelector;
     public RouteSearcher routeSearcher;
+    
+    public BlockadeUtil blockadeUtil;
+    public BlockedAreaSelector blockedAreaSelector;
 
+    public BlockedArea blockedAreaTarget;
+    
     //0 -> current
     //1 -> current - 1
     public Point2D[] agentPoint;
     public boolean posInit;
     public boolean beforeMove;
 
-    private int clearRange;
-    private int clearWidth;
+    public int clearRange;
+    public int clearWidth;
     
     private StateMachine actionStateMachine;
     private StateMachine statusStateMachine;
+    
 
    
     @Override
@@ -69,6 +80,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
     @Override
     public void registerEvent(MessageManager manager) {
         manager.registerEvent(new BasicRoadEvent(this, this));
+        manager.registerEvent(new MessageBlockedAreaEvent(this, this));
     }
 
 
@@ -118,13 +130,16 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
     public void preparation(Config config, MessageManager messageManager) {
         this.routeSearcher = this.initRouteSearcher();
         this.impassableSelector = this.initImpassableSelector();
+        this.blockedAreaSelector = new BlockedAreaSelector(this);
         this.beforeMove = false;
         this.agentPoint = new Point2D[2];
         this.posInit = true;
         clearRange = 10000;
         clearWidth = 1200;
+        
         this.actionStateMachine = new StateMachine(ActionStates.Policeman.AWAITING_ORDERS);
         this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
+        this.blockadeUtil = new BlockadeUtil(this);
         
         MDC.put("agent", this);
         MDC.put("location", location());
@@ -176,30 +191,33 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
          * TODO: define a strategy for the police destination
          */
         
-        // Update target Destination
-        EntityID oldTarget;
         //this.target = new EntityID(256);
-        YRescueImpassableSelector yis = (YRescueImpassableSelector) this.impassableSelector;
+        /*YRescueImpassableSelector yis = (YRescueImpassableSelector) this.impassableSelector;
         Logger.debug("#blocked roads: " + yis.impassableRoadList.size());
         Logger.debug("They are: " + yis.impassableRoadList);
+        */
         
-        if(this.target != null) {
-        	oldTarget = this.target;
-            this.target = this.impassableSelector.updateTarget(currentTime, this.target);    
+        Logger.debug("#blocked roads: " + blockedAreaSelector.blockedAreas.size());
+        Logger.debug("They are: " + blockedAreaSelector.blockedAreas.values());
+        
+        
+        if(this.blockedAreaTarget != null) {
+            this.blockedAreaTarget = this.blockedAreaSelector.updateTarget(currentTime, this.blockedAreaTarget);    
         } else { // Select a new Target Destination
-        	this.target = this.impassableSelector.getNewTarget(currentTime);
+        	this.blockedAreaTarget = this.blockedAreaSelector.getNewTarget(currentTime);
         }
         
         
         
         // Determines the path to be followed
         List<EntityID> path;
-        if(this.target == null || this.target == this.location().getID()) { //if there is no more known targets -> select a random target
+        if(this.blockedAreaTarget == null){
         	path = this.routeSearcher.noTargetMove(currentTime, this.me);
+        	Logger.debug("noTargetMove - path: " + path);
         } else {
-        	path = this.routeSearcher.getPath(currentTime, this.me, this.target);
+        	path = this.routeSearcher.getPath(currentTime, this.me, this.blockedAreaTarget.getEntityID());
+        	Logger.debug("Path to target: " + path);
         }
-        //System.out.println(path);
         
         /***************************************
          * 
@@ -246,7 +264,17 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
         	//System.out.println("blockade on way? " + checkBlockadeOnWayTo(path));
         	actionStateMachine.setState(ActionStates.MOVING_TO_TARGET);
     		statusStateMachine.setState(StatusStates.ACTING);
-        	return new ActionMove(this, path);
+    		
+    		if (blockedAreaTarget == null) {
+    			Logger.trace("Null target, moving with " + path);
+    			return new ActionMove(this, path);
+    		}
+    		else {
+    			Logger.trace(String.format("Moving to %d,%d of path %s", this.blockedAreaTarget.x, this.blockedAreaTarget.y, path)); 
+    			return new ActionMove(this, path, this.blockedAreaTarget.x, this.blockedAreaTarget.y);
+    		}
+    		
+        	
         }
             
         //return new ActionRest(this);
@@ -289,64 +317,13 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
 		System.out.println("target: " + target);
 		ArrayList<Blockade> blockList = new ArrayList<Blockade>(getBlockadesInSquare(me().getX(), me().getY(), clearRange));
 		System.out.println("blocklist: " + blockList);
-		if (anyBlockadeInClearArea(blockList, target)){
+		if (blockadeUtil.anyBlockadeInClearArea(blockList, target)){
 			System.out.println("TRUE");
 			return true;}
 		return false;
 	}
     
-	/**
-	 * Returns true if a blockade in the list is in clearRange around target area
-	 * @param blockList
-	 * @param target
-	 * @return
-	 */
-	private boolean anyBlockadeInClearArea(ArrayList<Blockade> blockList, Point2D target) {
-		boolean result = false;
-		java.awt.geom.Area clearArea = getClearArea((int)target.getX(), (int)target.getY(), clearRange, clearWidth);
-		for (Blockade block : blockList) {
-			java.awt.geom.Area select = new java.awt.geom.Area(block.getShape());
-			select.intersect(clearArea);
-			if (!select.isEmpty()) {
-				Logger.debug(block + "  has intersect with clear area ");
-				result = true;
-			}
-		}
-		return result;
-	}
-	/**
-	 * from clear.Geometry
-	 */
-	public java.awt.geom.Area getClearArea(int targetX, int targetY, int clearLength, int clearRad) {
-		clearLength = clearLength - 200;
-		clearRad = clearRad - 200;
-		Vector2D agentToTarget = new Vector2D(targetX - me().getX(), targetY - me().getY());
-
-		if (agentToTarget.getLength() > clearLength)
-			agentToTarget = agentToTarget.normalised().scale(clearLength);
-
-		Vector2D backAgent = (new Vector2D(me().getX(), me().getY()))
-				.add(agentToTarget.normalised().scale(-450));
-		Line2D line = new Line2D(backAgent.getX(), backAgent.getY(),
-				agentToTarget.getX(), agentToTarget.getY());
-
-		Vector2D dir = agentToTarget.normalised().scale(clearRad);
-		Vector2D perpend1 = new Vector2D(-dir.getY(), dir.getX());
-		Vector2D perpend2 = new Vector2D(dir.getY(), -dir.getX());
-
-		Point2D points[] = new Point2D[] {
-				line.getOrigin().plus(perpend1),
-				line.getEndPoint().plus(perpend1),
-				line.getEndPoint().plus(perpend2),
-				line.getOrigin().plus(perpend2) };
-		int[] xPoints = new int[points.length];
-		int[] yPoints = new int[points.length];
-		for (int i = 0; i < points.length; i++) {
-			xPoints[i] = (int) points[i].getX();
-			yPoints[i] = (int) points[i].getY();
-		}
-		return new java.awt.geom.Area(new Polygon(xPoints, yPoints, points.length));
-	}
+	
 
 	/**
 	 * Returns all blockades contained in the square 
@@ -379,4 +356,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
     public String toString(){
     	return "Police:" + this.getID();
     }
+
+	@Override
+	public BlockedAreaSelector getBlockedAreaSelector() {
+		return blockedAreaSelector;
+	}
 }
