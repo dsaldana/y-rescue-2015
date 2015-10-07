@@ -249,6 +249,7 @@ public class MessageManager
 					messages.add(
 							new AKSpeak(agentID, this.getTime(), ch, bos.toByteArray())
 							);
+					Logger.trace("Added message to queue. Msg size: " + bos.size());
 				}
 			}
 

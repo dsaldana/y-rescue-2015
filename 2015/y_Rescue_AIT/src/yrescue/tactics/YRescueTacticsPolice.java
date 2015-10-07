@@ -180,7 +180,8 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
         EntityID oldTarget;
         //this.target = new EntityID(256);
         YRescueImpassableSelector yis = (YRescueImpassableSelector) this.impassableSelector;
-        Logger.debug(String.format("I know %d blocked roads ", yis.impassableRoadList.size()));
+        Logger.debug("#blocked roads: " + yis.impassableRoadList.size());
+        Logger.debug("They are: " + yis.impassableRoadList);
         
         if(this.target != null) {
         	oldTarget = this.target;
@@ -286,7 +287,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
 		target = new Point2D(me.getX() + escalar.getX(),me.getY() + escalar.getY());
 		//System.out.println("frontier: " + frontier);
 		System.out.println("target: " + target);
-		ArrayList<Blockade> blockList = new ArrayList<Blockade>(getBlockadesInRange(me().getX(), me().getY(), clearRange));
+		ArrayList<Blockade> blockList = new ArrayList<Blockade>(getBlockadesInSquare(me().getX(), me().getY(), clearRange));
 		System.out.println("blocklist: " + blockList);
 		if (anyBlockadeInClearArea(blockList, target)){
 			System.out.println("TRUE");
@@ -347,7 +348,15 @@ public class YRescueTacticsPolice extends BasicTacticsPolice {
 		return new java.awt.geom.Area(new Polygon(xPoints, yPoints, points.length));
 	}
 
-    public PriorityQueue<Blockade> getBlockadesInRange(int x, int y, int range) {
+	/**
+	 * Returns all blockades contained in the square 
+	 * with diagonal from (x - range, y - range) to (x + range, y + range) 
+	 * @param x
+	 * @param y
+	 * @param range
+	 * @return
+	 */
+    public PriorityQueue<Blockade> getBlockadesInSquare(int x, int y, int range) {
 		final PriorityQueue<Blockade> result = new PriorityQueue<Blockade>(20, new YRescueDistanceSorter(me(), model));
 		Rectangle r = new Rectangle(x - range, y - range, x + range, y + range);
 

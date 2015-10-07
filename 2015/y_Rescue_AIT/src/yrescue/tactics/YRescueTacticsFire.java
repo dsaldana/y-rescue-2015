@@ -23,6 +23,7 @@ import adk.team.util.RouteSearcher;
 import comlib.manager.MessageManager;
 import comlib.message.information.MessageBuilding;
 import comlib.message.information.MessageCivilian;
+import comlib.message.information.MessageFireBrigade;
 import comlib.message.information.MessageRoad;
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
@@ -31,6 +32,7 @@ import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.action.ActionRefill;
+import yrescue.blockade.BlockadeUtil;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
@@ -88,7 +90,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                     manager.addSendMessage(new MessageCivilian(civilian));
                 }
             }
-            else if(entity instanceof Blockade) {
+            /*else if(entity instanceof Blockade) {
                 Blockade blockade = (Blockade) entity;
                 
                 if (! reportedRoads.contains(blockade.getPosition())) {
@@ -97,7 +99,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	                
 	                reportedRoads.add(blockade.getPosition());
                 }
-            }
+            }*/
         }
     }
     
@@ -111,6 +113,30 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         MDC.put("location", location());
         
         System.out.println("Y-Rescue Time:" + currentTime + " Id:" + this.agentID.getValue() + " - FireBrigade agent");
+        
+        if (this.tacticsAgent.stuck (currentTime)){
+        	Logger.info("> I'm stuck. Will report blocked road to Police.");
+    		manager.addSendMessage(new MessageRoad((Road)this.location(), BlockadeUtil.getClosestBlockadeInMyRoad(this), false) );
+    		return new ActionRest(this);	//does nothing...
+    	}
+        
+        //check for buriedness and tries to extinguish fire in a close building
+        if(this.me.getBuriedness() > 0) {
+            manager.addSendMessage(new MessageFireBrigade(this.me, MessageFireBrigade.ACTION_REST, this.agentID));
+            for(StandardEntity entity : this.world.getObjectsInRange(this.me, this.maxDistance)) {
+                if(entity instanceof Building) {
+                    Building building = (Building)entity;
+                    this.target = building.getID();
+                    //if (building.isOnFire() && (this.world.getDistance(this.agentID, this.target) <= this.maxDistance)) {
+                    if(building.isOnFire()) {
+                        return new ActionExtinguish(this, this.target, this.maxPower);
+                    }
+                }
+            }
+            return new ActionRest(this);
+        }
+        
+        
 
         // Building the Lists of Refuge and Hydrant
         Collection<StandardEntity> refuge = this.world.getEntitiesOfType(StandardEntityURN.REFUGE);

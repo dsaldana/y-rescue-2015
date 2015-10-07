@@ -36,6 +36,7 @@ import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
+import yrescue.blockade.BlockadeUtil;
 import yrescue.search.ExploreRouteSearcher;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
@@ -85,11 +86,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     @Override
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
     	
-    	Set<EntityID> reportedRoads = new HashSet<>();
-    	
-    	if (this.tacticsAgent.stuck (currentTime)){
-    		//manager.addSendMessage(new Mes ); //What Message should i send?
-    	}
     	
         for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);
@@ -105,14 +101,14 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                     manager.addSendMessage(new MessageBuilding(b));
                 }
             }
-            else if(entity instanceof Blockade) {
+            /*else if(entity instanceof Blockade) {
                 Blockade blockade = (Blockade) entity;
                 
                 if (! reportedRoads.contains(blockade.getPosition())) {
 	                manager.addSendMessage(new MessageRoad((Road) this.world.getEntity(blockade.getPosition()), blockade, false));
 	                reportedRoads.add(blockade.getPosition());
                 }
-            }
+            }*/
         }
     }
     
@@ -137,6 +133,11 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             this.target = null;
             return new ActionRescue(this, this.agentID);
         }
+        
+        if (this.tacticsAgent.stuck (currentTime)){
+    		manager.addSendMessage(new MessageRoad((Road)this.location(), BlockadeUtil.getClosestBlockadeInMyRoad(this), false) );
+    		return new ActionRest(this);	//does nothing...
+    	}
         
         // If we are not in the special condition exploring, update target or get a new one 
         if(!this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.EXPLORING)){
