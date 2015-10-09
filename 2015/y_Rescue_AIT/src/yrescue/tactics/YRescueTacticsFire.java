@@ -115,13 +115,14 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         System.out.println("Y-Rescue Time:" + currentTime + " Id:" + this.agentID.getValue() + " - FireBrigade agent");
         
+        // Check if the agent is stuck
         if (this.tacticsAgent.stuck (currentTime)){
         	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID()));
         	Logger.trace("I'm blocked. Added a MessageBlockedArea");
     		return new ActionRest(this);	//does nothing...
     	}
         
-        //check for buriedness and tries to extinguish fire in a close building
+        // Check for buriedness and tries to extinguish fire in a close building
         if(this.me.getBuriedness() > 0) {
             manager.addSendMessage(new MessageFireBrigade(this.me, MessageFireBrigade.ACTION_REST, this.agentID));
             for(StandardEntity entity : this.world.getObjectsInRange(this.me, this.maxDistance)) {
@@ -129,7 +130,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                     Building building = (Building)entity;
                     this.target = building.getID();
                     //if (building.isOnFire() && (this.world.getDistance(this.agentID, this.target) <= this.maxDistance)) {
-                    if(building.isOnFire()) {
+                    if(building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4 && building.isBrokennessDefined() && building.getBrokenness() > 10) {
+                    	System.out.println(">>>>>>>>> Teste ");
                         return new ActionExtinguish(this, this.target, this.maxPower);
                     }
                 }
@@ -137,7 +139,23 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             return new ActionRest(this);
         }
         
-        
+        // Check if the agent got inside the building in fire
+        EntityID locationID = this.me.getPosition();
+        StandardEntity location = this.world.getEntity(locationID);
+        if(location instanceof Building) {
+            Building b = (Building)location;
+            if(b.isOnFire()) {        	
+                for(StandardEntity entity : this.world.getObjectsInRange(this.me, this.maxDistance/2)) {
+                    if(entity instanceof Road) {
+                        Road road = (Road)entity;
+                        List<EntityID> path = this.routeSearcher.getPath(currentTime, this.me, road);
+                        if(path != null) {
+                            return new ActionMove(this, path);
+                        }
+                    }
+                }
+            }
+        }
 
         // Building the Lists of Refuge and Hydrant
         Collection<StandardEntity> refuge = this.world.getEntitiesOfType(StandardEntityURN.REFUGE);
@@ -148,17 +166,19 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         hydrant.addAll(hydrant);
         
         // Max Distance
-        this.maxDistance = 15000;
+        this.maxDistance = 25000;
         BasicBuildingSelector bs = (BasicBuildingSelector) buildingSelector;
         
         Logger.info(String.format("I know %d buildings on fire", bs.buildingList.size()));
         
         // Out of Water
-        // But it's already refilling then rest
+        // But it's already refilling then rest        
         if((this.location instanceof Refuge || this.location instanceof Hydrant) && (this.me.getWater() < this.maxWater)) {
             this.target = null;
+            System.out.println(">>>>>>> Refill = " + this.me.getWater());
             return new ActionRest(this);
         }
+        
         // Refill
         if(me.isWaterDefined() && me.getWater() < maxPower) {
         	this.target = null;
@@ -172,20 +192,32 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         if(this.target == null) {
             return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
         }
-        // Check if the robot is not close to the target
+        
+        // Check if the robot is not close to the target then get closer
         if(this.world.getDistance(this.agentID, this.target) > this.maxDistance) {
             return this.moveTarget(currentTime);
         }
+        
         // Check if the target is still on fire
         // If it's not then select a new target
         do{
             Building building = (Building) this.world.getEntity(this.target);
-            if (building.isOnFire()) {
+            if (building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4 && building.isBrokennessDefined() && building.getBrokenness() > 10){
+            	System.out.println(">>>>>> Temperature = " + building.getTemperature());
                 return this.world.getDistance(this.agentID, this.target) <= this.maxDistance ? new ActionExtinguish(this, this.target, this.maxPower) : this.moveTarget(currentTime);
             } else {
+            	System.out.println(">>>>>> it's not on fire anymore. Target OK  = " + this.target.getValue());
                 this.buildingSelector.remove(this.target);
             }
-            this.target = this.buildingSelector.getNewTarget(currentTime);
+            EntityID newTarget = this.buildingSelector.getNewTarget(currentTime);
+            if(this.target != newTarget){
+            	this.target = newTarget;
+            	if(this.target != null)
+            		System.out.println(">>>>>> it's not on fire anymore. Target new = " + this.target.getValue());
+            	else
+            		System.out.println(">>>>>> there's no target anymore.");
+            	break;
+            }
         }while(this.target != null);
         
         // If none of the others action then walk randomly
