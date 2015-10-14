@@ -1,58 +1,65 @@
 package yrescue.tactics;
 
+import rescuecore2.config.Config;
+import rescuecore2.log.Logger;
+import rescuecore2.standard.entities.Blockade;
+import rescuecore2.standard.entities.Building;
+import rescuecore2.standard.entities.Civilian;
+import rescuecore2.standard.entities.Hydrant;
+import rescuecore2.standard.entities.Refuge;
+import rescuecore2.standard.entities.Road;
+import rescuecore2.standard.entities.StandardEntity;
+import rescuecore2.standard.entities.StandardEntityConstants.Fieryness;
+import rescuecore2.standard.entities.StandardEntityURN;
+import rescuecore2.worldmodel.ChangeSet;
+import rescuecore2.worldmodel.EntityID;
+import yrescue.action.ActionRefill;
+import yrescue.message.information.MessageBlockedArea;
+import yrescue.util.YRescueBuildingSelector;
+
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.log4j.MDC;
 
-import java.util.Collection;
-import java.util.HashSet;
-
+//import yrescue.util.YRescueRouteSearcher;
 import adk.sample.basic.event.BasicBuildingEvent;
-import adk.sample.basic.util.BasicBuildingSelector;
 import adk.sample.basic.tactics.BasicTacticsFire;
+import adk.sample.basic.util.BasicBuildingSelector;
 import adk.sample.basic.util.BasicRouteSearcher;
 import adk.team.action.Action;
 import adk.team.action.ActionExtinguish;
 import adk.team.action.ActionMove;
-import adk.team.action.ActionRescue;
 import adk.team.action.ActionRest;
 import adk.team.util.BuildingSelector;
 import adk.team.util.RouteSearcher;
+import adk.team.util.graph.RouteManager;
 import comlib.manager.MessageManager;
 import comlib.message.information.MessageBuilding;
 import comlib.message.information.MessageCivilian;
 import comlib.message.information.MessageFireBrigade;
 import comlib.message.information.MessageRoad;
-import rescuecore2.config.Config;
-import rescuecore2.log.Logger;
-import rescuecore2.misc.geometry.Point2D;
-import rescuecore2.standard.entities.*;
-import rescuecore2.worldmodel.ChangeSet;
-import rescuecore2.worldmodel.EntityID;
-import yrescue.action.ActionRefill;
-import yrescue.message.information.MessageBlockedArea;
-import yrescue.problem.blockade.BlockadeUtil;
-import yrescue.statemachine.ActionStates;
-import yrescue.statemachine.StateMachine;
-import yrescue.statemachine.StatusStates;
 
 public class YRescueTacticsFire extends BasicTacticsFire {
 
-    @Override
+    private List<StandardEntity> refugeIDs;
+	private List<StandardEntity> hydrantIDs;
+
+	@Override
     public String getTacticsName() {
         return "Y-Rescue Firefighter";
     }
 
     @Override
     public BuildingSelector initBuildingSelector() {
-        return new BasicBuildingSelector(this);
+        return new YRescueBuildingSelector(this);
     }
 
     @Override
     public RouteSearcher initRouteSearcher() {
-        return new BasicRouteSearcher(this);
+    	return new BasicRouteSearcher(this);
+        //return new YRescueRouteSearcher(this, new RouteManager(this.world));
     }
 
 
@@ -65,15 +72,31 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     public void preparation(Config config, MessageManager messageManager) {
         this.routeSearcher = this.initRouteSearcher();
         this.buildingSelector = this.initBuildingSelector();
+        
+        //Building the Lists of Refuge and Hydrant
+        Collection<StandardEntity> refuge = this.world.getEntitiesOfType(StandardEntityURN.REFUGE);
+        refugeIDs = new ArrayList<StandardEntity>();
+        refugeIDs.addAll(refuge);
+        Collection<StandardEntity> hydrant = this.world.getEntitiesOfType(StandardEntityURN.HYDRANT);
+        hydrantIDs = new ArrayList<StandardEntity>();
+        hydrant.addAll(hydrant);
+        
         MDC.put("agent", this);
         MDC.put("location", location());
     }
 
+    public boolean onWaterSource() {
+    	if (this.location instanceof Refuge) return true;
+    	if (this.location instanceof Hydrant) return true;
+    	return false;
+    }
+    
+    private boolean isWaterLessThan(double percentage) {
+    	return (this.me.getWater() < this.maxWater * percentage);
+    }
+    
     @Override
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
-    	
-    	Set<EntityID> reportedRoads = new HashSet<>(); 
-    	
         for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);
             if(entity instanceof Building) {
@@ -93,13 +116,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             }
             /*else if(entity instanceof Blockade) {
                 Blockade blockade = (Blockade) entity;
-                
-                if (! reportedRoads.contains(blockade.getPosition())) {
-	                manager.addSendMessage(new MessageRoad((Road) this.world.getEntity(blockade.getPosition()), blockade, false));
-	                Logger.trace("Added outgoin' msg about blockade:" + blockade + " in road " + this.world.getEntity(blockade.getPosition()));
-	                
-	                reportedRoads.add(blockade.getPosition());
-                }
+                manager.addSendMessage(new MessageRoad((Road)this.world.getEntity(blockade.getPosition()), blockade, false));
             }*/
         }
     }
@@ -157,25 +174,15 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             }
         }
 
-        // Building the Lists of Refuge and Hydrant
-        Collection<StandardEntity> refuge = this.world.getEntitiesOfType(StandardEntityURN.REFUGE);
-        List<StandardEntity> refugeIDs = new ArrayList<StandardEntity>();
-        refugeIDs.addAll(refuge);
-        Collection<StandardEntity> hydrant = this.world.getEntitiesOfType(StandardEntityURN.HYDRANT);
-        List<StandardEntity> hydrantIDs = new ArrayList<StandardEntity>();
-        hydrant.addAll(hydrant);
-        
         // Max Distance
-        this.maxDistance = 25000;
+        //this.maxDistance = 25000;
         BasicBuildingSelector bs = (BasicBuildingSelector) buildingSelector;
         
         Logger.info(String.format("I know %d buildings on fire", bs.buildingList.size()));
-        
-        // Out of Water
-        // But it's already refilling then rest        
-        if((this.location instanceof Refuge || this.location instanceof Hydrant) && (this.me.getWater() < this.maxWater)) {
+        //FIXME soh enche de agua até 20% criar uma flag pra marcar q ta enchendo
+        if(onWaterSource() && isWaterLessThan(1.0)) {
             this.target = null;
-            System.out.println(">>>>>>> Refill = " + this.me.getWater());
+            Logger.info(">>>>>>> Refill = " + this.me.getWater());
             return new ActionRest(this);
         }
         
