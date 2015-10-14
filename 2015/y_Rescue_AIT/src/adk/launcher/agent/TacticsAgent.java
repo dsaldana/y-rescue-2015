@@ -133,18 +133,20 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
 	
 		Pair<Integer, Integer> currentPos = me().getLocation(model);
 		
-		distance = Math.hypot(currentPos.first() - currentPos.first(), lastPosition.second() - lastPosition.second());
+		distance = Math.hypot(currentPos.first() - lastPosition.first(), currentPos.second() - lastPosition.second());
 		
 		Logger.debug("Stuckness test - distance from last position:" + distance);
 	
 		if (commandHistory.containsKey(time -1)) {
 			Action cmd = commandHistory.get(time -1); 
 		
-			Logger.debug("Stuckness test - last command:" + cmd);
+			Logger.debug(String.format(
+				"Stuckness test: last command: %s, Last position (%d, %d), Curr position (%d, %d)", 
+				cmd, lastPosition.first(), lastPosition.second(), currentPos.first(), currentPos.second()
+			));
 		
-			//if move command was issue and I traversed small distance, I'm stuck
-			if ( (cmd instanceof ActionMove) && 
-				 (distance  < tolerance)) {
+			//if move command was issued and I traversed small distance, I'm stuck
+			if ( (cmd instanceof ActionMove) && (distance  < tolerance)) {
 					Logger.info("Dammit, I'm stuck!");
 					return true;
 			}

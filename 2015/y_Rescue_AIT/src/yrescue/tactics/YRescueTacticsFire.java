@@ -133,7 +133,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         System.out.println("Y-Rescue Time:" + currentTime + " Id:" + this.agentID.getValue() + " - FireBrigade agent");
         
         // Check if the agent is stuck
-        if (this.tacticsAgent.stuck (currentTime)){
+        if (this.tacticsAgent.stuck(currentTime)){
         	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID()));
         	Logger.trace("I'm blocked. Added a MessageBlockedArea");
     		return new ActionRest(this);	//does nothing...
@@ -176,7 +176,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 
         // Max Distance
         //this.maxDistance = 25000;
-        BasicBuildingSelector bs = (BasicBuildingSelector) buildingSelector;
+        YRescueBuildingSelector bs = (YRescueBuildingSelector) buildingSelector;
         
         Logger.info(String.format("I know %d buildings on fire", bs.buildingList.size()));
         //FIXME soh enche de agua até 20% criar uma flag pra marcar q ta enchendo
