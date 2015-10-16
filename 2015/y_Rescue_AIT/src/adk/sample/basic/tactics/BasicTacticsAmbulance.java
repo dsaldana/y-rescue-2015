@@ -2,9 +2,11 @@ package adk.sample.basic.tactics;
 
 import adk.team.action.*;
 import adk.team.tactics.TacticsAmbulance;
+import adk.team.util.ImpassableSelector;
 import adk.team.util.RouteSearcher;
 import adk.team.util.VictimSelector;
 import adk.team.util.graph.PositionUtil;
+import adk.team.util.provider.ImpassableSelectorProvider;
 import adk.team.util.provider.RouteSearcherProvider;
 import adk.team.util.provider.VictimSelectorProvider;
 import comlib.manager.MessageManager;
