@@ -23,8 +23,10 @@ import rescuecore2.standard.entities.Blockade;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Civilian;
 import rescuecore2.standard.entities.Edge;
+import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
+import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.message.event.MessageBlockedAreaEvent;
@@ -43,8 +45,13 @@ import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Random;
+import java.util.Set;
 
 import org.apache.log4j.MDC;
 
@@ -70,6 +77,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     private StateMachine actionStateMachine;
     private StateMachine statusStateMachine;
     
+    public Set<EntityID> cleanRefuges;
 
    
     @Override
@@ -141,6 +149,8 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
         this.blockadeUtil = new BlockadeUtil(this);
         
+        this.cleanRefuges = new HashSet<>();
+        
         MDC.put("agent", this);
         MDC.put("location", location());
         
@@ -153,15 +163,13 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
-    	Logger.info("\nTimestep:" + currentTime);
+    	Logger.info(String.format("----------- Timestep %d --------------", currentTime));
     	Logger.debug("Radio channel: " + manager.getRadioConfig().getChannel());
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
         
         MDC.put("location", location());
         
         Logger.trace("The received message: " + manager.getReceivedMessage());
-        
-        
         
         //if I am buried, send a message and attempt to clear the entrance to my building
         if(this.me.getBuriedness() > 0) {
@@ -171,7 +179,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
             manager.addSendMessage(new MessagePoliceForce(this.me, MessagePoliceForce.ACTION_REST, this.agentID));
             List<EntityID> neighbours = ((Area)this.location).getNeighbours();
             if(neighbours.isEmpty()) {
-                return new ActionRest(this);
+            	return new ActionRest(this);
             }
             if(this.count <= 0) {
                 this.count = neighbours.size();
@@ -184,7 +192,22 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         }
         
         if (this.tacticsAgent.stuck(currentTime)){
-        	Logger.info("I'm STUCK! How's that possible?");
+        	Logger.warn("I'm STUCK! How's that possible?");
+        	Blockade closest = BlockadeUtil.getClosestBlockadeInMyRoad(this);
+        	if(closest == null){
+        		return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, location.getID()));
+        	}
+        	return new ActionClear(this, closest);//closest.getX(), closest.getY() );
+        }
+        
+        if(this.stuckClearLoop(currentTime)) {
+        	Logger.warn("Warning: clearing the same position for more than 3 timesteps");
+        	if(blockedAreaTarget != null){
+        		return new ActionMove(this, this.routeSearcher.getPath(currentTime, this.me, this.blockedAreaTarget.getOriginID()));
+        	}
+        	else{
+        		return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, location.getID()));
+        	}
         }
         
         
@@ -204,6 +227,30 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         Logger.debug("#blocked roads: " + blockedAreaSelector.blockedAreas.size());
         Logger.debug("They are: " + blockedAreaSelector.blockedAreas.values());
         
+        if (blockedAreaSelector.blockedAreas.size() == 0){
+        	EntityID randomDestination = null;
+        	Random ran = new Random();
+        	
+        	List<EntityID> blockedRefuges = new ArrayList<>();
+        	for (Refuge next : refugeList){
+        		if (!(cleanRefuges.contains(next.getID()))){
+        			blockedRefuges.add(next.getID());
+        		}
+        	}
+        	
+        	if (blockedRefuges.size() == 0){
+        		int index = ran.nextInt(this.getWorld().getAllEntities().size());
+        		randomDestination = (EntityID)this.getWorld().getEntitiesOfType(StandardEntityURN.ROAD, StandardEntityURN.BUILDING).toArray()[index];
+        	} else {
+        		
+            	int index = ran.nextInt(blockedRefuges.size());
+            	randomDestination = blockedRefuges.get(index);
+        	}
+        	
+        	Area a = (Area) this.world.getEntity(randomDestination);
+        	
+        	this.getBlockedAreaSelector().add(new BlockedArea(randomDestination, null, a.getX(), a.getY()));
+        }
         
         if(this.blockedAreaTarget != null) {
             this.blockedAreaTarget = this.blockedAreaSelector.updateTarget(currentTime, this.blockedAreaTarget);    
@@ -216,10 +263,14 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         // Determines the path to be followed
         List<EntityID> path;
         if(this.blockedAreaTarget == null){
+        	if (location instanceof Refuge){
+        		this.cleanRefuges.add(location.getID());
+        		Logger.debug("Refuge cleaned " +location.getID());
+        	}
         	path = this.routeSearcher.noTargetMove(currentTime, this.me);
         	Logger.debug("noTargetMove - path: " + path);
         } else {
-        	path = this.routeSearcher.getPath(currentTime, this.me, this.blockedAreaTarget.getEntityID());
+        	path = this.routeSearcher.getPath(currentTime, this.me, this.blockedAreaTarget.getOriginID());
         	Logger.debug("Path to target: " + path);
         }
         
@@ -274,8 +325,8 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     			return new ActionMove(this, path);
     		}
     		else {
-    			Logger.trace(String.format("Moving to %d,%d of path %s", this.blockedAreaTarget.x, this.blockedAreaTarget.y, path)); 
-    			return new ActionMove(this, path, this.blockedAreaTarget.x, this.blockedAreaTarget.y);
+    			Logger.trace(String.format("Moving to %d,%d of path %s", this.blockedAreaTarget.xOrigin, this.blockedAreaTarget.yOrigin, path)); 
+    			return new ActionMove(this, path, this.blockedAreaTarget.xOrigin, this.blockedAreaTarget.yOrigin);
     		}
     		
         	
@@ -283,6 +334,29 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
             
         //return new ActionRest(this);
    }
+    
+    private boolean stuckClearLoop(int currentTime){
+    	if (tacticsAgent.commandHistory.size() < 4){
+    		Logger.info("Insufficient commands in history");
+    		return false;
+    	}
+    	Action lastCmd = null;
+    	for(int backtime = 1; backtime <= 4; backtime++){
+    		if (lastCmd == null){
+    			lastCmd = tacticsAgent.commandHistory.get(currentTime - backtime);
+    		}
+    		
+    		Logger.trace(String.format("backtime=%d, lastCmd=%s, currCmd=%s", backtime, lastCmd, tacticsAgent.commandHistory.get(currentTime - backtime)));
+    		
+    		if (!lastCmd.equals(tacticsAgent.commandHistory.get(currentTime - backtime))){
+    			return false;
+    		}
+    		lastCmd = tacticsAgent.commandHistory.get(currentTime - backtime);
+    		
+    	}
+    	
+    	return true;
+    }
     
     private boolean checkBlockadeOnWayTo(List<EntityID> dest_path) {
 		

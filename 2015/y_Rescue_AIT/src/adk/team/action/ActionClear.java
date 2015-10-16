@@ -45,4 +45,18 @@ public class ActionClear extends ActionTarget {
     public Message getCommand(EntityID agentID, int time) {
         return this.usePosition ? new AKClearArea(agentID, time, this.posX, this.posY) : new AKClear(agentID, time, this.target);
     }
+    
+    @Override
+    public boolean equals(Object other){
+    	if(other instanceof ActionClear){
+    		ActionClear a = (ActionClear) other;
+    		return this.usePosition == a.getUsePosition() && this.posX == a.getPosX() && this.posY == a.getPosY();
+    	}
+    	return false;
+    }
+    
+    @Override
+    public String toString(){
+    	return String.format("ActionClear; usePosition=%s, x=%d, y=%d", usePosition, posX, posY);
+    }
 }

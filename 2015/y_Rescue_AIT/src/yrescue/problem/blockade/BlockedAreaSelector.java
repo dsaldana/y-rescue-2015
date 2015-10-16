@@ -34,11 +34,11 @@ public class BlockedAreaSelector {
 	}
 	
 	public void add(BlockedArea a){
-		blockedAreas.put(a.areaID, a);
+		blockedAreas.put(a.originID, a);
 	}
 	
 	public void remove(BlockedArea a){
-		blockedAreas.remove(a.areaID);
+		blockedAreas.remove(a.originID);
 		Logger.trace("Removed an item from blockedAreas: " + a );
 		Logger.trace("Status of blockedAreas: " + blockedAreas );
 	}
@@ -46,7 +46,7 @@ public class BlockedAreaSelector {
 	public BlockedArea getNewTarget(int time) {
 		Set<Area> areas = new HashSet<>();
 		for(BlockedArea b : blockedAreas.values()){
-			areas.add((Area)tactics.getWorld().getEntity(b.areaID));
+			areas.add((Area)tactics.getWorld().getEntity(b.originID));
 		}
 	    Pair<Integer, Integer> position = new Pair<Integer, Integer>(tactics.me().getX(), tactics.me().getY());
         Area closest = PositionUtil.getNearTarget(this.tactics.getWorld(), position, areas);
@@ -56,7 +56,7 @@ public class BlockedAreaSelector {
     public BlockedArea updateTarget(int time, BlockedArea target) {
     	
     	//if policeman has arrived in target position, then problem solved! (tolerance: 1 meter)
-    	if (PositionUtil.equalsPoint(tactics.me.getX(), tactics.me.getY(), target.x, target.y, 1000)){	//milimeter is the unit of distance 
+    	if (PositionUtil.equalsPoint(tactics.me.getX(), tactics.me.getY(), target.xOrigin, target.yOrigin, 1000)){	//milimeter is the unit of distance 
     		Logger.debug("Policeman has arrived to target " + target);
     		this.remove(target);
     		target = getNewTarget(time);

@@ -27,7 +27,7 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     
     protected Tactics tactics;
     protected Action action;						//current action of this agent
-    protected Map<Integer, Action> commandHistory;	//history of commands
+    public Map<Integer, Action> commandHistory;	//history of commands
     public int ignoreTime;
     protected Pair<Integer, Integer> lastPosition;
     

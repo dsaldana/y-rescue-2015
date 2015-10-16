@@ -137,7 +137,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
-        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID()));
+        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
         	Logger.trace("I'm blocked. Added a MessageBlockedArea");
     		return new ActionRest(this);	//does nothing...
     	}

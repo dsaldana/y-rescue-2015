@@ -172,7 +172,14 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         
         if (this.tacticsAgent.stuck (currentTime)){
     		//manager.addSendMessage(new MessageRoad((Road)this.location(), BlockadeUtil.getClosestBlockadeInMyRoad(this), false) );
-        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID()));
+        	List<EntityID> path = this.getPathToTarget(currentTime);
+        	if(path != null){
+        		manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), path.get(path.size() - 1)));
+        	}
+        	else {
+        		manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), null));
+        		Logger.warn("Null path to target " + target);
+        	}
         	Logger.trace("I'm blocked. Added a MessageBlockedArea");
     		return new ActionRest(this);	//does nothing...
     	}
