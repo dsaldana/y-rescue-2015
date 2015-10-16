@@ -230,8 +230,14 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
          */
         
         // There is a blockage on the way
-        if(path != null && path.size() > 0 && checkBlockadeOnWayTo(path)){
-    		
+        
+      
+        if(path != null && path.size() > 0 && checkBlockadeOnWayTo(path, this.blockedAreaTarget)){
+    	
+        
+        	
+        	System.out.println("Position: " +me.getX() +"-" +me.getY());
+        	
     		Area area0 = (Area) this.world.getEntity(this.location.getID());
     		Area area1 = (Area) this.world.getEntity(path.get(0));
     		
@@ -284,7 +290,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         //return new ActionRest(this);
    }
     
-    private boolean checkBlockadeOnWayTo(List<EntityID> dest_path) {
+    private boolean checkBlockadeOnWayTo(List<EntityID> dest_path, BlockedArea Btarget) {
 		
 		//EntityID dest = dest_path.get(0);
 	
@@ -297,8 +303,12 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 		
 		//TODO: melhorar o calculo do alvo (modularizar)
 		if(area0 == area1) {
-			target = new Point2D(area0.getX(), area0.getY());
-		}
+			//target = new Point2D(area0.getX(), area0.getY());
+			if (Btarget != null){
+			target = new Point2D(Btarget.x,Btarget.y);
+			} else {
+			target = new Point2D(area0.getX(),area0.getY());
+		}}
 		else{
 			Edge frontier = area0.getEdgeTo(area1.getID());
 		
