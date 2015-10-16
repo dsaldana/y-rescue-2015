@@ -63,6 +63,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     
     public BlockadeUtil blockadeUtil;
     public BlockedAreaSelector blockedAreaSelector;
+    
 
     public BlockedArea blockedAreaTarget;
     
@@ -80,7 +81,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     
     public Set<EntityID> cleanRefuges;
 
-   
+
     @Override
     public String getTacticsName() {
         return "Y-Rescue Policeman";
@@ -294,48 +295,35 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         //-----AQUI O BIXO JA PEGOU
         Logger.debug("The new path, including surrounded buildings is: " + path);
         
-        /***************************************
-         * 
-         * Go towards the chosen path
-         * TODO: 
-         */
+        /**** Go towards the chosen path ****/
         
-        // There is a blockage on the way
-        if(path != null && path.size() > 0 && checkBlockadeOnWayTo(path)){
+        if(path != null && path.size() > 0 && checkBlockadeOnWayTo(path, this.blockedAreaTarget)){ // There is a blockage on the way
+        	
+        	Logger.trace("Will shoot at blockade. My position: " + me.getX() + ", " +me.getY());
     		
-    		Area area0 = (Area) this.world.getEntity(this.location.getID());
-    		Area area1 = (Area) this.world.getEntity(path.get(0));
-    		
-    		Point2D target;
-    		
-    		if(area0 == area1) {
-    			target = new Point2D(area0.getX(), area0.getY());
-    		}
-    		else{
-    			Edge frontier = area0.getEdgeTo(area1.getID());
-    		
-    			target = new Point2D(frontier.getStartX() + (frontier.getEndX() - frontier.getStartX())/2,
-    									 frontier.getStartY() + (frontier.getEndY() - frontier.getStartY())/2);
-    		}
+        	Point2D target = getTargetPoint(path, blockedAreaTarget);
+        	
     		
     		//CHECK IF DISTANCE TO FRONTIER IS SHORT
     		Vector2D agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
     		//System.out.println("Distance to midpoint: " + agentToTarget.getLength());
-    		if (agentToTarget.getLength() < 1000){
-    			System.out.println("Mid point of frontier is very close, will aim to next area's centroid");
-    			target = new Point2D(area1.getX(), area1.getY());
+    		/*if (agentToTarget.getLength() < 1000){
+    			Logger.warn("Mid point of frontier is very close, will aim to next area's centroid");
+    			Area next = (Area) this.world.getEntity(path.get(0));
+    			target = new Point2D(next.getX(), next.getY());
     			agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
-    		}
+    		}*/
     		
     		//MAKES SURE THE AGENT WILL SHOOT AT THE MAXIMUM RANGE
     		Vector2D normalagentToTarget = agentToTarget.normalised();
         	Vector2D escalar = normalagentToTarget.scale(clearRange);
-        	target = new Point2D(me.getX() + escalar.getX(),me.getY() + escalar.getY());
+        	target = new Point2D(me.getX() + escalar.getX(), me.getY() + escalar.getY());
     		
     		actionStateMachine.setState(ActionStates.Policeman.CLEARING);
     		statusStateMachine.setState(StatusStates.ACTING);
         	return new ActionClear(this, (int)target.getX(), (int)target.getY());
-        }else{
+        }
+        else{
         	//System.out.println("blockade on way? " + checkBlockadeOnWayTo(path));
         	actionStateMachine.setState(ActionStates.MOVING_TO_TARGET);
     		statusStateMachine.setState(StatusStates.ACTING);
@@ -348,12 +336,42 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     			Logger.trace(String.format("Moving to %d,%d of path %s", this.blockedAreaTarget.xOrigin, this.blockedAreaTarget.yOrigin, path)); 
     			return new ActionMove(this, path, this.blockedAreaTarget.xOrigin, this.blockedAreaTarget.yOrigin);
     		}
-    		
-        	
         }
+        /**** END: Go towards the chosen path ****/
             
         //return new ActionRest(this);
-   }
+    }
+    
+    protected Point2D getTargetPoint(List<EntityID> path, BlockedArea bTarget){
+		
+		Area area0 = (Area) this.world.getEntity(this.location.getID());
+		Area area1 = (Area) this.world.getEntity(path.get(0));
+		
+		Point2D target;
+		
+		if (area0 == area1) {
+			// target = new Point2D(area0.getX(), area0.getY());
+			if (bTarget != null) {
+				target = new Point2D(bTarget.xOrigin, bTarget.yOrigin);
+				Logger.debug("TargetPoint: coordinates of target in current area :)");
+			} else {
+				target = new Point2D(area0.getX(), area0.getY());
+				Logger.debug("TargetPoint: centroid of current area :(");
+			}
+		} else {
+			Edge frontier = area0.getEdgeTo(area1.getID());
+
+			target = new Point2D(
+				frontier.getStartX() + (frontier.getEndX() - frontier.getStartX()) / 2,
+				frontier.getStartY() + (frontier.getEndY() - frontier.getStartY()) / 2
+			);
+			Logger.debug("TargetPoint: midpoint of frontier with next Area :)");
+		}
+		
+		return target;
+    }
+    
+    
     
     /**
      * Returns the list of Buildings surrounded by blockades
@@ -377,8 +395,6 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     			}
     		}
     	}
-    	
-    	
     	return buildings;
     }
     
@@ -405,36 +421,22 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     	return true;
     }
     
-    private boolean checkBlockadeOnWayTo(List<EntityID> dest_path) {
+    private boolean checkBlockadeOnWayTo(List<EntityID> dest_path, BlockedArea bTarget) {
 		
 		//EntityID dest = dest_path.get(0);
 	
-		Area area0 = (Area) this.world.getEntity(this.location.getID());
-		Area area1 = (Area) this.world.getEntity(dest_path.get(0));
-		
-		
-		//System.out.println(""+area0 + " - " + area1);
-		Point2D target;
-		
-		//TODO: melhorar o calculo do alvo (modularizar)
-		if(area0 == area1) {
-			target = new Point2D(area0.getX(), area0.getY());
-		}
-		else{
-			Edge frontier = area0.getEdgeTo(area1.getID());
-		
-			target = new Point2D(frontier.getStartX() + (frontier.getEndX() - frontier.getStartX())/2,
-									 frontier.getStartY() + (frontier.getEndY() - frontier.getStartY())/2);
-		}
-		
+		Point2D target = getTargetPoint(dest_path, bTarget);
+
 		//CHECK IF DISTANCE TO FRONTIER IS SHORT
 		Vector2D agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
-		System.out.println("Distance to midpoint: " + agentToTarget.getLength());
-		if (agentToTarget.getLength() < 1000){
-			System.out.println("Mid point of frontier is very close, will aim to next area's centroid");
+		/*Logger.debug("Distance to midpoint: " + agentToTarget.getLength());
+		if (agentToTarget.getLength() < 200){
+			Area area1 = (Area) this.world.getEntity(dest_path.get(0));
+			Logger.warn("Mid point of frontier is very close, will aim to next area's centroid");
 			target = new Point2D(area1.getX(), area1.getY());
 			agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
-		}
+		}*/
+		
 		Vector2D normalagentToTarget = agentToTarget.normalised();
 		Vector2D escalar = normalagentToTarget.scale(clearRange);
 		target = new Point2D(me.getX() + escalar.getX(),me.getY() + escalar.getY());
@@ -442,7 +444,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 		Logger.trace("target: " + target);
 		ArrayList<Blockade> blockList = new ArrayList<Blockade>(blockadeUtil.getBlockadesInSquare(me().getX(), me().getY(), clearRange));
 		Logger.trace("#blockades in square around agent: " + blockList.size());
-		Logger.trace("They are: " + blockList.size());
+		Logger.trace("They are: " + blockList);
 		
 		if (blockadeUtil.anyBlockadeInClearArea(blockList, target)){
 			Logger.trace("There is a blockade in clear area!");
