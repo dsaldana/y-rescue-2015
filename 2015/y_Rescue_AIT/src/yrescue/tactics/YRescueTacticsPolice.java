@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -274,6 +275,25 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         	Logger.debug("Path to target: " + path);
         }
         
+        //------AQUI O BIXO VAI PEGAR
+        
+        
+        List<EntityID> buildingsToVisit = getBuildingsToVisit(currentTime);
+        
+        List<EntityID> newPath = new LinkedList<>();
+        EntityID origin = location.getID();
+        for(EntityID id : buildingsToVisit){
+        	newPath.addAll(this.routeSearcher.getPath(currentTime, origin, id));
+        	origin = id;
+        }
+        if(blockedAreaTarget != null){
+        	newPath.addAll(this.routeSearcher.getPath(currentTime, origin, blockedAreaTarget.originID));
+        }
+        
+        path = newPath;
+        //-----AQUI O BIXO JA PEGOU
+        Logger.debug("The new path, including surrounded buildings is: " + path);
+        
         /***************************************
          * 
          * Go towards the chosen path
@@ -334,6 +354,33 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
             
         //return new ActionRest(this);
    }
+    
+    /**
+     * Returns the list of Buildings surrounded by blockades
+     * @param currentTime
+     * @return
+     */
+    private List<EntityID> getBuildingsToVisit(int currentTime){
+    	List<EntityID> buildings = new ArrayList<>();
+    	
+    	List<EntityID> neighbors = ((Area) this.location).getNeighbours();
+    	
+    	for(EntityID neigh : neighbors){
+    		List<EntityID> neighborsOfneighbors = ((Area) world.getEntity(neigh)).getNeighbours();
+    		
+    		for(EntityID neighOfneigh : neighborsOfneighbors){
+    			if(((Area) world.getEntity(neighOfneigh)) instanceof Building){
+    				Area neighArea = (Area) world.getEntity(neigh);
+    				if (neighArea.isBlockadesDefined() && ! neighArea.getBlockades().isEmpty()){
+    					buildings.add(neighOfneigh);
+    				}
+    			}
+    		}
+    	}
+    	
+    	
+    	return buildings;
+    }
     
     private boolean stuckClearLoop(int currentTime){
     	if (tacticsAgent.commandHistory.size() < 4){
