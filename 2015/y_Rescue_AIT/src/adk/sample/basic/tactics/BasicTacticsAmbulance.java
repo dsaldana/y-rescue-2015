@@ -131,8 +131,19 @@ public abstract class BasicTacticsAmbulance extends TacticsAmbulance implements 
     }
 
     public Action moveTarget(int currentTime) {
-        List<EntityID> path = null;
-        if(this.target != null) {
+        List<EntityID> path = getPathToTarget(currentTime);
+        return new ActionMove(this, path != null ? path : this.routeSearcher.noTargetMove(currentTime, this.me));
+    }
+
+	/**
+	 * @param currentTime
+	 * @param path
+	 * @return
+	 */
+	protected List<EntityID> getPathToTarget(int currentTime) {
+		List<EntityID> path = null;
+		
+		if(this.target != null) {
         	if(this.world.getEntity(this.target) instanceof Human){
         		Human humanTarget = (Human) this.world.getEntity(this.target);
         		path = this.routeSearcher.getPath(currentTime, this.me.getPosition(), humanTarget.getPosition());
@@ -141,6 +152,6 @@ public abstract class BasicTacticsAmbulance extends TacticsAmbulance implements 
         		path = this.routeSearcher.getPath(currentTime, this.me.getPosition(), this.target);
         	}
         }
-        return new ActionMove(this, path != null ? path : this.routeSearcher.noTargetMove(currentTime, this.me));
-    }
+		return path;
+	}
 }

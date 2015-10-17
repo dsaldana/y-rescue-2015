@@ -9,7 +9,7 @@ public class StatusState extends State {
 	@Override
 	public boolean equals(Object other){
 		if (other instanceof StatusState){
-			return getName() == ((StatusState)other).getName();
+			return getName().equals(((StatusState)other).getName());
 		}
 		return false;
 	}

@@ -29,15 +29,33 @@ public class ConfigInitializer {
     }
 
     public static Config analysis(String[] args) {
-        Config config = new Config();
+    	Config config = new Config();
+    	//System.out.println("Here");
         Map<String, Option> options = initOption();
+    	//System.out.println("Here");
+        
+        //System.out.println(args); 
+       
         for(String str : args) {
-            String[] strArray = str.split(":");
+        	//System.out.println("Here");
+        	String[] strArray = str.split(":");
+            //System.out.println("args " + strArray[0]);
             Option option = options.get(strArray[0]);
+            //System.out.println("option " + option);
             if(option != null) {
+            	System.out.println(strArray);
+            	//System.out.println(strArray);
                 option.setValue(config, strArray);
             }
         }
+        //System.out.println("args0 " + strArray[0]);
+        //System.out.println("args1 " + strArray[1]);
+        //System.out.println("args2 " + strArray[2]);
+        //System.out.println("args3 " + strArray[3]);
+        //System.out.println("args4 " + strArray[4]);
+        //System.out.println("args5 " + strArray[5]);
+        //System.out.println("args6 " + strArray[6]);
+        //System.out.println("args7 " + strArray[7]);
         return config;
     }
 

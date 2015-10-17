@@ -8,7 +8,6 @@ import rescuecore2.worldmodel.EntityID;
 
 import java.util.HashSet;
 import java.util.Set;
-
 public class YRescueImpassableSelector implements ImpassableSelector {
 
     public Set<Road> impassableRoadList;
@@ -24,7 +23,7 @@ public class YRescueImpassableSelector implements ImpassableSelector {
 
     @Override
     public void add(Road road) {
-        if(!this.passableRoadList.contains(road.getID()) && !road.getBlockades().isEmpty()) {
+        if(/*!this.passableRoadList.contains(road.getID()) &&*/ !road.getBlockades().isEmpty()) {
             this.impassableRoadList.add(road);
         }
     }
@@ -32,9 +31,9 @@ public class YRescueImpassableSelector implements ImpassableSelector {
     @Override
     public void add(Blockade blockade) {
         Road road = (Road)this.provider.getWorld().getEntity(blockade.getPosition());
-        if(!this.passableRoadList.contains(road.getID())) {
-            this.impassableRoadList.add(road);
-        }
+        //if(!this.passableRoadList.contains(road.getID())) {
+        this.impassableRoadList.add(road);
+        //}
     }
 
     @Override
@@ -75,18 +74,27 @@ public class YRescueImpassableSelector implements ImpassableSelector {
 
     @Override
     public EntityID getNewTarget(int time) {
-        StandardEntity result = PositionUtil.getNearTarget(this.provider.getWorld(), this.provider.getOwner(), this.impassableRoadList);
+    	    
+    	Set<Road> impassableRoadList2 = new HashSet<>() ;
+    	for (Road next: this.impassableRoadList){
+    		if (next != this.provider.location()){
+    			impassableRoadList2.add(next);
+    		}
+    	}
+    	    	
+        StandardEntity result = PositionUtil.getNearTarget(this.provider.getWorld(), this.provider.getOwner(), impassableRoadList2);
         return result != null ? result.getID() : null;
     }
 
     @Override
     public EntityID updateTarget(int time, EntityID target) {
-        if(this.passableRoadList.contains(target)) {
-            return this.getNewTarget(time);
-        }
+        /*if(this.passableRoadList.contains(target)) {
+            System.out.println("problem solved");
+        	return this.getNewTarget(time);
+        }*/
         for(StandardEntity police : this.provider.getWorld().getEntitiesOfType(StandardEntityURN.POLICE_FORCE)) {
             if(target.getValue() == ((PoliceForce)police).getPosition().getValue()) {
-                if(this.provider.getID().getValue() < police.getID().getValue()) {
+            	if(this.provider.getID().getValue() == police.getID().getValue()) {
                     this.remove(target);
                     return this.getNewTarget(time);
                 }

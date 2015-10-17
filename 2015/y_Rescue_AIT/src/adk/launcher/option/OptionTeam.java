@@ -28,6 +28,7 @@ public class OptionTeam extends Option {
 
             config.setValue(ConfigKey.KEY_AMBULANCE_AGENT_COUNT, datas[6]);
             config.setValue(ConfigKey.KEY_AMBULANCE_STATION_COUNT, datas[7]);
+            //System.out.println("Data: " + datas);
         }
     }
 }

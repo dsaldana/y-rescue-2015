@@ -18,7 +18,9 @@ public class PositionUtil {
     }
 
     public static <T extends StandardEntity> T getNearTarget(StandardWorldModel world, StandardEntity user, Collection<T> targets) {
-        return getNearTarget(world, user.getLocation(world), targets);
+    	//System.out.println("All Targets:");
+    	//System.out.println(targets);
+    	return getNearTarget(world, user.getLocation(world), targets);
     }
 
     @SuppressWarnings("unchecked")

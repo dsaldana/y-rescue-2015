@@ -9,7 +9,7 @@ public class ActionState extends State {
 	@Override
 	public boolean equals(Object other){
 		if (other instanceof ActionState){
-			return getName() == ((ActionState)other).getName();
+			return getName().equals(((ActionState)other).getName());
 		}
 		return false;
 	}

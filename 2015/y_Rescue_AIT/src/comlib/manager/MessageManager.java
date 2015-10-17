@@ -12,11 +12,13 @@ import comlib.util.BitStreamReader;
 
 import rescuecore2.Constants;
 import rescuecore2.config.Config;
+import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
 import rescuecore2.messages.Message;
 import rescuecore2.standard.kernel.comms.ChannelCommunicationModel;
 import rescuecore2.standard.messages.AKSpeak;
 import rescuecore2.worldmodel.EntityID;
+import yrescue.message.provider.MessageBlockedAreaProvider;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -240,12 +242,15 @@ public class MessageManager
 						bitOutputStreamList[this.getBitOutputStreamNumber(priority, kind)];
 					if (bos.size() <= 0)
 					{ continue; }
-					if ((sentMessageSize + bos.size()) > getMaxBandWidth(ch))
-					{ continue; }
+					if ((sentMessageSize + bos.size()) > getMaxBandWidth(ch)) { 
+						Logger.warn("Message does not fit in bandwidth");		
+						continue;
+					}
 					sentMessageSize += bos.size();
 					messages.add(
 							new AKSpeak(agentID, this.getTime(), ch, bos.toByteArray())
 							);
+					Logger.trace("Added message to queue. Msg size: " + bos.size());
 				}
 			}
 
@@ -262,7 +267,6 @@ public class MessageManager
 		// StringBuilder sb = new StringBuilder();
 		// for (CommunicationMessage msg : this.sendMessages)
 		// { this.providerList[msg.getMessageID()].write(this, sb, msg); }
-
 		return messages;
 	}
 
@@ -275,10 +279,11 @@ public class MessageManager
 	{
 		if (priority < 0 || PRIORITY_DEPTH <= priority)
 		{ throw new IllegalArgumentException(); }
-
+		
 		this.sendMessages.add(msg);
 		int msgID = msg.getMessageID();
-		//		System.out.println("msgID:" + msgID);
+				
+		Logger.trace("Adding message to 'queue' with ID: " + msgID + " with priority " + priority);
 		// TODO: need cutting data
 		this.providerList[msgID].write(this, bitOutputStreamList[msgID], msg);
 	}
@@ -326,6 +331,11 @@ public class MessageManager
 				new CommandFireProvider(MessageID.fireCommand));
 		this.registerStandardProvider(
 				new CommandScoutProvider(MessageID.scoutCommand));
+		
+		//adding MessageBlockedArea
+		this.registerStandardProvider(
+			new MessageBlockedAreaProvider(MessageID.blockedAreaMessage)
+		);
 		//this.register(CommunicationMessage.buildingMessageID, new MessageBuildingProvider(this.event));
 		//this.register(CommunicationMessage.blockadeMessageID, new BlockadeMessageProvider(this.event));
 		//this.register(CommunicationMessage.victimMessageID,   new VictimMessageProvider());

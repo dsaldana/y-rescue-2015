@@ -13,6 +13,7 @@ public class OptionServer extends Option {
     @Override
     public void setValue(Config config, String[] datas) {
         if (datas.length == 3) {
+        	//System.out.println("Server.");
             config.setValue(Constants.KERNEL_HOST_NAME_KEY, datas[1]);
             config.setValue(Constants.KERNEL_PORT_NUMBER_KEY, datas[2]);
         }

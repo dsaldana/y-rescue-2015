@@ -1,6 +1,7 @@
 package adk.launcher.agent;
 
 import adk.team.action.Action;
+import adk.team.action.ActionMove;
 import adk.team.tactics.Tactics;
 import comlib.agent.CommunicationAgent;
 import comlib.manager.MessageManager;
@@ -11,8 +12,13 @@ import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.standard.messages.AKRest;
+import rescuecore2.misc.Pair;
+import rescuecore2.log.Logger;
 
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public abstract class TacticsAgent<E extends StandardEntity> extends CommunicationAgent<E> {
@@ -20,7 +26,11 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     public static final String LOS_MAX_DISTANCE_KEY = "perception.los.max-distance";
     
     protected Tactics tactics;
+    protected Action action;						//current action of this agent
+    public Map<Integer, Action> commandHistory;	//history of commands
     public int ignoreTime;
+    protected Pair<Integer, Integer> lastPosition;
+    
 
     public TacticsAgent(Tactics t, boolean pre) {
         super();
@@ -43,6 +53,11 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
         this.setAgentUniqueValue();
         this.setAgentEntity();
         this.tactics.preparation(this.config, manager);
+        this.tactics.registerTacticsAgent(this);
+        
+        lastPosition = me().getLocation(model);
+        
+        this.commandHistory = new HashMap<Integer, Action>();
     }
 
     protected abstract void setAgentUniqueValue();
@@ -66,10 +81,11 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
             this.tactics.ignoreTimeThink(time, changed, this.manager);
             return;
         }
-        Action action = this.tactics.think(time, changed, this.manager);
-        Message message = action == null ? new AKRest(this.getID(), time) : action.getCommand(this.getID(), time);
+        this.action = this.tactics.think(time, changed, this.manager);
+        lastPosition = me().getLocation(model); //updates lastPosition
+        Message message = this.action == null ? new AKRest(this.getID(), time) : this.action.getCommand(this.getID(), time);
         //System.out.println(message.getClass());
-        System.out.println(action.getClass());
+        System.out.println(this.action.getClass());
         this.send(message);
     }
 
@@ -85,6 +101,8 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
 
     @Override
     public void sendAfterEvent(int time, ChangeSet changed) {
+    	//added by Anderson: registers the current action in history
+    	this.commandHistory.put(time, this.action);
     }
 
     @Override
@@ -95,4 +113,50 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     public StandardWorldModel getWorld() {
         return this.model;
     }
+    
+    /**
+	 * Tests whether I tried to move last time and it was not possible
+	 * @return
+	 */
+	public boolean stuck(int time){
+		int tolerance = 500;	//if agent moved less than this, will be considered as stuck
+		double distance;
+		
+		//agents cannot issue move commands in beginning
+		if (time == config.getIntValue(kernel.KernelConstants.IGNORE_AGENT_COMMANDS_KEY)) {
+			return false;
+		}
+	
+		if (commandHistory.size() == 0) {
+			return false;
+		}
+	
+		Pair<Integer, Integer> currentPos = me().getLocation(model);
+		
+		distance = Math.hypot(currentPos.first() - lastPosition.first(), currentPos.second() - lastPosition.second());
+		
+		Logger.debug("Stuckness test - distance from last position:" + distance);
+	
+		if (commandHistory.containsKey(time -1)) {
+			Action cmd = commandHistory.get(time -1); 
+		
+			Logger.debug(String.format(
+				"Stuckness test: last command: %s, Last position (%d, %d), Curr position (%d, %d)", 
+				cmd, lastPosition.first(), lastPosition.second(), currentPos.first(), currentPos.second()
+			));
+		
+			//if move command was issued and I traversed small distance, I'm stuck
+			if ( (cmd instanceof ActionMove) && (distance  < tolerance)) {
+					Logger.info("Dammit, I'm stuck!");
+					return true;
+			}
+		}
+		Logger.info("Not stuck!");
+		return false;
+	}
+
+    
 }
+
+
+	
