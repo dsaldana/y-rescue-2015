@@ -5,11 +5,13 @@ import adk.team.util.VictimSelector;
 import adk.team.util.provider.RouteSearcherProvider;
 import adk.team.util.provider.VictimSelectorProvider;
 import adk.team.tactics.TacticsAmbulance;
+import adk.team.action.Action;
 import adk.team.precompute.PrecomputeAmbulance;
 import adk.team.util.graph.RouteManager;
 import comlib.manager.MessageManager;
 import rescuecore2.config.Config;
 import rescuecore2.standard.entities.AmbulanceTeam;
+import rescuecore2.worldmodel.ChangeSet;
 import yrescue.search.YRescueRouteSearcher;
 import yrescue.util.YRescueVictimSelector;
 
@@ -39,4 +41,11 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
     public String getTacticsName() {
         return "Y-Rescue pre-processing";
     }
+
+	@Override
+	public Action failsafeThink(int currentTime, ChangeSet updateWorldData,
+			MessageManager manager) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

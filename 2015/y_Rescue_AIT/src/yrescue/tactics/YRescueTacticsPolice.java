@@ -15,6 +15,7 @@ import comlib.message.information.MessageCivilian;
 import comlib.message.information.MessagePoliceForce;
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
+import rescuecore2.misc.geometry.GeometryTools2D;
 import rescuecore2.misc.geometry.Line2D;
 import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.misc.geometry.Vector2D;
@@ -165,7 +166,6 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
-    	Logger.info(String.format("----------- Timestep %d --------------", currentTime));
     	Logger.debug("Radio channel: " + manager.getRadioConfig().getChannel());
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
         
@@ -260,8 +260,6 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         	this.blockedAreaTarget = this.blockedAreaSelector.getNewTarget(currentTime);
         }
         
-        
-        
         // Determines the path to be followed
         List<EntityID> path;
         if(this.blockedAreaTarget == null){
@@ -276,8 +274,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         	Logger.debug("Path to target: " + path);
         }
         
-        //------AQUI O BIXO VAI PEGAR
-        
+        //------Pegar a lista de predios a visitar:
         
         List<EntityID> buildingsToVisit = getBuildingsToVisit(currentTime);
         
@@ -292,7 +289,8 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         }
         
         path = newPath;
-        //-----AQUI O BIXO JA PEGOU
+        //-----Path ja ajustado com os predios a visitar
+        
         Logger.debug("The new path, including surrounded buildings is: " + path);
         
         /**** Go towards the chosen path ****/
@@ -463,4 +461,127 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 	public BlockedAreaSelector getBlockedAreaSelector() {
 		return blockedAreaSelector;
 	}
+
+	@Override
+	public Action failsafeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
+		// Am I near a blockade?
+        Blockade target = failSafeGetTargetBlockade();
+        if (target != null) {
+            Logger.info("Clearing blockade " + target);
+            List<Line2D> lines = GeometryTools2D.pointsToLines(GeometryTools2D.vertexArrayToPoints(target.getApexes()), true);
+            double best = Double.MAX_VALUE;
+            Point2D bestPoint = null;
+            Point2D origin = new Point2D(me().getX(), me().getY());
+            for (Line2D next : lines) {
+                Point2D closest = GeometryTools2D.getClosestPointOnSegment(next, origin);
+                double d = GeometryTools2D.getDistance(origin, closest);
+                if (d < best) {
+                    best = d;
+                    bestPoint = closest;
+                }
+            }
+            Vector2D v = bestPoint.minus(new Point2D(me().getX(), me().getY()));
+            v = v.normalised().scale(1000000);
+            return new ActionClear(this, (int)(me().getX() + v.getX()), (int)(me().getY() + v.getY()));
+        }
+        // Plan a path to a blocked area
+        EntityID tgt = failSafeGetBlockedRoad();
+        if (tgt != null) {
+	        List<EntityID> path = routeSearcher.getPath(currentTime, me().getPosition(), tgt);
+	        if (path != null) {
+	            Logger.info("Moving to target");
+	            Road r = (Road)model.getEntity(path.get(path.size() - 1));
+	            Blockade b = failSafeGetTargetBlockade(r, -1);
+	            Logger.debug("Path: " + path);
+	            Logger.debug("Target coordinates: " + b.getX() + ", " + b.getY());
+	            return new ActionMove(this, path, b.getX(), b.getY());
+	        }
+        }
+        Logger.debug("Couldn't plan a path to a blocked road");
+        Logger.info("Moving randomly");
+        return new ActionMove(this, routeSearcher.noTargetMove(currentTime, me.getPosition()));
+    }
+
+	private EntityID failSafeGetBlockedRoad() {
+        Collection<StandardEntity> e = model.getEntitiesOfType(StandardEntityURN.ROAD);
+        for (StandardEntity next : e) {
+            Road r = (Road)next;
+            if (r.isBlockadesDefined() && !r.getBlockades().isEmpty()) {
+                return r.getID();
+            }
+        }
+        return null;
+    }
+
+    private List<EntityID> failSafeGetBlockedRoads() {
+        Collection<StandardEntity> e = model.getEntitiesOfType(StandardEntityURN.ROAD);
+        List<EntityID> result = new ArrayList<EntityID>();
+        for (StandardEntity next : e) {
+            Road r = (Road)next;
+            if (r.isBlockadesDefined() && !r.getBlockades().isEmpty()) {
+                result.add(r.getID());
+            }
+        }
+        return result;
+    }
+
+    private Blockade failSafeGetTargetBlockade() {
+        Logger.debug("Looking for target blockade");
+        Area location = (Area)location();
+        Logger.debug("Looking in current location");
+        Blockade result = failSafeGetTargetBlockade(location, clearRange - 1000);
+        if (result != null) {
+            return result;
+        }
+        Logger.debug("Looking in neighbouring locations");
+        for (EntityID next : location.getNeighbours()) {
+            location = (Area)model.getEntity(next);
+            result = failSafeGetTargetBlockade(location, clearRange - 1000);
+            if (result != null) {
+                return result;
+            }
+        }
+        return null;
+    }
+
+    private Blockade failSafeGetTargetBlockade(Area area, int maxDistance) {
+        //        Logger.debug("Looking for nearest blockade in " + area);
+        if (area == null || !area.isBlockadesDefined()) {
+            //            Logger.debug("Blockades undefined");
+            return null;
+        }
+        List<EntityID> ids = area.getBlockades();
+        // Find the first blockade that is in range.
+        int x = me().getX();
+        int y = me().getY();
+        for (EntityID next : ids) {
+            Blockade b = (Blockade)model.getEntity(next);
+            double d = failSafeFindDistanceTo(b, x, y);
+            //            Logger.debug("Distance to " + b + " = " + d);
+            if (maxDistance < 0 || d < maxDistance) {
+                //                Logger.debug("In range");
+                return b;
+            }
+        }
+        //        Logger.debug("No blockades in range");
+        return null;
+    }
+
+    private int failSafeFindDistanceTo(Blockade b, int x, int y) {
+        //        Logger.debug("Finding distance to " + b + " from " + x + ", " + y);
+        List<Line2D> lines = GeometryTools2D.pointsToLines(GeometryTools2D.vertexArrayToPoints(b.getApexes()), true);
+        double best = Double.MAX_VALUE;
+        Point2D origin = new Point2D(x, y);
+        for (Line2D next : lines) {
+            Point2D closest = GeometryTools2D.getClosestPointOnSegment(next, origin);
+            double d = GeometryTools2D.getDistance(origin, closest);
+            //            Logger.debug("Next line: " + next + ", closest point: " + closest + ", distance: " + d);
+            if (d < best) {
+                best = d;
+                //                Logger.debug("New best distance");
+            }
+
+        }
+        return (int)best;
+    }
 }

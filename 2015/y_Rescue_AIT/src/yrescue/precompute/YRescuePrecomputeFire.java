@@ -1,5 +1,6 @@
 package yrescue.precompute;
 
+import adk.team.action.Action;
 import adk.team.precompute.PrecomputeFire;
 import adk.team.util.BuildingSelector;
 import adk.team.util.RouteSearcher;
@@ -9,6 +10,7 @@ import adk.team.util.graph.RouteManager;
 import comlib.manager.MessageManager;
 import rescuecore2.config.Config;
 import rescuecore2.standard.entities.FireBrigade;
+import rescuecore2.worldmodel.ChangeSet;
 import yrescue.search.YRescueRouteSearcher;
 import yrescue.util.YRescueBuildingSelector;
 
@@ -38,4 +40,11 @@ public class YRescuePrecomputeFire extends PrecomputeFire implements RouteSearch
     public String getTacticsName() {
     	return "Y-Rescue pre-processing";
     }
+
+	@Override
+	public Action failsafeThink(int currentTime, ChangeSet updateWorldData,
+			MessageManager manager) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

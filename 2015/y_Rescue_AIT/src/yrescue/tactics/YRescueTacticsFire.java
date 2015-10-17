@@ -1,32 +1,33 @@
 package yrescue.tactics;
 
-import rescuecore2.config.Config;
-import rescuecore2.log.Logger;
-import rescuecore2.standard.entities.Blockade;
-import rescuecore2.standard.entities.Building;
-import rescuecore2.standard.entities.Civilian;
-import rescuecore2.standard.entities.Hydrant;
-import rescuecore2.standard.entities.Refuge;
-import rescuecore2.standard.entities.Road;
-import rescuecore2.standard.entities.StandardEntity;
-import rescuecore2.standard.entities.StandardEntityConstants.Fieryness;
-import rescuecore2.standard.entities.StandardEntityURN;
-import rescuecore2.worldmodel.ChangeSet;
-import rescuecore2.worldmodel.EntityID;
-import yrescue.action.ActionRefill;
-import yrescue.message.information.MessageBlockedArea;
-import yrescue.util.YRescueBuildingSelector;
+import static rescuecore2.misc.Handy.objectsToIDs;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.log4j.MDC;
 
+import rescuecore2.config.Config;
+import rescuecore2.log.Logger;
+import rescuecore2.standard.entities.Building;
+import rescuecore2.standard.entities.Civilian;
+import rescuecore2.standard.entities.FireBrigade;
+import rescuecore2.standard.entities.Hydrant;
+import rescuecore2.standard.entities.Refuge;
+import rescuecore2.standard.entities.Road;
+import rescuecore2.standard.entities.StandardEntity;
+import rescuecore2.standard.entities.StandardEntityURN;
+import rescuecore2.worldmodel.ChangeSet;
+import rescuecore2.worldmodel.EntityID;
+import yrescue.util.DistanceSorter;
+import yrescue.action.ActionRefill;
+import yrescue.message.information.MessageBlockedArea;
+import yrescue.util.YRescueBuildingSelector;
 //import yrescue.util.YRescueRouteSearcher;
 import adk.sample.basic.event.BasicBuildingEvent;
 import adk.sample.basic.tactics.BasicTacticsFire;
-import adk.sample.basic.util.BasicBuildingSelector;
 import adk.sample.basic.util.BasicRouteSearcher;
 import adk.team.action.Action;
 import adk.team.action.ActionExtinguish;
@@ -34,12 +35,10 @@ import adk.team.action.ActionMove;
 import adk.team.action.ActionRest;
 import adk.team.util.BuildingSelector;
 import adk.team.util.RouteSearcher;
-import adk.team.util.graph.RouteManager;
 import comlib.manager.MessageManager;
 import comlib.message.information.MessageBuilding;
 import comlib.message.information.MessageCivilian;
 import comlib.message.information.MessageFireBrigade;
-import comlib.message.information.MessageRoad;
 
 public class YRescueTacticsFire extends BasicTacticsFire {
 
@@ -131,9 +130,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
+        //this.refugeList.get(-1); //triggers exception to test failsafe
         MDC.put("location", location());
-        
-        Logger.info("FireFitghter - time:" + currentTime + " id:" + this.agentID.getValue());
         
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
@@ -270,4 +268,77 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     public String toString(){
     	return "Firefighter:" + this.getID();
     }
+
+	@Override
+	public Action failsafeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
+		FireBrigade me = me();
+	    // Are we currently filling with water?
+	    if (me.isWaterDefined() && me.getWater() < maxWater && location() instanceof Refuge) {
+	        Logger.info("Filling water at " + location()+ ". Now I have " + me().getWater());
+	        return new ActionRest(this);
+	    }
+	    // Are we out of water?
+	    if (me.isWaterDefined() && me.getWater() == 0) {
+	        // Head for a refuge
+	    	return this.moveRefuge(currentTime);
+	    }
+	    // Find all buildings that are on fire
+	    Collection<EntityID> all = failSafeGetBurningBuildings();
+	    // Can we extinguish any right now?
+	    for (EntityID next : all) {
+	        if (model.getDistance(getID(), next) <= sightDistance) {
+	            Logger.info("Extinguishing " + next);
+	            return new ActionExtinguish(this, next, maxPower);
+	        }
+	    }
+	    // Plan a path to a fire
+	    for (EntityID next : all) {
+	        List<EntityID> path = failSafePlanPathToFire(next);
+	        if (path != null) {
+	            Logger.info("Moving to target");
+	            return new ActionMove(this, path);
+	        }
+	    }
+	    List<EntityID> path = null;
+	    Logger.debug("Couldn't plan a path to a fire.");
+	    path = this.routeSearcher.noTargetMove(currentTime, this.location.getID());
+	    Logger.info("Moving randomly with: " + path);
+	    return new ActionMove(this, path);
+		
+	}
+	
+	/**
+	 * The getBurningBuildings of the sample agent
+	 * @return
+	 */
+	private Collection<EntityID> failSafeGetBurningBuildings() {
+	    Collection<StandardEntity> e = model.getEntitiesOfType(StandardEntityURN.BUILDING);
+	    List<Building> result = new ArrayList<Building>();
+	    for (StandardEntity next : e) {
+	        if (next instanceof Building) {
+	            Building b = (Building)next;
+	            if (b.isOnFire()) {
+	                result.add(b);
+	            }
+	        }
+	    }
+	    // Sort by distance
+	    Collections.sort(result, new DistanceSorter(location(), model));
+	    return objectsToIDs(result);
+	}
+	
+	/**
+	 * The planPathToFire of the sample agent
+	 * @param target
+	 * @return
+	 */
+	private List<EntityID> failSafePlanPathToFire(EntityID target) {
+		return routeSearcher.getPath(getCurrentTime(), location.getID(), target);
+		
+	    /*Collection<StandardEntity> targets = model.getObjectsInRange(target, maxDistance);
+	    if (targets.isEmpty()) {
+	        return null;
+	    }
+	    return failSafeSearch.breadthFirstSearch(me().getPosition(), objectsToIDs(targets));*/
+	}
 }

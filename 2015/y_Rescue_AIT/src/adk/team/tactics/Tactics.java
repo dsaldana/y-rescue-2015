@@ -42,6 +42,8 @@ public abstract class Tactics<E extends Human> implements WorldProvider<E> {
     public abstract void registerEvent(MessageManager manager);
 
     public abstract Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager);
+    
+    public abstract Action failsafeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager);
 
     public void ignoreTimeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
     }

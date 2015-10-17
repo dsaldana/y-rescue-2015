@@ -55,6 +55,7 @@ import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
+import yrescue.util.DistanceSorter;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.util.GeometricUtil;
@@ -81,7 +82,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     
     @Override
     public void preparation(Config config, MessageManager messageManager) {
-        // TODO: fill this method if needed
     	this.stateMachine = new StateMachine(ActionStates.Ambulance.EXPLORING);
     	this.victimSelector = new BasicVictimSelector(this);
     	this.routeSearcher = new BasicRouteSearcher(this);
@@ -150,9 +150,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
-        
-        System.out.println("\n");
-        System.out.println("Y-Rescue Time:" + currentTime + " Id:" + this.agentID.getValue());
+        //this.refugeList.get(-1); //triggers exception to test failsafe
         
         heatMap.updateNode(this.location.getID(), currentTime);
         heatMap.writeMapToFile();
@@ -322,4 +320,96 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         }
     }
 
+	@Override
+	public Action failsafeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
+		//failSafeUpdateUnexploredBuildings(changed);
+		if (failSafeSomeoneOnBoard()) {
+			if (location() instanceof Refuge) {
+				Logger.info("Unloading");
+				return new ActionUnload(this);
+			} else {
+				return this.moveRefuge(currentTime);
+			}
+		}
+		
+		for (Human next : failSafeGetTargets()) {
+			if (next.getPosition().equals(location().getID())) {
+				if ((next instanceof Civilian) && next.getBuriedness() == 0 && !(location() instanceof Refuge)) {
+					Logger.info("Loading " + next);
+					return new ActionLoad(this, (Civilian) next);
+				}
+				if (next.getBuriedness() > 0) {
+					Logger.info("Rescueing " + next);
+					return new ActionRescue(this, next.getID());
+				}
+			} else {
+				List<EntityID> path = routeSearcher.getPath(currentTime, me().getPosition(), next.getPosition());
+				if (path != null) {
+					Logger.info("Moving to target");
+					return new ActionMove(this, path);
+				}
+			}
+		}
+		/*List<EntityID> path = failSafeSearch.breadthFirstSearch(me().getPosition(), unexploredBuildings);
+		if (path != null) {
+			Logger.info("Searching buildings");
+			sendMove(time, path);
+			return;
+		}*/
+		Logger.info("Moving randomly");
+		return new ActionMove(this, routeSearcher.noTargetMove(currentTime, me.getPosition()));
+	}
+
+	/**
+	 * Copied from SampleAgent. Do not change
+	 * 
+	 * @return
+	 */
+	private List<Human> failSafeGetTargets() {
+		List<Human> targets = new ArrayList<Human>();
+		for (StandardEntity next : model.getEntitiesOfType(
+				StandardEntityURN.CIVILIAN, StandardEntityURN.FIRE_BRIGADE,
+				StandardEntityURN.POLICE_FORCE,
+				StandardEntityURN.AMBULANCE_TEAM)) {
+			Human h = (Human) next;
+			if (h == me()) {
+				continue;
+			}
+			if (h.isHPDefined() && h.isBuriednessDefined()
+					&& h.isDamageDefined() && h.isPositionDefined()
+					&& h.getHP() > 0
+					&& (h.getBuriedness() > 0 || h.getDamage() > 0)) {
+				targets.add(h);
+			}
+		}
+		Collections.sort(targets, new DistanceSorter(location(), model));
+		return targets;
+	}
+
+	/**
+	 * Copied from sample agent. Do not change
+	 * 
+	 * @return
+	 */
+	private boolean failSafeSomeoneOnBoard() {
+		for (StandardEntity next : model
+				.getEntitiesOfType(StandardEntityURN.CIVILIAN)) {
+			if (((Human) next).getPosition().equals(getID())) {
+				Logger.debug(next + " is on board");
+				return true;
+			}
+		}
+		return false;
+	}
+
+	 /**
+	  * Copied from SampleAgent. Do not change
+	  * 
+	  * @return
+	  *
+	private void failSafeUpdateUnexploredBuildings(ChangeSet changed) {
+		for (EntityID next : changed.getChangedEntities()) {
+			unexploredBuildings.remove(next);
+		}
+	}*/
 }
