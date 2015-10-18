@@ -76,7 +76,6 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     @Override
     public void think(int time, ChangeSet changed) {
     	try{
-    		Logger.info(String.format("----------- Start of Timestep %d --------------", time));
     		this.action = null;
     		
 	        if(time <= this.ignoreTime) {
@@ -88,7 +87,7 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
 	        lastPosition = me().getLocation(model); //updates lastPosition
     	}
     	catch (Exception e){
-    		Logger.error(("System malfunction! (exception occurred). Going 'failsafe' behavior."), e);
+    		Logger.error(("An exception has occurred!"), e);
     		if (this.action == null){
     			this.action = this.tactics.failsafeThink(time, changed, this.manager);
     		}
@@ -99,7 +98,6 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
         Logger.info("Action: " + message.getClass());
         this.send(message);
         
-        Logger.info(String.format("----------- End of Timestep %d --------------\n", time));
     }
 
     @Override

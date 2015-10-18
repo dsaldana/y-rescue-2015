@@ -124,13 +124,17 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
         for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);
-            System.out.println(entity.getClass());
+            Logger.trace("I'm seeing: " + entity);
             if(entity instanceof Civilian) {
-                this.victimSelector.add((Civilian) entity);
-                manager.addSendMessage(new MessageCivilian( (Civilian) entity));
+            	Civilian c = (Civilian) entity;
+                this.victimSelector.add(c);
+                manager.addSendMessage(new MessageCivilian(c));
+                Logger.trace(String.format("It's a Civilian. HP: %d, B'ness: %d", c.getHP(), c.getBuriedness()));
             }
             else if(entity instanceof Human) {
-                this.victimSelector.add((Human)entity);
+            	Human h = (Human) entity;
+                this.victimSelector.add(h);
+                Logger.trace(String.format("It's a Human. HP: %d, B'ness: %d", h.getHP(), h.getBuriedness()));
             }
             else if(entity instanceof Building) {
                 Building b = (Building)entity;
@@ -323,6 +327,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	@Override
 	public Action failsafeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
 		//failSafeUpdateUnexploredBuildings(changed);
+		Logger.info("" + me + " going failsafe in timestep " + currentTime);
+		
 		if (failSafeSomeoneOnBoard()) {
 			if (location() instanceof Refuge) {
 				Logger.info("Unloading");
@@ -339,13 +345,15 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 					return new ActionLoad(this, (Civilian) next);
 				}
 				if (next.getBuriedness() > 0) {
-					Logger.info("Rescueing " + next);
+					Logger.info(String.format(
+						"Rescueing %s. HP: %d, B'ness: %d", next, next.getHP(), next.getBuriedness()
+					));
 					return new ActionRescue(this, next.getID());
 				}
 			} else {
 				List<EntityID> path = routeSearcher.getPath(currentTime, me().getPosition(), next.getPosition());
 				if (path != null) {
-					Logger.info("Moving to target");
+					Logger.info("Moving to target with " + path);
 					return new ActionMove(this, path);
 				}
 			}
@@ -379,6 +387,9 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 					&& h.isDamageDefined() && h.isPositionDefined()
 					&& h.getHP() > 0
 					&& (h.getBuriedness() > 0 || h.getDamage() > 0)) {
+				Logger.trace(String.format(
+					"Adding %s to targets. HP: %d, B'ness: %d", h, h.getHP(), h.getBuriedness()
+				));
 				targets.add(h);
 			}
 		}
