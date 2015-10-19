@@ -11,8 +11,8 @@ import comlib.manager.MessageManager;
 import rescuecore2.config.Config;
 import rescuecore2.standard.entities.FireBrigade;
 import rescuecore2.worldmodel.ChangeSet;
+import yrescue.heatmap.HeatMap;
 import yrescue.search.YRescueRouteSearcher;
-import yrescue.util.HeatMap;
 import yrescue.util.YRescueBuildingSelector;
 
 public class YRescuePrecomputeFire extends PrecomputeFire implements RouteSearcherProvider, BuildingSelectorProvider {

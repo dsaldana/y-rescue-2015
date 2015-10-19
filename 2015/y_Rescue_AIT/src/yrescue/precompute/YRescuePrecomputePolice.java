@@ -11,8 +11,8 @@ import comlib.manager.MessageManager;
 import rescuecore2.config.Config;
 import rescuecore2.standard.entities.PoliceForce;
 import rescuecore2.worldmodel.ChangeSet;
+import yrescue.heatmap.HeatMap;
 import yrescue.search.YRescueRouteSearcher;
-import yrescue.util.HeatMap;
 import yrescue.util.YRescueImpassableSelector;
 
 public class YRescuePrecomputePolice extends PrecomputePolice implements RouteSearcherProvider, ImpassableSelectorProvider {

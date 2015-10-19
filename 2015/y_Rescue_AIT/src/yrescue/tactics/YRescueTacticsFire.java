@@ -25,9 +25,9 @@ import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.util.DistanceSorter;
 import yrescue.util.GeometricUtil;
-import yrescue.util.HeatMap;
-import yrescue.util.HeatNode;
 import yrescue.action.ActionRefill;
+import yrescue.heatmap.HeatMap;
+import yrescue.heatmap.HeatNode;
 import yrescue.message.information.MessageBlockedArea;
 import yrescue.util.YRescueBuildingSelector;
 //import yrescue.util.YRescueRouteSearcher;
@@ -204,7 +204,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         // If there is no target then walk randomly
         if(this.target == null) {
-            return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
+        	EntityID explorationTgt = heatMap.getNodeToVisit();
+        	Logger.info("No target... Heatmapping to: " + explorationTgt);
+            return new ActionMove(this, this.routeSearcher.getPath(currentTime, me, explorationTgt));
         }
         
         // Check if the robot is not close to the target then get closer
@@ -254,7 +256,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
          */
         
         // If none of the others action then walk randomly
-        return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
+        EntityID explorationTgt = heatMap.getNodeToVisit();
+    	Logger.info("End of think reached. Heatmapping to: " + explorationTgt);
+        return new ActionMove(this, this.routeSearcher.getPath(currentTime, me, explorationTgt));
     }
     
     // Move to a target if it exists otherwise walk randomly
@@ -267,7 +271,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             }
             this.target = null;
         }
-        return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
+        EntityID explorationTgt = heatMap.getNodeToVisit();
+    	Logger.info("No target... Heatmapping to: " + explorationTgt);
+        return new ActionMove(this, this.routeSearcher.getPath(currentTime, me, explorationTgt));
     }
     
     public String toString(){

@@ -1,4 +1,4 @@
-package yrescue.util;
+package yrescue.heatmap;
 
 import rescuecore2.worldmodel.EntityID;
 

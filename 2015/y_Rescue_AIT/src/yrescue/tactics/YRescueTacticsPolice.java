@@ -1,14 +1,24 @@
 package yrescue.tactics;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+
+import org.apache.log4j.MDC;
+
+import adk.sample.basic.event.BasicRoadEvent;
+import adk.sample.basic.tactics.BasicTacticsPolice;
+import adk.sample.basic.util.BasicRouteSearcher;
 import adk.team.action.Action;
 import adk.team.action.ActionClear;
 import adk.team.action.ActionMove;
 import adk.team.action.ActionRest;
 import adk.team.util.ImpassableSelector;
 import adk.team.util.RouteSearcher;
-import adk.sample.basic.event.BasicRoadEvent;
-import adk.sample.basic.tactics.BasicTacticsPolice;
-import adk.sample.basic.util.BasicRouteSearcher;
 import comlib.manager.MessageManager;
 import comlib.message.information.MessageBuilding;
 import comlib.message.information.MessageCivilian;
@@ -29,7 +39,10 @@ import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.ChangeSet;
+import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
+import yrescue.heatmap.HeatMap;
+import yrescue.heatmap.HeatNode;
 import yrescue.message.event.MessageBlockedAreaEvent;
 import yrescue.problem.blockade.BlockadeUtil;
 import yrescue.problem.blockade.BlockedArea;
@@ -38,29 +51,15 @@ import yrescue.problem.blockade.BlockedAreaSelectorProvider;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
-import yrescue.util.YRescueDistanceSorter;
+import yrescue.util.GeometricUtil;
 import yrescue.util.YRescueImpassableSelector;
-import adk.sample.basic.util.*;
-
-import java.awt.Polygon;
-import java.awt.Rectangle;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Random;
-import java.util.Set;
-
-import org.apache.log4j.MDC;
 
 public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedAreaSelectorProvider {
 
     public ImpassableSelector impassableSelector;
     public RouteSearcher routeSearcher;
+    
+    protected HeatMap heatMap = null;
     
     public BlockadeUtil blockadeUtil;
     public BlockedAreaSelector blockedAreaSelector;
@@ -113,30 +112,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     	}
     	return this.impassableSelector;
     }
-
-    @Override
-    public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
-        for (EntityID next : updateWorldInfo.getChangedEntities()) {
-            StandardEntity entity = this.getWorld().getEntity(next);
-            /*if(entity instanceof Blockade) {
-                this.impassableSelector.add((Blockade) entity);
-            }
-            else*/ if(entity instanceof Civilian) {
-                Civilian civilian = (Civilian)entity;
-                if(civilian.getBuriedness() > 0) {
-                    manager.addSendMessage(new MessageCivilian(civilian));
-                }
-            }
-            else if(entity instanceof Building) {
-                Building b = (Building)entity;
-                if(b.isOnFire()) {
-                    manager.addSendMessage(new MessageBuilding(b));
-                }
-            }
-        }
-    }
-
-
+    
     @Override
     public void preparation(Config config, MessageManager messageManager) {
         this.routeSearcher = this.initRouteSearcher();
@@ -158,6 +134,28 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         MDC.put("location", location());
         
         Logger.info("Preparation complete!");
+    }
+
+    @Override
+    public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
+        for (EntityID next : updateWorldInfo.getChangedEntities()) {
+            StandardEntity entity = this.getWorld().getEntity(next);
+            /*if(entity instanceof Blockade) {
+                this.impassableSelector.add((Blockade) entity);
+            }
+            else*/ if(entity instanceof Civilian) {
+                Civilian civilian = (Civilian)entity;
+                if(civilian.getBuriedness() > 0) {
+                    manager.addSendMessage(new MessageCivilian(civilian));
+                }
+            }
+            else if(entity instanceof Building) {
+                Building b = (Building)entity;
+                if(b.isOnFire()) {
+                    manager.addSendMessage(new MessageBuilding(b));
+                }
+            }
+        }
     }
 
     public void ignoreTimeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
@@ -208,7 +206,8 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         		return new ActionMove(this, this.routeSearcher.getPath(currentTime, this.me, this.blockedAreaTarget.getOriginID()));
         	}
         	else{
-        		return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, location.getID()));
+        		Logger.info("I have no target, using heatmap exploration...");
+        		return new ActionMove(this, this.routeSearcher.getPath(currentTime, location.getID(), heatMap.getNodeToVisit()));
         	}
         }
         
@@ -267,8 +266,8 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         		this.cleanRefuges.add(location.getID());
         		Logger.debug("Refuge cleaned " +location.getID());
         	}
-        	path = this.routeSearcher.noTargetMove(currentTime, this.me);
-        	Logger.debug("noTargetMove - path: " + path);
+        	path = this.routeSearcher.getPath(currentTime, me, heatMap.getNodeToVisit());// noTargetMove(currentTime, this.me);
+        	Logger.debug("HeatMap exploration - path: " + path);
         } else {
         	path = this.routeSearcher.getPath(currentTime, this.me, this.blockedAreaTarget.getOriginID());
         	Logger.debug("Path to target: " + path);
@@ -461,6 +460,24 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 	public BlockedAreaSelector getBlockedAreaSelector() {
 		return blockedAreaSelector;
 	}
+	
+	@Override
+	public HeatMap initializeHeatMap() {
+    	HeatMap heatMap = new HeatMap(this.agentID, this.world);
+        for (Entity next : this.getWorld()) {
+            if (next instanceof Area) {
+            	// Ignore very small areas to explore
+            	//if(GeometricUtil.getAreaOfEntity(next.getID(), this.world) < EXPLORE_AREA_SIZE_TRESH) continue;
+            	
+            	// Ignore non Road areas
+            	if(!(next instanceof Road)) continue;
+            	
+            	heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.LOW, 0);
+            }
+        }
+        
+        return heatMap;
+	}
 
 	@Override
 	public Action failsafeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
@@ -498,8 +515,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 	        }
         }
         Logger.debug("Couldn't plan a path to a blocked road");
-        Logger.info("Moving randomly");
-        return new ActionMove(this, routeSearcher.noTargetMove(currentTime, me.getPosition()));
+        
+        Logger.info("Exploring via HeatMap, target: " + heatMap.getNodeToVisit());
+        return new ActionMove(this, routeSearcher.getPath(currentTime, me, heatMap.getNodeToVisit()));
     }
 
 	private EntityID failSafeGetBlockedRoad() {
