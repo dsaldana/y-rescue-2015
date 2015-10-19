@@ -11,6 +11,7 @@ import org.apache.log4j.MDC;
 
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
+import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Civilian;
 import rescuecore2.standard.entities.FireBrigade;
@@ -20,8 +21,12 @@ import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.ChangeSet;
+import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.util.DistanceSorter;
+import yrescue.util.GeometricUtil;
+import yrescue.util.HeatMap;
+import yrescue.util.HeatNode;
 import yrescue.action.ActionRefill;
 import yrescue.message.information.MessageBlockedArea;
 import yrescue.util.YRescueBuildingSelector;
@@ -340,5 +345,23 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	        return null;
 	    }
 	    return failSafeSearch.breadthFirstSearch(me().getPosition(), objectsToIDs(targets));*/
+	}
+
+	@Override
+	public HeatMap initializeHeatMap() {
+    	HeatMap heatMap = new HeatMap(this.agentID, this.world);
+        for (Entity next : this.getWorld()) {
+            if (next instanceof Area) {
+            	// Ignore very small areas to explore
+            	//if(GeometricUtil.getAreaOfEntity(next.getID(), this.world) < EXPLORE_AREA_SIZE_TRESH) continue;
+            	
+            	// Ignore non building areas
+            	if(!(next instanceof Building)) continue;
+            	
+            	heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.LOW, 0);
+            }
+        }
+        
+        return heatMap;
 	}
 }
