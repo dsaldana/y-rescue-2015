@@ -34,6 +34,10 @@ public class BlockadeUtil {
 	}	
 	
 	public static Blockade getClosestBlockadeInMyRoad(Tactics<?> t){
+		if(!(t.location instanceof Road)){
+			Logger.debug("I'm not in a Road, so there are no blockades");
+			return null;
+		}
 		Road myRoad = (Road) t.location;
 		
 		Blockade closest = null;

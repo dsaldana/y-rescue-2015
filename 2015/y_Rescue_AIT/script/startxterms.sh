@@ -14,6 +14,8 @@ if [ "$#" -ne 3 ]; then
     exit
 fi
 
+cd ..
+
 echo "Will start $1 Firefighters, $2 Ambulances and $3 Policemen."
 
 # $1 is the agent type ("firefighter", "ambulance", "policeman")

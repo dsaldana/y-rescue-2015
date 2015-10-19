@@ -65,9 +65,19 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     public void preparation(Config config, MessageManager messageManager) {
         this.routeSearcher = this.initRouteSearcher();
         this.buildingSelector = this.initBuildingSelector();
-        this.refuge_rate = this.config.getIntValue("fire.tank.refill_hydrant_rate");
+        
+        //Building the Lists of Refuge and Hydrant
+        Collection<StandardEntity> refuge = this.world.getEntitiesOfType(StandardEntityURN.REFUGE);
+        refugeIDs = new ArrayList<StandardEntity>();
+        refugeIDs.addAll(refuge);
+        Collection<StandardEntity> hydrant = this.world.getEntitiesOfType(StandardEntityURN.HYDRANT);
+        hydrantIDs = new ArrayList<StandardEntity>();
+        hydrant.addAll(hydrant);
+
+this.refuge_rate = this.config.getIntValue("fire.tank.refill_hydrant_rate");
         this.hydrant_rate = this.config.getIntValue("fire.tank.refill_rate");
         this.tank_maximum = this.config.getIntValue("fire.tank.maximum");
+        
         MDC.put("agent", this);
         MDC.put("location", location());
     }
@@ -116,8 +126,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
         MDC.put("location", location());
         
-        Logger.info(String.format("Y-Rescue Time: %d - Id: %d - FireBrigade agent", currentTime, this.agentID.getValue()));
-        System.out.println();
+        System.out.println("Y-Rescue Time:" + currentTime + " Id:" + this.agentID.getValue() + " - FireBrigade agent");
         
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck (currentTime)){
@@ -135,6 +144,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                     this.target = building.getID();
                     //if (building.isOnFire() && (this.world.getDistance(this.agentID, this.target) <= this.maxDistance)) {
                     if(building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4 && building.isBrokennessDefined() && building.getBrokenness() > 10) {
+                    	System.out.println(">>>>>>>>> Teste ");
                         return new ActionExtinguish(this, this.target, this.maxPower);
                     }
                 }
@@ -168,7 +178,6 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         List<StandardEntity> hydrantIDs = new ArrayList<StandardEntity>();
         hydrant.addAll(hydrant);
         
-        
         // Max Distance
         this.maxDistance = 25000;
         BasicBuildingSelector bs = (BasicBuildingSelector) buildingSelector;
@@ -179,9 +188,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         // But it's already refilling then rest        
         if((this.location instanceof Refuge || this.location instanceof Hydrant) && (this.me.getWater() < this.maxWater)) {
             this.target = null;
-            if(this.location instanceof Hydrant){
-            	System.out.println(">>>>>>>>>>>>>>>> Refill = " + this.me.getWater());
-            }
+            System.out.println(">>>>>>> Refill = " + this.me.getWater());
             return new ActionRest(this);
         }
         
