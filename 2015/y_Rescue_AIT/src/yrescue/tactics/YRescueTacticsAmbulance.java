@@ -22,6 +22,7 @@ import org.apache.log4j.MDC;
 
 import com.infomatiq.jsi.Rectangle;
 
+import adf.util.map.PositionUtil;
 import adk.sample.basic.event.BasicAmbulanceEvent;
 import adk.sample.basic.event.BasicCivilianEvent;
 import adk.sample.basic.event.BasicFireEvent;
@@ -67,7 +68,7 @@ import yrescue.util.YRescueDistanceSorter;
 
 public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
-	protected final int EXPLORE_TIME_STEP_TRESH = 35;
+	protected final int EXPLORE_TIME_STEP_TRESH = 15;
 	protected int EXPLORE_TIME_LIMIT = EXPLORE_TIME_STEP_TRESH;
 	protected int LIMIT_TO_REACH_TARGET = 15;
 	protected int target_step_counter = 0;
@@ -192,7 +193,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	        	this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
 	        }
 	        
-	        if(this.someoneOnBoard() || this.me.getDamage() >= 100) {
+	        if(this.me.getDamage() >= 100) { //this.someoneOnBoard() || 
 	        	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
 	        }
         }
@@ -226,6 +227,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		this.target_step_counter = 0;
         	}
         	
+        	this.target = null;
         	this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         }
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.GOING_TO_TARGET)){
@@ -283,7 +285,17 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             this.target = this.victimSelector.getNewTarget(currentTime);
             if(this.target == null) {
             	Logger.info("Problem getting target, return random move ...");
-                return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
+            	EntityID nodeToVisit = heatMap.getNodeToVisit();
+                if(nodeToVisit == null){
+                	Logger.debug("Random walk");
+                	return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
+                }
+                else{
+                	Logger.debug("HeatmMap");
+                	this.stateMachine.setState(ActionStates.Ambulance.EXPLORING);
+                	this.target = nodeToVisit;
+                	return this.moveTarget(currentTime);
+                }
             }
             
             // Begin target basic processing
@@ -337,6 +349,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         }
         else{
         	Logger.debug("HeatmMap");
+        	this.stateMachine.setState(ActionStates.Ambulance.EXPLORING);
         	this.target = nodeToVisit;
         	return this.moveTarget(currentTime);
         	//List<EntityID> etList = new LinkedList<EntityID>();
@@ -389,6 +402,12 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 		return new ActionMove(this, routeSearcher.noTargetMove(currentTime, me.getPosition()));
 	}
 
+	public boolean someoneOnBoard() {
+		if(this.target == null) return false;
+		return PositionUtil.equalsPoint(this.world.getEntity(this.target).getLocation(world), this.me.getLocation(world), 500);
+        //return this.target != null && ((Human)this.world.getEntity(this.target)).getPosition().getValue() == this.me.getID().getValue();
+    }
+	
 	/**
 	 * Copied from SampleAgent. Do not change
 	 * 
