@@ -1,9 +1,7 @@
 package yrescue.action;
 
 import adk.team.action.Action;
-import adk.team.action.ActionRest;
 import rescuecore2.messages.Message;
-import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.messages.AKMove;
 import rescuecore2.worldmodel.EntityID;
