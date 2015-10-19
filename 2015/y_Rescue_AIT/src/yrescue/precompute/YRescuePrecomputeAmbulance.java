@@ -13,6 +13,7 @@ import rescuecore2.config.Config;
 import rescuecore2.standard.entities.AmbulanceTeam;
 import rescuecore2.worldmodel.ChangeSet;
 import yrescue.search.YRescueRouteSearcher;
+import yrescue.util.HeatMap;
 import yrescue.util.YRescueVictimSelector;
 
 public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements RouteSearcherProvider, VictimSelectorProvider {
@@ -45,6 +46,12 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
 	@Override
 	public Action failsafeThink(int currentTime, ChangeSet updateWorldData,
 			MessageManager manager) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public HeatMap initializeHeatMap() {
 		// TODO Auto-generated method stub
 		return null;
 	}
