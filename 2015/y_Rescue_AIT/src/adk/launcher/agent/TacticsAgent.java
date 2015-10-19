@@ -85,7 +85,7 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
         lastPosition = me().getLocation(model); //updates lastPosition
         Message message = this.action == null ? new AKRest(this.getID(), time) : this.action.getCommand(this.getID(), time);
         //System.out.println(message.getClass());
-        System.out.println(this.action.getClass());
+        System.out.println("Selected action:" + this.action.getClass());
         this.send(message);
     }
 

@@ -66,6 +66,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
 	protected final int EXPLORE_TIME_STEP_TRESH = 35;
 	protected int EXPLORE_TIME_LIMIT = EXPLORE_TIME_STEP_TRESH;
+	protected int LIMIT_TO_REACH_TARGET = 15;
+	protected int target_step_counter = 0;
 	protected StateMachine stateMachine = null;
 	protected int timeoutAction = 0;
 	protected Set<Road> impassableRoadList = new HashSet<>();
@@ -114,7 +116,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
     @Override
     public void registerEvent(MessageManager manager) {
-        manager.registerEvent(new BasicCivilianEvent(this, this));
+        manager.registerEvent(new BasicCivilianEvent(this, this, this));
         manager.registerEvent(new BasicAmbulanceEvent(this, this));
         manager.registerEvent(new BasicFireEvent(this, this));
         manager.registerEvent(new BasicPoliceEvent(this, this));
@@ -124,7 +126,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
         for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);
-            System.out.println(entity.getClass());
+            Logger.debug("organizeUpdateInfo:" + entity.getClass());
             if(entity instanceof Civilian) {
                 this.victimSelector.add((Civilian) entity);
                 manager.addSendMessage(new MessageCivilian( (Civilian) entity));
@@ -151,8 +153,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
         
-        System.out.println("\n");
-        System.out.println("Y-Rescue Time:" + currentTime + " Id:" + this.agentID.getValue());
+        Logger.info("Y-Rescue Time:" + currentTime + " Id:" + this.agentID.getValue());
         
         heatMap.updateNode(this.location.getID(), currentTime);
         heatMap.writeMapToFile();
@@ -162,9 +163,9 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
          *   Basic actions  *
          * === -------- === */
         
-        System.out.println("Civilians perceived:" + ((BasicVictimSelector) this.victimSelector).civilianList.size());
+        Logger.debug("Civilians perceived:" + ((BasicVictimSelector) this.victimSelector).civilianList.size());
         for (Civilian civ : ((BasicVictimSelector) this.victimSelector).civilianList) {
-        	System.out.println("Civilian ID:" + civ.getID() + " pos:" + civ.getPosition() + " burriedness:" + civ.getBuriedness() + " damage:" + civ.getDamage());
+        	Logger.debug("Civilian ID:" + civ.getID() + " pos:" + civ.getPosition() + " burriedness:" + civ.getBuriedness() + " damage:" + civ.getDamage());
         }
         
         if(this.me.getBuriedness() > 0) {
@@ -191,13 +192,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
          * === ---------------------------------- === */
         
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.EXPLORING)){
-        	System.out.println("Exploring..");
+        	Logger.info("Exploring..");
         	if(currentTime < EXPLORE_TIME_LIMIT){
         		if(this.target == null || this.target.getValue() == this.location.getID().getValue()){
         			EntityID nodeToVisit = heatMap.getNodeToVisit();
         			this.target = nodeToVisit;
-        	        System.out.println("Entity to visit:" + nodeToVisit.getValue());
-        	        System.out.println("Area:" + String.valueOf(GeometricUtil.getAreaOfEntity(nodeToVisit, this.world)));
+        			Logger.debug("Entity to visit:" + nodeToVisit.getValue());
+        			Logger.debug("Area:" + String.valueOf(GeometricUtil.getAreaOfEntity(nodeToVisit, this.world)));
         			
         			//List<EntityID> result = this.exploreRouteSearcher.noTargetMove(currentTime, this.me);
         			//this.target = result.get(result.size() - 1);
@@ -207,10 +208,18 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		return this.moveTarget(currentTime);
         	}
         	
+        	if(!this.tacticsAgent.stuck(time) && target_step_counter <= LIMIT_TO_REACH_TARGET && (this.target != null && this.target.getValue() != this.location.getID().getValue())){
+        		this.target_step_counter++;
+        		return this.moveTarget(currentTime);
+        	}
+        	else{
+        		this.target_step_counter = 0;
+        	}
+        	
         	this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         }
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.GOING_TO_TARGET)){
-        	System.out.println("Going to target..");
+        	Logger.info("Going to target..");
         	Human victim = (Human) this.world.getEntity(this.target);
         	if (victim.getPosition().getValue() != this.location.getID().getValue()) {
                 return this.moveTarget(currentTime);
@@ -219,10 +228,10 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	this.stateMachine.setState(ActionStates.Ambulance.RESCUING);
         }
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.RESCUING)){
-        	System.out.println("Rescuing ...");
+        	Logger.info("Rescuing ...");
         	Human victim = (Human) this.world.getEntity(this.target);
         	if(victim.getBuriedness() > 0){
-        		System.out.println("Burriedness: " + victim.getBuriedness() + " Damage: " + victim.getDamage() + " HP: " + victim.getHP());
+        		Logger.info("Burriedness: " + victim.getBuriedness() + " Damage: " + victim.getDamage() + " HP: " + victim.getHP());
         		return new ActionRescue(this, this.target);
         	}
         	
@@ -233,9 +242,9 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             return new ActionLoad(this, this.target);
         }
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.GOING_TO_REFUGE)){
-        	System.out.println("Going to refugee..");
+        	Logger.info("Going to refugee..");
         	if(!this.someoneOnBoard() && this.me.getDamage() <= 0){
-        		System.out.println("Does not need to go to refugee, selecting new target..");
+        		Logger.info("Does not need to go to refugee, selecting new target..");
         		this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.SELECT_NEW_TARGET);
         	}
         	else{
@@ -259,11 +268,11 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	}
         }
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.SELECT_NEW_TARGET)){
-        	System.out.println("Select new target..");
+        	Logger.info("Select new target..");
         	
             this.target = this.victimSelector.getNewTarget(currentTime);
             if(this.target == null) {
-            	System.out.println("Problem getting target, return random move ...");
+            	Logger.info("Problem getting target, return random move ...");
                 return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
             }
             
@@ -310,15 +319,19 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             }while (this.target != null);
         }
         
-        System.out.println("Default behaviour, random walk ... ???");
+        Logger.info("Default behaviour, random walk ... ???");
         EntityID nodeToVisit = heatMap.getNodeToVisit();
         if(nodeToVisit == null){
+        	Logger.debug("Random walk");
         	return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
         }
         else{
-        	List<EntityID> etList = new LinkedList<EntityID>();
-        	etList.add(nodeToVisit);
-        	return new ActionMove(this, etList);
+        	Logger.debug("HeatmMap");
+        	this.target = nodeToVisit;
+        	return this.moveTarget(currentTime);
+        	//List<EntityID> etList = new LinkedList<EntityID>();
+        	//etList.add(nodeToVisit);
+        	//return new ActionMove(this, etList);
         }
     }
 
