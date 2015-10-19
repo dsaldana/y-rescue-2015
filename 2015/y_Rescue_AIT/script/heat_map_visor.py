@@ -15,13 +15,13 @@
 
 from math import sin, cos, pi, sqrt, atan2, degrees
 import random
-from shapely.geometry import *
-from shapely import affinity
+#from shapely.geometry import *
+#from shapely import affinity
 import pygame
 import re
 import sys
-from shapely.geometry import *
-from shapely import affinity
+#from shapely.geometry import *
+#from shapely import affinity
 import json
 import time
 import math
