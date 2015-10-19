@@ -80,8 +80,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         hydrantIDs = new ArrayList<StandardEntity>();
         hydrant.addAll(hydrant);
         
-        this.refuge_rate = this.config.getIntValue("fire.tank.refill_hydrant_rate");
-        this.hydrant_rate = this.config.getIntValue("fire.tank.refill_rate");
+        this.hydrant_rate = this.config.getIntValue("fire.tank.refill_hydrant_rate");
         this.tank_maximum = this.config.getIntValue("fire.tank.maximum");
         
         MDC.put("agent", this);
