@@ -18,6 +18,8 @@ import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.log4j.MDC;
+
 import com.infomatiq.jsi.Rectangle;
 
 import adk.sample.basic.event.BasicAmbulanceEvent;
@@ -87,6 +89,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     	this.stateMachine = new StateMachine(ActionStates.Ambulance.EXPLORING);
     	this.victimSelector = new BasicVictimSelector(this);
     	this.routeSearcher = new BasicRouteSearcher(this);
+    	
+    	MDC.put("agent", this);
     	
     	// Prepare HeatMap
     	this.heatMap = new HeatMap(this.agentID, this.world);
@@ -429,6 +433,11 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 		}
 		return false;
 	}
+	
+	@Override
+	public String toString(){
+    	return "Ambulance:" + this.getID();
+    }
 
 	 /**
 	  * Copied from SampleAgent. Do not change
