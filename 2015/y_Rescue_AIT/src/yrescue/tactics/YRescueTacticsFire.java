@@ -85,6 +85,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         hydrantIDs = new ArrayList<StandardEntity>();
         hydrant.addAll(hydrant);
         
+        this.hydrant_rate = this.config.getIntValue("fire.tank.refill_hydrant_rate");
+        this.tank_maximum = this.config.getIntValue("fire.tank.maximum");
+        
         MDC.put("agent", this);
         MDC.put("location", location());
         
@@ -154,7 +157,6 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                     this.target = building.getID();
                     //if (building.isOnFire() && (this.world.getDistance(this.agentID, this.target) <= this.maxDistance)) {
                     if(building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4 && building.isBrokennessDefined() && building.getBrokenness() > 10) {
-                    	System.out.println(">>>>>>>>> Teste ");
                         return new ActionExtinguish(this, this.target, this.maxPower);
                     }
                 }
@@ -188,7 +190,6 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         //FIXME soh enche de agua até 20% criar uma flag pra marcar q ta enchendo
         if(onWaterSource() && isWaterLessThan(1.0)) {
             this.target = null;
-            Logger.info(">>>>>>> Refill = " + this.me.getWater());
             return new ActionRest(this);
         }
         
@@ -218,19 +219,18 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             Building building = (Building) this.world.getEntity(this.target);
             Logger.trace(String.format("%s, fierynessDefined=%s, onFire=%s", building, building.isFierynessDefined(), building.isOnFire()));
             if (building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4 && building.isBrokennessDefined() && building.getBrokenness() > 10){
-            	System.out.println(">>>>>> Temperature = " + building.getTemperature());
                 return this.world.getDistance(this.agentID, this.target) <= this.sightDistance ? new ActionExtinguish(this, this.target, this.maxPower) : this.moveTarget(currentTime);
             } else {
-            	System.out.println(">>>>>> it's not on fire anymore. Target OK  = " + this.target.getValue());
+            	//System.out.println(">>>>>> it's not on fire anymore. Target OK  = " + this.target.getValue());
                 this.buildingSelector.remove(this.target);
             }
             EntityID newTarget = this.buildingSelector.getNewTarget(currentTime);
             if(this.target != newTarget){
             	this.target = newTarget;
-            	if(this.target != null)
-            		System.out.println(">>>>>> it's not on fire anymore. Target new = " + this.target.getValue());
-            	else
-            		System.out.println(">>>>>> there's no target anymore.");
+            	//if(this.target != null)
+            	//	System.out.println(">>>>>> it's not on fire anymore. Target new = " + this.target.getValue());
+            	//else
+            	//	System.out.println(">>>>>> there's no target anymore.");
             	break;
             }
         }while(this.target != null);
