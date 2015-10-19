@@ -81,12 +81,6 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     	try{
     		this.action = null;
     		
-	        if(time <= this.ignoreTime) {
-	            this.tactics.agentID = this.getID();
-	            this.tactics.ignoreTimeThink(time, changed, this.manager);
-	            return;
-	        }
-	        
 	        if (this.tactics.heatMap != null){
 	        	this.tactics.heatMap.updateNode(this.tactics.location.getID(), time);
 	        }
@@ -94,6 +88,12 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
 	        	Logger.warn("Heatmap not initialized by agent " + this.tactics);
 	        	Logger.warn("Will attempt to initialize it now.");
 	        	this.tactics.heatMap = this.tactics.initializeHeatMap();
+	        }
+	        
+	        if(time <= this.ignoreTime) {
+	            this.tactics.agentID = this.getID();
+	            this.tactics.ignoreTimeThink(time, changed, this.manager);
+	            return;
 	        }
 	        
 	        this.action = this.tactics.think(time, changed, this.manager);
