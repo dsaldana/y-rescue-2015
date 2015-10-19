@@ -105,18 +105,28 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
         for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);
-            Logger.debug("organizeUpdateInfo:" + entity.getClass());
+            //Logger.debug("organizeUpdateInfo:" + entity.getClass());
             Logger.trace("I'm seeing: " + entity);
             if(entity instanceof Civilian) {
             	Civilian c = (Civilian) entity;
-                this.victimSelector.add(c);
-                manager.addSendMessage(new MessageCivilian(c));
-                Logger.trace(String.format("It's a Civilian. HP: %d, B'ness: %d", c.getHP(), c.getBuriedness()));
+            	Logger.trace(String.format("It's a Civilian. HP: %d, B'ness: %d", c.getHP(), c.getBuriedness()));
+            	if(c.getBuriedness() > 0) {
+	                this.victimSelector.add(c);
+	                manager.addSendMessage(new MessageCivilian(c));
+	                Logger.trace("  added to victimSelector and sent a message reporting it");
+            	}
+                
+                Civilian fromWorld =(Civilian) world.getEntity(c.getID());
+                Logger.trace(String.format("Data from world - HP: %d, B'ness: %d", fromWorld.getHP(), fromWorld.getBuriedness()));
             }
             else if(entity instanceof Human) {
             	Human h = (Human) entity;
-                this.victimSelector.add(h);
-                Logger.trace(String.format("It's a Human. HP: %d, B'ness: %d", h.getHP(), h.getBuriedness()));
+            	Logger.trace(String.format("It's a Human. HP: %d, B'ness: %d", h.getHP(), h.getBuriedness()));
+            	if(h.getBuriedness() > 0){
+            		this.victimSelector.add(h);
+            		Logger.trace("  added to victimSelector.");
+            	}
+                
             }
             else if(entity instanceof Building) {
                 Building b = (Building)entity;
@@ -124,23 +134,27 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                     manager.addSendMessage(new MessageBuilding(b));
                 }
             }
-            else if(entity instanceof Blockade) {
+            /*else if(entity instanceof Blockade) {
                 Blockade blockade = (Blockade) entity;
                 Road r = (Road) this.world.getEntity(blockade.getPosition());
                 manager.addSendMessage(new MessageRoad(r, blockade, false));
                 this.impassableRoadList.add(r);
-            }
+            }*/
         }
     }
     
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
-        
         MDC.put("location", location());
         
-        Logger.info("Y-Rescue Time:" + currentTime + " Id:" + this.agentID.getValue());
+        //Logger.info("Y-Rescue Time:" + currentTime + " Id:" + this.agentID.getValue());
         //this.refugeList.get(-1); //triggers exception to test failsafe
+        
+        Logger.info(String.format(
+			"HP: %d, B'ness: %d, Dmg: %d, Direction: %d, SmOnBrd? %s", 
+			me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection(), someoneOnBoard()
+		));
         
         
         heatMap.writeMapToFile();
@@ -150,10 +164,12 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
          *   Basic actions  *
          * === -------- === */
         
-        Logger.debug("Civilians perceived:" + ((BasicVictimSelector) this.victimSelector).civilianList.size());
+        Logger.debug("#buried civilians I know: " + ((BasicVictimSelector) this.victimSelector).civilianList.size());
         for (Civilian civ : ((BasicVictimSelector) this.victimSelector).civilianList) {
         	Logger.debug("Civilian ID:" + civ.getID() + " pos:" + civ.getPosition() + " burriedness:" + civ.getBuriedness() + " damage:" + civ.getDamage());
         }
+        
+        Logger.debug("#buried agents I know: " + ((BasicVictimSelector) this.victimSelector).agentList.size());
         
         if(this.me.getBuriedness() > 0) {
             this.target = null;
@@ -216,11 +232,27 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	this.stateMachine.setState(ActionStates.Ambulance.RESCUING);
         }
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.RESCUING)){
-        	Logger.info("Rescuing ...");
+        	
         	Human victim = (Human) this.world.getEntity(this.target);
-        	if(victim.getBuriedness() > 0){
-        		Logger.info("Burriedness: " + victim.getBuriedness() + " Damage: " + victim.getDamage() + " HP: " + victim.getHP());
+        	Logger.info("Target b'ness: " + victim.getBuriedness() + ", dmg: " + victim.getDamage() + ", HP: " + victim.getHP());
+        	if(victim.getBuriedness() > 0 && victim.getHP() > 0){
+        		Logger.info("Rescuing ...");
         		return new ActionRescue(this, this.target);
+        	}
+        	else if (victim.getHP() <= 0){
+        		Logger.info("Not rescuing, victim is dead. Will look for new target");
+        		victimSelector.remove(victim);
+        		target = victimSelector.getNewTarget(currentTime);
+        		if(target != null){
+        			this.stateMachine.setState((ActionStates.Ambulance.GOING_TO_TARGET));
+        			Logger.info("Moving to new target");
+        			return this.moveTarget(currentTime);
+        		}
+        		else{
+        			Logger.info("Could not find a new target... random-walking.");
+        			this.stateMachine.setState((ActionStates.Ambulance.SELECT_NEW_TARGET));
+        			return new ActionMove(this, routeSearcher.noTargetMove(currentTime, me)); //getPath(currentTime, me, heatMap.getNodeToVisit()));
+        		}
         	}
         	
         	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
@@ -233,7 +265,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	Logger.info("Going to refugee..");
         	if(!this.someoneOnBoard() && this.me.getDamage() <= 0){
         		Logger.info("Does not need to go to refugee, selecting new target..");
-        		this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.SELECT_NEW_TARGET);
+        		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         	}
         	else{
 	        	if(this.location instanceof Refuge) {

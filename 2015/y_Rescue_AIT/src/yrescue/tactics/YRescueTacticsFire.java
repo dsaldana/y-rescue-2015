@@ -141,6 +141,11 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         //this.refugeList.get(-1); //triggers exception to test failsafe
         MDC.put("location", location());
         
+        Logger.info(String.format(
+			"HP: %d, B'ness: %d, Damage: %d, Direction: %d, Water: %d", 
+			me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection(), me.getWater()
+		));
+        
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
         	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
@@ -189,14 +194,14 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         Logger.info(String.format("I know %d buildings on fire", bs.buildingList.size()));
         //FIXME soh enche de agua até 20% criar uma flag pra marcar q ta enchendo
         if(onWaterSource() && isWaterLessThan(1.0)) {
-            this.target = null;
+            //this.target = null;
             return new ActionRest(this);
         }
         
         // Refill
-        if(me.isWaterDefined() && me.getWater() < maxPower) {
-        	this.target = null;
-        	return new ActionRefill(this,refugeIDs,hydrantIDs);
+        if(me.isWaterDefined() && isWaterLessThan(1.0)) {
+        	//this.target = null;
+        	return new ActionRefill(this, refugeIDs, hydrantIDs);
         }
         
         // Select new target
@@ -211,7 +216,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         // Check if the robot is not close to the target then get closer
         // Also goes out of water source to throw water
-        if(this.world.getDistance(this.agentID, this.target) > this.maxDistance || this.onWaterSource()) {
+        if(this.world.getDistance(this.agentID, this.target) > this.sightDistance || this.onWaterSource()) {
             return this.moveTarget(currentTime);
         }
         
@@ -220,7 +225,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         do{
             Building building = (Building) this.world.getEntity(this.target);
             Logger.trace(String.format("%s, fierynessDefined=%s, onFire=%s", building, building.isFierynessDefined(), building.isOnFire()));
-            if (building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4 && building.isBrokennessDefined() && building.getBrokenness() > 10){
+            if (building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4/* && building.isBrokennessDefined() && building.getBrokenness() > 10*/){
                 return this.world.getDistance(this.agentID, this.target) <= this.sightDistance ? new ActionExtinguish(this, this.target, this.maxPower) : this.moveTarget(currentTime);
             } else {
             	//System.out.println(">>>>>> it's not on fire anymore. Target OK  = " + this.target.getValue());

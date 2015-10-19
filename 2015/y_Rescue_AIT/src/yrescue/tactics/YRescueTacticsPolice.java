@@ -169,6 +169,11 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         
         MDC.put("location", location());
         
+        Logger.info(String.format(
+			"HP: %d, B'ness: %d, Dmg: %d, Direction: %d",  
+			me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection()
+		));
+        
         Logger.trace("The received message: " + manager.getReceivedMessage());
         
         //if I am buried, send a message and attempt to clear the entrance to my building
@@ -186,9 +191,15 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
             }
             this.count--;
             Area area = (Area)this.world.getEntity(neighbours.get(this.count));
-            Vector2D vector = (new Point2D(area.getX(), area.getY())).minus(this.agentPoint[0]).normalised().scale(1000000);
-            actionStateMachine.setState(ActionStates.Policeman.CLEARING);
-            return new ActionClear(this, (int) (this.me.getX() + vector.getX()), (int) (this.me.getY() + vector.getY()));
+            
+            if(area != null && this.agentPoint[0] != null) {
+	            Vector2D vector = (new Point2D(area.getX(), area.getY())).minus(this.agentPoint[0]).normalised().scale(1000000);
+	            actionStateMachine.setState(ActionStates.Policeman.CLEARING);
+	            return new ActionClear(this, (int) (this.me.getX() + vector.getX()), (int) (this.me.getY() + vector.getY()));
+            }
+            else{
+            	return new ActionRest(this);
+            }
         }
         
         if (this.tacticsAgent.stuck(currentTime)){
@@ -240,8 +251,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         	}
         	
         	if (blockedRefuges.size() == 0){
-        		int index = ran.nextInt(this.getWorld().getAllEntities().size());
-        		randomDestination = (EntityID)this.getWorld().getEntitiesOfType(StandardEntityURN.ROAD, StandardEntityURN.BUILDING).toArray()[index];
+        		Collection<StandardEntity> areas = this.getWorld().getEntitiesOfType(StandardEntityURN.ROAD, StandardEntityURN.BUILDING);
+        		int index = ran.nextInt(areas.size());
+        		randomDestination = areas.toArray(new StandardEntity[0])[index].getID();
         	} else {
         		
             	int index = ran.nextInt(blockedRefuges.size());
@@ -266,6 +278,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         		this.cleanRefuges.add(location.getID());
         		Logger.debug("Refuge cleaned " +location.getID());
         	}
+        	
+        	
+        	System.out.println("The heatmap " +heatMap);
         	path = this.routeSearcher.getPath(currentTime, me, heatMap.getNodeToVisit());// noTargetMove(currentTime, this.me);
         	Logger.debug("HeatMap exploration - path: " + path);
         } else {
@@ -514,10 +529,11 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 	            return new ActionMove(this, path, b.getX(), b.getY());
 	        }
         }
-        Logger.debug("Couldn't plan a path to a blocked road");
+        Logger.debug("Couldn't plan a path to a blocked road.");
+	    Logger.info("Moving randomly.");
+	    return new ActionMove(this, routeSearcher.noTargetMove(currentTime, this.location.getID()));
         
-        Logger.info("Exploring via HeatMap, target: " + heatMap.getNodeToVisit());
-        return new ActionMove(this, routeSearcher.getPath(currentTime, me, heatMap.getNodeToVisit()));
+        
     }
 
 	private EntityID failSafeGetBlockedRoad() {
