@@ -3,6 +3,7 @@ package comlib.agent;
 
 import comlib.manager.MessageManager;
 import comlib.message.CommunicationMessage;
+import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
 import rescuecore2.messages.Message;
 import rescuecore2.standard.components.StandardAgent;
@@ -56,6 +57,7 @@ public abstract class CommunicationAgent<E extends StandardEntity> extends Stand
     @Override
     protected final void think(int time, ChangeSet changed, Collection<Command> heard)
     {
+    	Logger.info(String.format("----------- Start of Timestep %d --------------", time));
         this.startProcessTime = System.currentTimeMillis();
         if (time <= this.ignoreTime)
         {
@@ -74,6 +76,7 @@ public abstract class CommunicationAgent<E extends StandardEntity> extends Stand
             this.send(this.manager.createSendMessage(super.getID()));
             this.sendAfterEvent(time, changed);
         }
+        Logger.info(String.format("----------- End of Timestep %d --------------\n", time));
     }
 
     public void receiveBeforeEvent(int time, ChangeSet changed) {

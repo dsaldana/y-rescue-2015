@@ -15,7 +15,6 @@ import rescuecore2.standard.messages.AKRest;
 import rescuecore2.misc.Pair;
 import rescuecore2.log.Logger;
 
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,17 +75,30 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     
     @Override
     public void think(int time, ChangeSet changed) {
-        if(time <= this.ignoreTime) {
-            this.tactics.agentID = this.getID();
-            this.tactics.ignoreTimeThink(time, changed, this.manager);
-            return;
-        }
-        this.action = this.tactics.think(time, changed, this.manager);
-        lastPosition = me().getLocation(model); //updates lastPosition
-        Message message = this.action == null ? new AKRest(this.getID(), time) : this.action.getCommand(this.getID(), time);
+    	try{
+    		this.action = null;
+    		
+	        if(time <= this.ignoreTime) {
+	            this.tactics.agentID = this.getID();
+	            this.tactics.ignoreTimeThink(time, changed, this.manager);
+	            return;
+	        }
+	        this.action = this.tactics.think(time, changed, this.manager);
+	        lastPosition = me().getLocation(model); //updates lastPosition
+    	}
+    	catch (Exception e){
+    		Logger.error(("An exception has occurred!"), e);
+    		if (this.action == null){
+    			this.action = this.tactics.failsafeThink(time, changed, this.manager);
+    		}
+    	}
+    	
+    	Message message = this.action == null ? new AKRest(this.getID(), time) : this.action.getCommand(this.getID(), time);
         //System.out.println(message.getClass());
         System.out.println("Selected action:" + this.action.getClass());
+        Logger.info("Action: " + message.getClass());
         this.send(message);
+        
     }
 
     @Override
