@@ -7,6 +7,7 @@ import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
 import rescuecore2.messages.Message;
 import rescuecore2.standard.components.StandardAgent;
+import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.messages.AKSubscribe;
 import rescuecore2.worldmodel.ChangeSet;
@@ -57,8 +58,10 @@ public abstract class CommunicationAgent<E extends StandardEntity> extends Stand
     @Override
     protected final void think(int time, ChangeSet changed, Collection<Command> heard)
     {
+    	this.startProcessTime = System.currentTimeMillis();
+
     	Logger.info(String.format("----------- Start of Timestep %d --------------", time));
-        this.startProcessTime = System.currentTimeMillis();
+        
         if (time <= this.ignoreTime)
         {
             send(new AKSubscribe(getID(), time, 1));
