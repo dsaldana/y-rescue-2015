@@ -64,7 +64,7 @@ public class HeatNode {
 	 * @param timeDiff
 	 */
 	private void updateHeatByTime(EntityID from, int timeDiff){
-		if(from.getValue() == entity.getValue()){
+		if((from != null && entity != null) && (from.getValue() == entity.getValue())){
 			this.heat = 1.0f;
 		}
 		else{
