@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="library/rescue/core/adf-util.jar"/>
+	<classpathentry kind="lib" path="library/rescue/core/adf-util.jar" sourcepath="/Users/h3ct0r/Git/roborescue"/>
 	<classpathentry kind="lib" path="library/rescue/core/sources/gis2-sources.jar"/>
 	<classpathentry kind="lib" path="library/util/guava-18.0.jar"/>
 	<classpathentry kind="lib" path="library/util/default/commons-logging-1.1.1.jar"/>
