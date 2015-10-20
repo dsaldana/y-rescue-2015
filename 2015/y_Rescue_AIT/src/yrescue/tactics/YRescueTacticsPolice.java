@@ -327,7 +327,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         
         //------Pegar a lista de predios a visitar:
         
-        List<EntityID> buildingsToVisit = getBuildingsToVisit(currentTime);
+        //TODO: Melhorar a selecão de prédios pra visitar.
+        
+        /*List<EntityID> buildingsToVisit = getBuildingsToVisit(currentTime);
         
         List<EntityID> newPath = new LinkedList<>();
         EntityID origin = location.getID();
@@ -339,12 +341,39 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         	newPath.addAll(this.routeSearcher.getPath(currentTime, origin, blockedAreaTarget.originID));
         }
         
-        path = newPath;
+        path = newPath;*/
         //-----Path ja ajustado com os predios a visitar
         
         Logger.debug("The new path, including surrounded buildings is: " + path);
         
         /**** Go towards the chosen path ****/
+        
+        List<EntityID> neighbours = new ArrayList<EntityID>();
+        Area area0 = (Area) this.world.getEntity(this.location.getID());
+        neighbours  = area0.getNeighbours();
+        for(EntityID A : neighbours){
+        	if((Area) world.getEntity(A) instanceof Building){
+        		List<EntityID> path2 = new ArrayList<EntityID>();
+        		path2.add(A);
+        		if(checkBlockadeOnWayTo(path2, blockedAreaTarget))	{
+        			Point2D target = getTargetPoint(path2, blockedAreaTarget);
+        			Vector2D agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
+        			
+        			agentToTarget = agentToTarget.normalised();
+        			agentToTarget = agentToTarget.scale(clearRange);
+        			target = new Point2D(target.getX() + agentToTarget.getX(), target.getY() + agentToTarget.getY());
+        			
+        		Logger.info("Door is blockade.");
+        			
+        			actionStateMachine.setState(ActionStates.Policeman.CLEARING);
+            		statusStateMachine.setState(StatusStates.ACTING);
+                	return new ActionClear(this, (int)target.getX(), (int)target.getY());
+        		}
+        			
+        		
+        	}
+        }
+        
         
         if(path != null && path.size() > 0 && checkBlockadeOnWayTo(path, this.blockedAreaTarget)){ // There is a blockage on the way
         	
