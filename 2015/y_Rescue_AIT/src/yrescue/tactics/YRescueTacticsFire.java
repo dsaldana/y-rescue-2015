@@ -153,8 +153,20 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     		return new ActionRest(this);	//does nothing...
     	}
         
+        if(this.stuckExtinguishLoop(currentTime)) {
+        	if (!updateWorldData.getChangedEntities().contains(target)){
+        		Logger.warn("Warning: extinguishing same building for more than 3 timesteps without seeing it.");
+        		Logger.warn("Will move to target");
+        		return moveTarget(currentTime);
+        	}
+        	else{
+        		Logger.info("Extinguishing same building for more than 3 timesteps, but I'm seeing it. No problem (I hope).");
+        	}
+        }
+        
         // Check for buriedness and tries to extinguish fire in a close building
         if(this.me.getBuriedness() > 0) {
+        	Logger.info("I'm buried at " + me.getPosition());
             manager.addSendMessage(new MessageFireBrigade(this.me, MessageFireBrigade.ACTION_REST, this.agentID));
             for(StandardEntity entity : this.world.getObjectsInRange(this.me, this.maxDistance)) {
                 if(entity instanceof Building) {
@@ -169,12 +181,17 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             return new ActionRest(this);
         }
         
+        YRescueBuildingSelector bs = (YRescueBuildingSelector) buildingSelector;
+        Logger.info(String.format("I know %d buildings on fire", bs.buildingList.size()));
+        Logger.debug("They are: " + bs.buildingList);
+        
         // Check if the agent got inside a building on fire
         EntityID locationID = this.me.getPosition();
         StandardEntity location = this.world.getEntity(locationID);
         if(location instanceof Building) {
             Building b = (Building)location;
-            if(b.isOnFire()) {        	
+            if(b.isOnFire()) {
+            	Logger.warn("I'm in a burning building! Will try to get out");
                 for(StandardEntity entity : this.world.getObjectsInRange(this.me, this.maxDistance/2)) {
                     if(entity instanceof Road) {
                         Road road = (Road)entity;
@@ -186,21 +203,15 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                 }
             }
         }
-
-        // Max Distance
-        //this.maxDistance = 25000;
-        YRescueBuildingSelector bs = (YRescueBuildingSelector) buildingSelector;
         
-        Logger.info(String.format("I know %d buildings on fire", bs.buildingList.size()));
-        //FIXME soh enche de agua até 20% criar uma flag pra marcar q ta enchendo
         if(onWaterSource() && isWaterLessThan(1.0)) {
-            //this.target = null;
+        	Logger.info("Refilling...");
             return new ActionRest(this);
         }
         
         // Refill
-        if(me.isWaterDefined() && isWaterLessThan(1.0)) {
-        	//this.target = null;
+        if(me.isWaterDefined() && me.getWater() < maxPower) {
+        	Logger.info("Insufficient water, going to refill.");
         	return new ActionRefill(this, refugeIDs, hydrantIDs);
         }
         
@@ -217,6 +228,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         // Check if the robot is not close to the target then get closer
         // Also goes out of water source to throw water
         if(this.world.getDistance(this.agentID, this.target) > this.sightDistance || this.onWaterSource()) {
+        	Logger.debug("Going to target " + target);
             return this.moveTarget(currentTime);
         }
         
@@ -225,21 +237,26 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         do{
             Building building = (Building) this.world.getEntity(this.target);
             Logger.trace(String.format("%s, fierynessDefined=%s, onFire=%s", building, building.isFierynessDefined(), building.isOnFire()));
-            if (building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4/* && building.isBrokennessDefined() && building.getBrokenness() > 10*/){
+            //if (building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4/* && building.isBrokennessDefined() && building.getBrokenness() > 10*/){
+            if(building.isOnFire()){
+            	Logger.trace(String.format("%s on fire, I'll tackle it", building));
                 return this.world.getDistance(this.agentID, this.target) <= this.sightDistance ? new ActionExtinguish(this, this.target, this.maxPower) : this.moveTarget(currentTime);
             } else {
             	//System.out.println(">>>>>> it's not on fire anymore. Target OK  = " + this.target.getValue());
+            	Logger.trace(String.format("%s not on fire anymore, will remove from list.", building));
                 this.buildingSelector.remove(this.target);
             }
-            EntityID newTarget = this.buildingSelector.getNewTarget(currentTime);
-            if(this.target != newTarget){
+            //EntityID newTarget = this.buildingSelector.getNewTarget(currentTime);
+            this.target = this.buildingSelector.getNewTarget(currentTime);
+            
+            /*if(this.target != newTarget){
             	this.target = newTarget;
             	//if(this.target != null)
             	//	System.out.println(">>>>>> it's not on fire anymore. Target new = " + this.target.getValue());
             	//else
             	//	System.out.println(">>>>>> there's no target anymore.");
             	break;
-            }
+            }*/
         }while(this.target != null);
         
         /**teste antigo
@@ -270,6 +287,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     public Action moveTarget(int currentTime) {
         if(this.target != null) {
             List<EntityID> path = this.routeSearcher.getPath(currentTime, this.me, this.target);
+            Logger.debug("Target " + target + "; path: " + path);
             if(path != null) {
                 path.remove(this.target);
                 return new ActionMove(this, path);
@@ -283,6 +301,28 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     
     public String toString(){
     	return "Firefighter:" + this.getID();
+    }
+    
+    private boolean stuckExtinguishLoop(int currentTime){
+    	if (tacticsAgent.commandHistory.size() < 4){
+    		Logger.info("Insufficient commands in history");
+    		return false;
+    	}
+    	Action lastCmd = null;
+    	for(int backtime = 1; backtime <= 4; backtime++){
+    		if (lastCmd == null){
+    			lastCmd = tacticsAgent.commandHistory.get(currentTime - backtime);
+    		}
+    		
+    		Logger.trace(String.format("backtime=%d, lastCmd=%s, currCmd=%s", backtime, lastCmd, tacticsAgent.commandHistory.get(currentTime - backtime)));
+    		
+    		if (!lastCmd.equals(tacticsAgent.commandHistory.get(currentTime - backtime))){
+    			return false;
+    		}
+    		lastCmd = tacticsAgent.commandHistory.get(currentTime - backtime);
+    	}
+    	
+    	return true;
     }
 
 	@Override
