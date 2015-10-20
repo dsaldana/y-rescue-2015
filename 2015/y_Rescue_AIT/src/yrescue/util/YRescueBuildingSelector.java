@@ -3,6 +3,7 @@ package yrescue.util;
 import adk.team.util.BuildingSelector;
 import adk.team.util.graph.PositionUtil;
 import adk.team.util.provider.WorldProvider;
+import rescuecore2.log.Logger;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.worldmodel.EntityID;
@@ -41,7 +42,10 @@ public class YRescueBuildingSelector implements BuildingSelector {
 
     @Override
     public void remove(Building building) {
+    	//System.out.println("C'mon, remove it!");
         this.buildingList.remove(building);
+        Logger.trace("Removing building from list:" + building);
+        Logger.trace("List now is: " + buildingList);
     }
 
     @Override

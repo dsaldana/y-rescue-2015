@@ -320,6 +320,10 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         	
         	
         	System.out.println("The heatmap " +heatMap);
+        	if(heatMap == null){
+        		Logger.info("WARNING: null heatmap. Will build a new one");
+        		heatMap = initializeHeatMap();
+        	}
         	path = this.routeSearcher.getPath(currentTime, me, heatMap.getNodeToVisit());// noTargetMove(currentTime, this.me);
         	Logger.debug("HeatMap exploration - path: " + path);
         } else {
