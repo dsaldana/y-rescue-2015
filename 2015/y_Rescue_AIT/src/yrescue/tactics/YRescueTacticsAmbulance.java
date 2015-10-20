@@ -59,8 +59,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
 	protected final int EXPLORE_TIME_STEP_TRESH = 15;
 	protected int EXPLORE_TIME_LIMIT = EXPLORE_TIME_STEP_TRESH;
-	protected int LIMIT_TO_REACH_TARGET = 15;
-	protected int target_step_counter = 0;
 	protected StateMachine stateMachine = null;
 	protected int timeoutAction = 0;
 	protected Set<Road> impassableRoadList = new HashSet<>();
@@ -105,19 +103,16 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
         for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);
-            //Logger.debug("organizeUpdateInfo:" + entity.getClass());
             Logger.trace("I'm seeing: " + entity);
+            
             if(entity instanceof Civilian) {
             	Civilian c = (Civilian) entity;
             	Logger.trace(String.format("It's a Civilian. HP: %d, B'ness: %d", c.getHP(), c.getBuriedness()));
-            	if(c.getBuriedness() > 0) {
+            	if(c.getBuriedness() > 0 && c.getHP() > 0) {
 	                this.victimSelector.add(c);
 	                manager.addSendMessage(new MessageCivilian(c));
 	                Logger.trace("  added to victimSelector and sent a message reporting it");
             	}
-                
-                Civilian fromWorld =(Civilian) world.getEntity(c.getID());
-                Logger.trace(String.format("Data from world - HP: %d, B'ness: %d", fromWorld.getHP(), fromWorld.getBuriedness()));
             }
             else if(entity instanceof Human) {
             	Human h = (Human) entity;
@@ -198,25 +193,14 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	Logger.info("Exploring..");
         	if(currentTime < EXPLORE_TIME_LIMIT){
         		if(this.target == null || this.target.getValue() == this.location.getID().getValue()){
-        			EntityID nodeToVisit = heatMap.getNodeToVisit();
-        			this.target = nodeToVisit;
-        			Logger.debug("Entity to visit:" + nodeToVisit.getValue());
-        			Logger.debug("Area:" + String.valueOf(GeometricUtil.getAreaOfEntity(nodeToVisit, this.world)));
-        			
-        			//List<EntityID> result = this.exploreRouteSearcher.noTargetMove(currentTime, this.me);
-        			//this.target = result.get(result.size() - 1);
+        			return getExplorationMovement(currentTime);
         		}
         		
-        		//((ExploreRouteSearcher) this.exploreRouteSearcher).addVisitedEntity(this.location.getID()); // TODO: Fix this, calling this class this way its breaking the inheritance
         		return this.moveTarget(currentTime);
         	}
         	
-        	if(!this.tacticsAgent.stuck(time) && target_step_counter <= LIMIT_TO_REACH_TARGET && (this.target != null && this.target.getValue() != this.location.getID().getValue())){
-        		this.target_step_counter++;
+        	if(!this.tacticsAgent.stuck(time) && (this.target != null && this.target.getValue() != this.location.getID().getValue())){
         		return this.moveTarget(currentTime);
-        	}
-        	else{
-        		this.target_step_counter = 0;
         	}
         	
         	this.target = null;
@@ -235,6 +219,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	
         	Human victim = (Human) this.world.getEntity(this.target);
         	Logger.info("Target b'ness: " + victim.getBuriedness() + ", dmg: " + victim.getDamage() + ", HP: " + victim.getHP());
+        	
         	if(victim.getBuriedness() > 0 && victim.getHP() > 0){
         		Logger.info("Rescuing ...");
         		return new ActionRescue(this, this.target);
@@ -242,29 +227,25 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	else if (victim.getHP() <= 0){
         		Logger.info("Not rescuing, victim is dead. Will look for new target");
         		victimSelector.remove(victim);
-        		target = victimSelector.getNewTarget(currentTime);
-        		if(target != null){
-        			this.stateMachine.setState((ActionStates.Ambulance.GOING_TO_TARGET));
-        			Logger.info("Moving to new target");
-        			return this.moveTarget(currentTime);
-        		}
-        		else{
-        			Logger.info("Could not find a new target... random-walking.");
-        			this.stateMachine.setState((ActionStates.Ambulance.SELECT_NEW_TARGET));
-        			return new ActionMove(this, routeSearcher.noTargetMove(currentTime, me)); //getPath(currentTime, me, heatMap.getNodeToVisit()));
-        		}
+        		this.stateMachine.setState((ActionStates.Ambulance.SELECT_NEW_TARGET));
         	}
-        	
-        	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
-        	Civilian civilian = (Civilian) victim;
-            manager.addSendMessage(new MessageCivilian(civilian));
-            this.victimSelector.remove(civilian);
-            return new ActionLoad(this, this.target);
+        	else{
+	        	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
+	        	Civilian civilian = (Civilian) victim;
+	            manager.addSendMessage(new MessageCivilian(civilian));
+	            this.victimSelector.remove(civilian);
+	            return new ActionLoad(this, this.target);
+        	}
         }
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.GOING_TO_REFUGE)){
         	Logger.info("Going to refugee..");
+        	
         	if(!this.someoneOnBoard() && this.me.getDamage() <= 0){
         		Logger.info("Does not need to go to refugee, selecting new target..");
+        		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
+        	}
+        	else if(this.target == null || ((Human) this.world.getEntity(this.target)).getHP() <= 0){
+        		Logger.info("The human im carrying on is dead, selecting new target..");
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         	}
         	else{
@@ -292,18 +273,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	
             this.target = this.victimSelector.getNewTarget(currentTime);
             if(this.target == null) {
-            	Logger.info("Problem getting target, return random move ...");
-            	EntityID nodeToVisit = heatMap.getNodeToVisit();
-                if(nodeToVisit == null){
-                	Logger.debug("Random walk");
-                	return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
-                }
-                else{
-                	Logger.debug("HeatmMap");
-                	this.stateMachine.setState(ActionStates.Ambulance.EXPLORING);
-                	this.target = nodeToVisit;
-                	return this.moveTarget(currentTime);
-                }
+            	Logger.info("Cannot define a first new target, going to explore!");
+            	return getExplorationMovement(currentTime);
             }
             
             // Begin target basic processing
@@ -349,21 +320,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             }while (this.target != null);
         }
         
-        Logger.info("Default behaviour, random walk ... ???");
-        EntityID nodeToVisit = heatMap.getNodeToVisit();
-        if(nodeToVisit == null){
-        	Logger.debug("Random walk");
-        	return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
-        }
-        else{
-        	Logger.debug("HeatmMap");
-        	this.stateMachine.setState(ActionStates.Ambulance.EXPLORING);
-        	this.target = nodeToVisit;
-        	return this.moveTarget(currentTime);
-        	//List<EntityID> etList = new LinkedList<EntityID>();
-        	//etList.add(nodeToVisit);
-        	//return new ActionMove(this, etList);
-        }
+        Logger.info("Cannot define a target or action, going to explore!");
+        return getExplorationMovement(currentTime);
     }
 
 	@Override
@@ -483,6 +441,20 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         }
         
         return heatMap;
+	}
+	
+	public Action getExplorationMovement(int currentTime){
+		EntityID nodeToVisit = heatMap.getNodeToVisit();
+        if(nodeToVisit == null){
+        	Logger.debug("Random walk");
+        	return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
+        }
+        else{
+        	Logger.debug("HeatmMap");
+        	this.stateMachine.setState(ActionStates.Ambulance.EXPLORING);
+        	this.target = nodeToVisit;
+        	return this.moveTarget(currentTime);
+        }
 	}
 
 	 /**

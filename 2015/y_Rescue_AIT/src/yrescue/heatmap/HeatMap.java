@@ -168,9 +168,15 @@ public class HeatMap {
 				if (sComp != 0) {
 					return sComp;
 				} else {
-					Integer d1 = worldModel.getDistance(((HeatNode) o1).getEntity(), lastFrom);
-					Integer d2 = worldModel.getDistance(((HeatNode) o2).getEntity(), lastFrom);
-					return d1.compareTo(d2);
+					int compPriority = Integer.compare(((HeatNode) o1).getPriorityLevel().getValue(), ((HeatNode) o2).getPriorityLevel().getValue());
+					if(compPriority != 0){
+						return compPriority;
+					}
+					else{
+						Integer d1 = worldModel.getDistance(((HeatNode) o1).getEntity(), lastFrom);
+						Integer d2 = worldModel.getDistance(((HeatNode) o2).getEntity(), lastFrom);
+						return d1.compareTo(d2);
+					}
 				}
 			}
 		});

@@ -10,9 +10,19 @@ public class HeatNode {
 	 *
 	 */
 	public static enum PriorityLevel {
-		LOW,
-		MEDIUM,
-		HIGH;
+		HIGH(1),
+		MEDIUM(2),
+		LOW(3);
+		
+		private int priorityValue;
+
+		PriorityLevel(int val) {
+	        this.priorityValue = val;
+	    }
+
+	    public int getValue() {
+	        return this.priorityValue;
+	    }
 	}
 	
 	private EntityID entity = null;
@@ -22,6 +32,10 @@ public class HeatNode {
 	private float heatFactor = 0.0f;
 	
 	public HeatNode(EntityID entity, PriorityLevel priority, Integer time) {
+		if(entity == null || priority == null || time == null){
+			throw new IllegalArgumentException("Some of the parameters are null");
+		}
+		
 		this.entity = entity;
 		this.priority = priority;
 		this.time = time;
@@ -59,12 +73,20 @@ public class HeatNode {
 	}
 	
 	/**
+	 * Get the priorityLevel of this node
+	 * @return
+	 */
+	public PriorityLevel getPriorityLevel(){
+		return this.priority;
+	}
+	
+	/**
 	 * Private function to update the heat of this node, given an actual and previous time 
 	 * @param from
 	 * @param timeDiff
 	 */
 	private void updateHeatByTime(EntityID from, int timeDiff){
-		if(from.getValue() == entity.getValue()){
+		if((from != null && entity != null) && (from.getValue() == entity.getValue())){
 			this.heat = 1.0f;
 		}
 		else{
