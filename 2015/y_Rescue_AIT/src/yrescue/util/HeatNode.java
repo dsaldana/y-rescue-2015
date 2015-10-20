@@ -22,6 +22,10 @@ public class HeatNode {
 	private float heatFactor = 0.0f;
 	
 	public HeatNode(EntityID entity, PriorityLevel priority, Integer time) {
+		if(entity == null || priority == null || time == null){
+			throw new IllegalArgumentException("Some of the parameters are null");
+		}
+		
 		this.entity = entity;
 		this.priority = priority;
 		this.time = time;
