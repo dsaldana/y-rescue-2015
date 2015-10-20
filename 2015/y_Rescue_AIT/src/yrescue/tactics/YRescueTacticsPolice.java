@@ -82,6 +82,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     private StateMachine statusStateMachine;
     
     public Set<EntityID> cleanRefuges;
+    public List<EntityID> visitedBuildingsandDoors;
 
 
     @Override
@@ -131,6 +132,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         this.blockadeUtil = new BlockadeUtil(this);
         
         this.cleanRefuges = new HashSet<>();
+        this.visitedBuildingsandDoors = new ArrayList<EntityID>();
         
         MDC.put("agent", this);
         MDC.put("location", location());
@@ -333,7 +335,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         
         //TODO: Melhorar a selecão de prédios pra visitar.
         
-        /*List<EntityID> buildingsToVisit = getBuildingsToVisit(currentTime);
+        List<EntityID> buildingsToVisit = getBuildingsToVisit(currentTime);
         
         List<EntityID> newPath = new LinkedList<>();
         EntityID origin = location.getID();
@@ -345,7 +347,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         	newPath.addAll(this.routeSearcher.getPath(currentTime, origin, blockedAreaTarget.originID));
         }
         
-        path = newPath;*/
+        path = newPath;
         //-----Path ja ajustado com os predios a visitar
         
         Logger.debug("The new path, including surrounded buildings is: " + path);
@@ -357,6 +359,8 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         neighbours  = area0.getNeighbours();
         for(EntityID A : neighbours){
         	if((Area) world.getEntity(A) instanceof Building){
+        		this.visitedBuildingsandDoors.add(A);
+        		this.visitedBuildingsandDoors.add(this.location.getID());
         		List<EntityID> path2 = new ArrayList<EntityID>();
         		path2.add(A);
         		if(checkBlockadeOnWayTo(path2, blockedAreaTarget))	{
@@ -467,11 +471,11 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     	
     	for(EntityID neigh : neighbors){
     		List<EntityID> neighborsOfneighbors = ((Area) world.getEntity(neigh)).getNeighbours();
-    		
+    		if(this.visitedBuildingsandDoors.contains(neighbors)) continue;
     		for(EntityID neighOfneigh : neighborsOfneighbors){
     			if(((Area) world.getEntity(neighOfneigh)) instanceof Building){
     				Area neighArea = (Area) world.getEntity(neigh);
-    				if (neighArea.isBlockadesDefined() && ! neighArea.getBlockades().isEmpty()){
+    				if (neighArea.isBlockadesDefined() && ! neighArea.getBlockades().isEmpty() && !this.visitedBuildingsandDoors.contains(neighArea.getID())){
     					buildings.add(neighOfneigh);
     				}
     			}
