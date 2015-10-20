@@ -11,6 +11,7 @@ import comlib.manager.MessageManager;
 import rescuecore2.config.Config;
 import rescuecore2.standard.entities.FireBrigade;
 import rescuecore2.worldmodel.ChangeSet;
+import yrescue.heatmap.HeatMap;
 import yrescue.search.YRescueRouteSearcher;
 import yrescue.util.YRescueBuildingSelector;
 
@@ -44,6 +45,12 @@ public class YRescuePrecomputeFire extends PrecomputeFire implements RouteSearch
 	@Override
 	public Action failsafeThink(int currentTime, ChangeSet updateWorldData,
 			MessageManager manager) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public HeatMap initializeHeatMap() {
 		// TODO Auto-generated method stub
 		return null;
 	}

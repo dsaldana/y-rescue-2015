@@ -12,6 +12,7 @@ import comlib.manager.MessageManager;
 import rescuecore2.config.Config;
 import rescuecore2.standard.entities.AmbulanceTeam;
 import rescuecore2.worldmodel.ChangeSet;
+import yrescue.heatmap.HeatMap;
 import yrescue.search.YRescueRouteSearcher;
 import yrescue.util.YRescueVictimSelector;
 
@@ -45,6 +46,12 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
 	@Override
 	public Action failsafeThink(int currentTime, ChangeSet updateWorldData,
 			MessageManager manager) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public HeatMap initializeHeatMap() {
 		// TODO Auto-generated method stub
 		return null;
 	}

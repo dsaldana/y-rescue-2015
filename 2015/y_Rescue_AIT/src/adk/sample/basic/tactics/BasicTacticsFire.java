@@ -24,7 +24,11 @@ import java.util.List;
 public abstract class BasicTacticsFire extends TacticsFire implements RouteSearcherProvider, BuildingSelectorProvider {
 
     public BuildingSelector buildingSelector;
-
+    
+    public int hydrant_rate;
+    public int refuge_rate;
+    public int tank_maximum;
+    
     public RouteSearcher routeSearcher;
 
     @Override

@@ -27,4 +27,18 @@ public class ActionExtinguish extends ActionTarget {
     public Message getCommand(EntityID agentID, int time) {
         return new AKExtinguish(agentID, time, this.target, this.power);
     }
+    
+    @Override
+    public boolean equals(Object other){
+    	if(other instanceof ActionExtinguish){
+    		ActionExtinguish a = (ActionExtinguish) other;
+    		return this.power == a.getPower() && this.getTarget() == a.getTarget();
+    	}
+    	return false;
+    }
+    
+    @Override
+    public String toString(){
+    	return String.format("ActionExtinguish; target=%s, power=%d", getTarget(), getPower());
+    }
 }

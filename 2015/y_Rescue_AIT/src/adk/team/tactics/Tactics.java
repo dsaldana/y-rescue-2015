@@ -11,6 +11,7 @@ import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
+import yrescue.heatmap.HeatMap;
 
 import java.util.List;
 
@@ -26,6 +27,7 @@ public abstract class Tactics<E extends Human> implements WorldProvider<E> {
     public ChangeSet changed;
     
     public int sightDistance;
+    public HeatMap heatMap;
 
     public long startProcessTime;
 
@@ -44,6 +46,9 @@ public abstract class Tactics<E extends Human> implements WorldProvider<E> {
     public abstract Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager);
     
     public abstract Action failsafeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager);
+    
+    public abstract HeatMap initializeHeatMap();
+    
 
     public void ignoreTimeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
     }

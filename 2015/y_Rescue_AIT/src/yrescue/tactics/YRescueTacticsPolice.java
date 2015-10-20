@@ -1,14 +1,24 @@
 package yrescue.tactics;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+
+import org.apache.log4j.MDC;
+
+import adk.sample.basic.event.BasicRoadEvent;
+import adk.sample.basic.tactics.BasicTacticsPolice;
+import adk.sample.basic.util.BasicRouteSearcher;
 import adk.team.action.Action;
 import adk.team.action.ActionClear;
 import adk.team.action.ActionMove;
 import adk.team.action.ActionRest;
 import adk.team.util.ImpassableSelector;
 import adk.team.util.RouteSearcher;
-import adk.sample.basic.event.BasicRoadEvent;
-import adk.sample.basic.tactics.BasicTacticsPolice;
-import adk.sample.basic.util.BasicRouteSearcher;
 import comlib.manager.MessageManager;
 import comlib.message.information.MessageBuilding;
 import comlib.message.information.MessageCivilian;
@@ -24,12 +34,17 @@ import rescuecore2.standard.entities.Blockade;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Civilian;
 import rescuecore2.standard.entities.Edge;
+import rescuecore2.standard.entities.GasStation;
+import rescuecore2.standard.entities.Hydrant;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.ChangeSet;
+import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
+import yrescue.heatmap.HeatMap;
+import yrescue.heatmap.HeatNode;
 import yrescue.message.event.MessageBlockedAreaEvent;
 import yrescue.problem.blockade.BlockadeUtil;
 import yrescue.problem.blockade.BlockedArea;
@@ -38,29 +53,15 @@ import yrescue.problem.blockade.BlockedAreaSelectorProvider;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
-import yrescue.util.YRescueDistanceSorter;
+import yrescue.util.GeometricUtil;
 import yrescue.util.YRescueImpassableSelector;
-import adk.sample.basic.util.*;
-
-import java.awt.Polygon;
-import java.awt.Rectangle;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Random;
-import java.util.Set;
-
-import org.apache.log4j.MDC;
 
 public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedAreaSelectorProvider {
 
     public ImpassableSelector impassableSelector;
     public RouteSearcher routeSearcher;
+    
+    protected HeatMap heatMap = null;
     
     public BlockadeUtil blockadeUtil;
     public BlockedAreaSelector blockedAreaSelector;
@@ -81,6 +82,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     private StateMachine statusStateMachine;
     
     public Set<EntityID> cleanRefuges;
+    public List<EntityID> visitedBuildingsandDoors;
 
 
     @Override
@@ -113,6 +115,30 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     	}
     	return this.impassableSelector;
     }
+    
+    @Override
+    public void preparation(Config config, MessageManager messageManager) {
+        this.routeSearcher = this.initRouteSearcher();
+        this.impassableSelector = this.initImpassableSelector();
+        this.blockedAreaSelector = new BlockedAreaSelector(this);
+        this.beforeMove = false;
+        this.agentPoint = new Point2D[2];
+        this.posInit = true;
+        clearRange = 10000;
+        clearWidth = 1200;
+        
+        this.actionStateMachine = new StateMachine(ActionStates.Policeman.AWAITING_ORDERS);
+        this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
+        this.blockadeUtil = new BlockadeUtil(this);
+        
+        this.cleanRefuges = new HashSet<>();
+        this.visitedBuildingsandDoors = new ArrayList<EntityID>();
+        
+        MDC.put("agent", this);
+        MDC.put("location", location());
+        
+        Logger.info("Preparation complete!");
+    }
 
     @Override
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
@@ -136,30 +162,6 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         }
     }
 
-
-    @Override
-    public void preparation(Config config, MessageManager messageManager) {
-        this.routeSearcher = this.initRouteSearcher();
-        this.impassableSelector = this.initImpassableSelector();
-        this.blockedAreaSelector = new BlockedAreaSelector(this);
-        this.beforeMove = false;
-        this.agentPoint = new Point2D[2];
-        this.posInit = true;
-        clearRange = 10000;
-        clearWidth = 1200;
-        
-        this.actionStateMachine = new StateMachine(ActionStates.Policeman.AWAITING_ORDERS);
-        this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
-        this.blockadeUtil = new BlockadeUtil(this);
-        
-        this.cleanRefuges = new HashSet<>();
-        
-        MDC.put("agent", this);
-        MDC.put("location", location());
-        
-        Logger.info("Preparation complete!");
-    }
-
     public void ignoreTimeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
     	Logger.debug("\nRadio channel: " + manager.getRadioConfig().getChannel());
     }
@@ -170,6 +172,11 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
         
         MDC.put("location", location());
+        
+        Logger.info(String.format(
+			"HP: %d, B'ness: %d, Dmg: %d, Direction: %d",  
+			me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection()
+		));
         
         Logger.trace("The received message: " + manager.getReceivedMessage());
         
@@ -188,9 +195,15 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
             }
             this.count--;
             Area area = (Area)this.world.getEntity(neighbours.get(this.count));
-            Vector2D vector = (new Point2D(area.getX(), area.getY())).minus(this.agentPoint[0]).normalised().scale(1000000);
-            actionStateMachine.setState(ActionStates.Policeman.CLEARING);
-            return new ActionClear(this, (int) (this.me.getX() + vector.getX()), (int) (this.me.getY() + vector.getY()));
+            
+            if(area != null && this.agentPoint[0] != null) {
+	            Vector2D vector = (new Point2D(area.getX(), area.getY())).minus(this.agentPoint[0]).normalised().scale(1000000);
+	            actionStateMachine.setState(ActionStates.Policeman.CLEARING);
+	            return new ActionClear(this, (int) (this.me.getX() + vector.getX()), (int) (this.me.getY() + vector.getY()));
+            }
+            else{
+            	return new ActionRest(this);
+            }
         }
         
         if (this.tacticsAgent.stuck(currentTime)){
@@ -208,7 +221,8 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         		return new ActionMove(this, this.routeSearcher.getPath(currentTime, this.me, this.blockedAreaTarget.getOriginID()));
         	}
         	else{
-        		return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, location.getID()));
+        		Logger.info("I have no target, using heatmap exploration...");
+        		return new ActionMove(this, this.routeSearcher.getPath(currentTime, location.getID(), heatMap.getNodeToVisit()));
         	}
         }
         
@@ -240,10 +254,46 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         		}
         	}
         	
-        	if (blockedRefuges.size() == 0){
-        		int index = ran.nextInt(this.getWorld().getAllEntities().size());
-        		randomDestination = (EntityID)this.getWorld().getEntitiesOfType(StandardEntityURN.ROAD, StandardEntityURN.BUILDING).toArray()[index];
-        	} else {
+        	
+            if (blockedRefuges.size() == 0){
+                int index = ran.nextInt(4);
+                int index2;
+                //Logger.debug("\n"+"\n"+"\n");
+                //Logger.debug("INDEX " +index);
+                //Logger.debug("\n"+"\n"+"\n");
+                if (index == 0){ //ROADS
+                	Collection<StandardEntity> areas = this.getWorld().getEntitiesOfType(StandardEntityURN.ROAD);
+                    index2 = ran.nextInt(areas.size());
+                    randomDestination = areas.toArray(new StandardEntity[0])[index].getID();
+                    //Logger.debug("\n"+"\n"+"\n");
+                    //Logger.debug("ROAD " +randomDestination);
+                    //Logger.debug("\n"+"\n"+"\n");
+                }
+                if (index == 1 && this.getWorld().getEntitiesOfType(StandardEntityURN.BUILDING).size()!=0){ //BUILDINGS
+                    Collection<StandardEntity> areas = this.getWorld().getEntitiesOfType(StandardEntityURN.BUILDING);
+                    index2 = ran.nextInt(areas.size());
+                    randomDestination = areas.toArray(new StandardEntity[0])[index].getID();
+                    //Logger.debug("\n"+"\n"+"\n");
+                    //Logger.debug("BUILDING " +randomDestination);
+                    //Logger.debug("\n"+"\n"+"\n");
+                }
+                if (index == 2 && this.getWorld().getEntitiesOfType(StandardEntityURN.GAS_STATION).size() != 0){ //GAS_STATIONS
+                    Collection<StandardEntity> areas = this.getWorld().getEntitiesOfType(StandardEntityURN.GAS_STATION);
+                    index2 = ran.nextInt(areas.size());
+                    randomDestination = areas.toArray(new StandardEntity[0])[index].getID();
+                    //Logger.debug("\n"+"\n"+"\n");
+                    //Logger.debug("GAS_STATION " +randomDestination);
+                    //Logger.debug("\n"+"\n"+"\n");
+                }
+                if (index == 3 && this.getWorld().getEntitiesOfType(StandardEntityURN.HYDRANT).size() != 0){ // HYDRANTS
+                    Collection<StandardEntity> areas = this.getWorld().getEntitiesOfType(StandardEntityURN.HYDRANT);
+                    index2 = ran.nextInt(areas.size());
+                    randomDestination = areas.toArray(new StandardEntity[0])[index].getID();
+                    //Logger.debug("\n"+"\n"+"\n");
+                    //Logger.debug("HYDRANT " +randomDestination);
+                    //Logger.debug("\n"+"\n"+"\n");
+                }
+            } else {
         		
             	int index = ran.nextInt(blockedRefuges.size());
             	randomDestination = blockedRefuges.get(index);
@@ -267,14 +317,23 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         		this.cleanRefuges.add(location.getID());
         		Logger.debug("Refuge cleaned " +location.getID());
         	}
-        	path = this.routeSearcher.noTargetMove(currentTime, this.me);
-        	Logger.debug("noTargetMove - path: " + path);
+        	
+        	
+        	System.out.println("The heatmap " +heatMap);
+        	if(heatMap == null){
+        		Logger.info("WARNING: null heatmap. Will build a new one");
+        		heatMap = initializeHeatMap();
+        	}
+        	path = this.routeSearcher.getPath(currentTime, me, heatMap.getNodeToVisit());// noTargetMove(currentTime, this.me);
+        	Logger.debug("HeatMap exploration - path: " + path);
         } else {
         	path = this.routeSearcher.getPath(currentTime, this.me, this.blockedAreaTarget.getOriginID());
         	Logger.debug("Path to target: " + path);
         }
         
         //------Pegar a lista de predios a visitar:
+        
+        //TODO: Melhorar a selecão de prédios pra visitar.
         
         List<EntityID> buildingsToVisit = getBuildingsToVisit(currentTime);
         
@@ -294,6 +353,35 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         Logger.debug("The new path, including surrounded buildings is: " + path);
         
         /**** Go towards the chosen path ****/
+        
+        List<EntityID> neighbours = new ArrayList<EntityID>();
+        Area area0 = (Area) this.world.getEntity(this.location.getID());
+        neighbours  = area0.getNeighbours();
+        for(EntityID A : neighbours){
+        	if((Area) world.getEntity(A) instanceof Building){
+        		this.visitedBuildingsandDoors.add(A);
+        		this.visitedBuildingsandDoors.add(this.location.getID());
+        		List<EntityID> path2 = new ArrayList<EntityID>();
+        		path2.add(A);
+        		if(checkBlockadeOnWayTo(path2, blockedAreaTarget))	{
+        			Point2D target = getTargetPoint(path2, blockedAreaTarget);
+        			Vector2D agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
+        			
+        			agentToTarget = agentToTarget.normalised();
+        			agentToTarget = agentToTarget.scale(clearRange);
+        			target = new Point2D(target.getX() + agentToTarget.getX(), target.getY() + agentToTarget.getY());
+        			
+        		Logger.info("Door is blockade.");
+        			
+        			actionStateMachine.setState(ActionStates.Policeman.CLEARING);
+            		statusStateMachine.setState(StatusStates.ACTING);
+                	return new ActionClear(this, (int)target.getX(), (int)target.getY());
+        		}
+        			
+        		
+        	}
+        }
+        
         
         if(path != null && path.size() > 0 && checkBlockadeOnWayTo(path, this.blockedAreaTarget)){ // There is a blockage on the way
         	
@@ -383,11 +471,11 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     	
     	for(EntityID neigh : neighbors){
     		List<EntityID> neighborsOfneighbors = ((Area) world.getEntity(neigh)).getNeighbours();
-    		
+    		if(this.visitedBuildingsandDoors.contains(neighbors)) continue;
     		for(EntityID neighOfneigh : neighborsOfneighbors){
     			if(((Area) world.getEntity(neighOfneigh)) instanceof Building){
     				Area neighArea = (Area) world.getEntity(neigh);
-    				if (neighArea.isBlockadesDefined() && ! neighArea.getBlockades().isEmpty()){
+    				if (neighArea.isBlockadesDefined() && ! neighArea.getBlockades().isEmpty() && !this.visitedBuildingsandDoors.contains(neighArea.getID())){
     					buildings.add(neighOfneigh);
     				}
     			}
@@ -461,6 +549,24 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 	public BlockedAreaSelector getBlockedAreaSelector() {
 		return blockedAreaSelector;
 	}
+	
+	@Override
+	public HeatMap initializeHeatMap() {
+    	HeatMap heatMap = new HeatMap(this.agentID, this.world);
+        for (Entity next : this.getWorld()) {
+            if (next instanceof Area) {
+            	// Ignore very small areas to explore
+            	//if(GeometricUtil.getAreaOfEntity(next.getID(), this.world) < EXPLORE_AREA_SIZE_TRESH) continue;
+            	
+            	// Ignore non Road areas
+            	if(!(next instanceof Road)) continue;
+            	
+            	heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.LOW, 0);
+            }
+        }
+        
+        return heatMap;
+	}
 
 	@Override
 	public Action failsafeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
@@ -497,9 +603,11 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 	            return new ActionMove(this, path, b.getX(), b.getY());
 	        }
         }
-        Logger.debug("Couldn't plan a path to a blocked road");
-        Logger.info("Moving randomly");
-        return new ActionMove(this, routeSearcher.noTargetMove(currentTime, me.getPosition()));
+        Logger.debug("Couldn't plan a path to a blocked road.");
+	    Logger.info("Moving randomly.");
+	    return new ActionMove(this, routeSearcher.noTargetMove(currentTime, this.location.getID()));
+        
+        
     }
 
 	private EntityID failSafeGetBlockedRoad() {

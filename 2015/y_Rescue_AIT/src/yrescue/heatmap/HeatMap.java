@@ -1,4 +1,4 @@
-package yrescue.util;
+package yrescue.heatmap;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import rescuecore2.log.Logger;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Edge;
 import rescuecore2.standard.entities.StandardWorldModel;
@@ -25,6 +26,8 @@ public class HeatMap {
 	
 	private EntityID lastFrom = null;
 	private int lastTime = 0;
+	
+	private EntityID explorationTarget = null;
 	
 	public HeatMap(EntityID ownerID, StandardWorldModel worldModel){
 		this.heatNodeMap = new HashMap<EntityID, HeatNode>();
@@ -44,6 +47,11 @@ public class HeatMap {
 		this.lastFrom = from;
 		this.lastTime = time;
 		
+		if(from.equals(explorationTarget)){
+			Logger.info("HeatMap exploration target " + explorationTarget + " reached!");
+			explorationTarget = null;
+		}
+		
 		HeatNode hn = heatNodeMap.get(from);
 		if(hn != null){
 			hn.updateHeat(from, time);
@@ -59,9 +67,13 @@ public class HeatMap {
 	 */
 	public EntityID getNodeToVisit(){
 		updateHeatMap(this.lastFrom, this.lastTime);
-		List<HeatNode> heatNodes = new ArrayList<HeatNode>(this.heatNodeMap.values());
-		heatNodes = orderHeatNodeList(heatNodes);
-		return heatNodes.get(0).getEntity();
+		if(explorationTarget == null) {
+			List<HeatNode> heatNodes = new ArrayList<HeatNode>(this.heatNodeMap.values());
+			heatNodes = orderHeatNodeList(heatNodes);
+			explorationTarget = heatNodes.get(0).getEntity();
+			Logger.debug("New HeatMap exploration target chosen: " + explorationTarget);
+		}
+		return explorationTarget;
 	}
 	
 	/**
