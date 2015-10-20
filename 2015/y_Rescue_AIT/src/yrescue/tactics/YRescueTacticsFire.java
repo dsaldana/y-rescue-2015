@@ -1,4 +1,4 @@
-package yrescue.tactics;
+gpackage yrescue.tactics;
 
 import static rescuecore2.misc.Handy.objectsToIDs;
 
