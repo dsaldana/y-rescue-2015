@@ -144,7 +144,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
         MDC.put("location", location());
         
-        //Logger.info("Y-Rescue Time:" + currentTime + " Id:" + this.agentID.getValue());
         //this.refugeList.get(-1); //triggers exception to test failsafe
         
         Logger.info(String.format(
@@ -166,11 +165,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         
         Logger.debug("#buried agents I know: " + ((BasicVictimSelector) this.victimSelector).agentList.size());
         
-        if(this.me.getBuriedness() > 0) {
-            this.target = null;
-            return new ActionRescue(this, this.agentID);
-        }
-        
         // If we are not in the special condition exploring, update target or get a new one 
         if(!this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.EXPLORING)){
 	        if(this.target != null){
@@ -180,7 +174,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	        	this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
 	        }
 	        
-	        if(this.me.getDamage() >= 100) { //this.someoneOnBoard() || 
+	        if(this.me.getDamage() >= 100 || this.someoneOnBoard()) { 
 	        	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
 	        }
         }
@@ -231,9 +225,16 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	}
         	else{
 	        	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
-	        	Civilian civilian = (Civilian) victim;
-	            manager.addSendMessage(new MessageCivilian(civilian));
-	            this.victimSelector.remove(civilian);
+	        	
+	        	if(victim instanceof Civilian){
+	        		Civilian civilian = (Civilian) victim;
+	        		manager.addSendMessage(new MessageCivilian(civilian));
+		            this.victimSelector.remove(civilian);
+	        	}
+	        	else if(victim instanceof Human){
+	        		this.victimSelector.remove((Human) victim);
+	        	}
+	        	
 	            return new ActionLoad(this, this.target);
         	}
         }
@@ -368,10 +369,37 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 		return new ActionMove(this, routeSearcher.noTargetMove(currentTime, me.getPosition()));
 	}
 
+	/**
+	 * Check if someone is on board, use a location with some tolerance
+	 */
 	public boolean someoneOnBoard() {
-		if(this.target == null) return false;
-		return PositionUtil.equalsPoint(this.world.getEntity(this.target).getLocation(world), this.me.getLocation(world), 500);
-        //return this.target != null && ((Human)this.world.getEntity(this.target)).getPosition().getValue() == this.me.getID().getValue();
+		if(this.target != null && (this.world.getEntity(this.target) instanceof Civilian || this.world.getEntity(this.target) instanceof Human)){
+			return PositionUtil.equalsPoint(this.world.getEntity(this.target).getLocation(world), this.me.getLocation(world), 500);
+		}
+		else{
+			return false;
+		}
+    }
+	
+	/**
+	 * Move to target, and do some sanity checks
+	 * If the building we are trying to enter is on fire, get a new exploration target 
+	 */
+	public Action moveTarget(int currentTime) {
+        List<EntityID> path = getPathToTarget(currentTime);
+        if(path != null && !path.isEmpty()){
+        	Entity ent = this.world.getEntity(path.get(0));
+        	if(ent instanceof Building){
+        		if(((Building) ent).isOnFire()){
+        			Logger.info("The next building is on FIRE, select a new exploration target");
+        			//this.heatMap.updateNode(ent.getID(), time);
+        			this.heatMap.removeEntityID(ent.getID());
+        			return getExplorationMovement(currentTime);
+        		}
+        	}
+        }
+        
+        return new ActionMove(this, path != null ? path : this.routeSearcher.noTargetMove(currentTime, this.me));
     }
 	
 	/**

@@ -1,5 +1,7 @@
 package yrescue.heatmap;
 
+import java.security.InvalidParameterException;
+
 import rescuecore2.worldmodel.EntityID;
 
 public class HeatNode {
@@ -24,6 +26,9 @@ public class HeatNode {
 	        return this.priorityValue;
 	    }
 	}
+	
+	public static final float MAX_HEAT = 1.0f;
+	public static final float MIN_HEAT = 0.0f;
 	
 	private EntityID entity = null;
 	private PriorityLevel priority = null;
@@ -53,6 +58,20 @@ public class HeatNode {
 	 */
 	public void updateHeat(EntityID from, Integer actualTime){
 		updateHeatByTime(from, Math.abs(actualTime - this.time));
+		this.time = actualTime;
+	}
+	
+	/**
+	 * Update the heat of the node, given a time and a heat
+	 * @param from
+	 * @param heat
+	 */
+	public void updateHeat(EntityID from, Integer actualTime, float heat){
+		if(heat > HeatNode.MAX_HEAT || heat < HeatNode.MIN_HEAT){
+			throw new InvalidParameterException("Invalid heat value");
+		}
+		
+		this.heat = heat;
 		this.time = actualTime;
 	}
 	
@@ -95,5 +114,13 @@ public class HeatNode {
 				if(this.heat < 0.0f) this.heat = 0.0f;
 			}
 		}
+	}
+	
+	public void setHeat(float heat){
+		this.heat = heat;
+	}
+	
+	public void setPriority(PriorityLevel priorityLevel){
+		if(priorityLevel != null) this.priority = priorityLevel;
 	}
 }

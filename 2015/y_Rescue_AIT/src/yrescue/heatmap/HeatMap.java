@@ -62,6 +62,31 @@ public class HeatMap {
 	}
 	
 	/**
+	 * Update the heat of a node by heat
+	 * @param from
+	 * @param time
+	 * @param heat
+	 * @return
+	 */
+	public boolean updateNode(EntityID from, Integer time, float heat){
+		this.lastFrom = from;
+		this.lastTime = time;
+		
+		if(from.equals(explorationTarget)){
+			Logger.info("HeatMap exploration target " + explorationTarget + " reached!");
+			explorationTarget = null;
+		}
+		
+		HeatNode hn = heatNodeMap.get(from);
+		if(hn != null){
+			hn.updateHeat(from, time, heat);
+			return true;
+		}
+		
+		return false;
+	}
+	
+	/**
 	 * Get the next entityID to visit. It will update the heat map and select the one with less heat and closer
 	 * @return
 	 */
@@ -84,6 +109,15 @@ public class HeatMap {
 	 */
 	public void addEntityID(EntityID entity, HeatNode.PriorityLevel priority, int timeStep){
 		this.heatNodeMap.put(entity, new HeatNode(entity, priority, timeStep));
+	}
+	
+	/**
+	 * Remove a entity from the heat map
+	 * Used in cases that you know that you will not be going to this place again
+	 * @param entity
+	 */
+	public void removeEntityID(EntityID entity){
+		this.heatNodeMap.remove(entity);
 	}
 	
 	/**
