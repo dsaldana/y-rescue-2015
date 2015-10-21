@@ -337,6 +337,10 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     	for(int backtime = 1; backtime <= 4; backtime++){
     		if (lastCmd == null){
     			lastCmd = tacticsAgent.commandHistory.get(currentTime - backtime);
+    			if(lastCmd == null){
+    				Logger.warn("Failed to query lastCmd at history in time " + (currentTime - backtime));
+    				return false;
+        		}
     		}
     		
     		Logger.trace(String.format("backtime=%d, lastCmd=%s, currCmd=%s", backtime, lastCmd, tacticsAgent.commandHistory.get(currentTime - backtime)));
