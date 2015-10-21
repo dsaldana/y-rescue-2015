@@ -1,6 +1,7 @@
 package yrescue.action;
 
 import adk.team.action.Action;
+import rescuecore2.log.Logger;
 import rescuecore2.messages.Message;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.messages.AKMove;
@@ -20,6 +21,8 @@ public class ActionRefill extends Action {
         super(tactics);
         this.tactics = tactics;
         
+        Logger.trace("ActionRefill. #refuges=" + refugeIDs + ", #hydrants=" + hydrantIDs);
+        
         // Search for the closest water source
         double dist = -1;
         List<EntityID> pathTemp = new ArrayList<EntityID>();
@@ -33,7 +36,10 @@ public class ActionRefill extends Action {
         }
         for(StandardEntity next: hydrantIDs){
         	pathTemp = tactics.routeSearcher.getPath(tactics.getCurrentTime(), tactics.getOwnerID(), next.getID());
-        	if(dist == -1 || dist < pathTemp.size()){
+        	if (pathTemp == null){
+        		Logger.warn("\nnull path to hydrant! " + next + ". It will be ignored.\n");
+        	}
+        	else if(dist == -1 || dist < pathTemp.size()){
         		dist = pathTemp.size();
         		this.path = pathTemp;
         		this.destination = next;

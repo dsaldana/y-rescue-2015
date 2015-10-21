@@ -359,8 +359,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	        return new ActionRest(this);
 	    }
 	    // Are we out of water?
-	    if (me.isWaterDefined() && me.getWater() == 0) {
+	    if (me.isWaterDefined() && me.getWater() < maxPower) {
 	        // Head for a refuge
+	    	Logger.debug("FailSafe going to refuge...");
 	    	return this.moveRefuge(currentTime);
 	    }
 	    // Find all buildings that are on fire

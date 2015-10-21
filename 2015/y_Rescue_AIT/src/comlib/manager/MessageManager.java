@@ -56,19 +56,18 @@ public class MessageManager
 
 	private boolean heardAgentHelp = false;
 
-	private int getBitOutputStreamNumber(int priority, int kind)
-	{
+	private int getBitOutputStreamNumber(int priority, int kind) {
+		//Logger.trace(String.format("getBitOutputStreamNumber(priority=%d,kind=%d)", priority, kind));
+		//Logger.trace("getBitOutputStreamNumber=" + ((PRIORITY_DEPTH * kind) + priority));
 		return (PRIORITY_DEPTH * kind) + priority;
 	}
 
-	public MessageManager(Config config, EntityID agentID)
-	{
+	public MessageManager(Config config, EntityID agentID) {
 		this.init(config);
 		this.agentID = agentID;
 	}
 
-	private void init(Config config)
-	{
+	private void init(Config config) {
 		this.developerMode =
 			config.getBooleanValue("comlib.develop.developerMode", false);
 		this.radioConfig = new RadioConfig(config);
@@ -81,22 +80,27 @@ public class MessageManager
 		this.useRadio = ( this.numRadio >= 1 );
 
 		this.providerList =
-			new MessageProvider[config.getIntValue("comlib.default.messageID", 16)];
-		this.bitOutputStreamList =
-			new BitOutputStream[this.getBitOutputStreamNumber(
-					config.getIntValue("comlib.default.messageID", 16) -1,
-					PRIORITY_DEPTH
-					)];
+			new MessageProvider[config.getIntValue("comlib.default.messageID", 32)];
+		
+		
+		//BUGFIX? priority and kind were inverted...
+		this.bitOutputStreamList = new BitOutputStream[this.getBitOutputStreamNumber(
+			PRIORITY_DEPTH,
+			config.getIntValue("comlib.default.messageID", 32) -1
+		)];
+		
+		Logger.trace("bitOutputStreamList.length=" + bitOutputStreamList.length);
+		
 		this.maxBandWidthList = new int[numRadio];
 		this.eventList = new ArrayList<>();
 		this.receivedMessages = new ArrayList<>();
 		this.sendMessages = new ArrayList<>();
 
-		for(int bosl = 0; bosl < this.bitOutputStreamList.length; bosl++)
-		{ this.bitOutputStreamList[bosl] = new BitOutputStream(); }
+		for(int bosl = 0; bosl < this.bitOutputStreamList.length; bosl++) { 
+			this.bitOutputStreamList[bosl] = new BitOutputStream(); 
+		}
 
-		for (int ch = 1; ch <= numRadio; ch++)
-		{
+		for (int ch = 1; ch <= numRadio; ch++) {
 			maxBandWidthList[ch -1] =
 				config.getIntValue("comms.channels." + ch + ".bandwidth");
 		}
@@ -104,47 +108,49 @@ public class MessageManager
 		this.initLoadProvider();
 	}
 
-	public boolean canUseRadio()
-	{ return this.useRadio; }
+	public boolean canUseRadio() {
+		return this.useRadio;
+	}
 
-	public RadioConfig getRadioConfig()
-	{ return this.radioConfig; }
+	public RadioConfig getRadioConfig() {
+		return this.radioConfig;
+	}
 
-	public VoiceConfig getVoiceConfig()
-	{ return this.voiceConfig; }
+	public VoiceConfig getVoiceConfig() {
+		return this.voiceConfig;
+	}
 
-	public int getTime()
-	{ return this.kernelTime; }
+	public int getTime() {
+		return this.kernelTime;
+	}
 
-	public int getMaxBandWidth(int ch)
-	{ return this.maxBandWidthList[ch -1]; }
+	public int getMaxBandWidth(int ch) {
+		return this.maxBandWidthList[ch - 1];
+	}
 
-	public boolean isHeardAgentHelp()
-	{ return this.heardAgentHelp; }
+	public boolean isHeardAgentHelp() {
+		return this.heardAgentHelp;
+	}
 
-	public void receiveMessage(int time, Collection<Command> heard)
-	{
+	public void receiveMessage(int time, Collection<Command> heard)	{
 		this.kernelTime = time;
 		this.receivedMessages.clear();
 		this.heardAgentHelp = false;
 
-		for (BitOutputStream bos : bitOutputStreamList)
-		{ bos.reset(); }
+		for (BitOutputStream bos : bitOutputStreamList) {
+			bos.reset();
+		}
 
-		for (Command command : heard)
-		{
-			if (command instanceof AKSpeak)
-			{
+		for (Command command : heard) {
+			if (command instanceof AKSpeak) {
 				if (agentID == command.getAgentID()) { continue; }
 
 				byte[] data = ((AKSpeak)command).getContent();
 				if (data.length <= 0) { continue; }
 
-				if (((AKSpeak) command).getChannel() == 0)
-				{
+				if (((AKSpeak) command).getChannel() == 0) {
 					String voice = new String(data);
-					if ("Help".equalsIgnoreCase(voice) || "Ouch".equalsIgnoreCase(voice))
-					{
+					if ("Help".equalsIgnoreCase(voice) || "Ouch".equalsIgnoreCase(voice)) {
 						//System.out.println(voice + " : " + command.getAgentID() + " : " );
 						this.heardAgentHelp = true;
 						continue;
@@ -152,34 +158,32 @@ public class MessageManager
 					String[] voiceData =
 						voice.split(this.voiceConfig.getMessageSeparator());
 					this.receiveVoiceMessage(
-							(AKSpeak)command,
-							Arrays.copyOfRange(voiceData, 1, voiceData.length - 1),
-							this.receivedMessages);
+						(AKSpeak)command,
+						Arrays.copyOfRange(voiceData, 1, voiceData.length - 1),
+						this.receivedMessages
+					);
 					// TODO: refactoring
 				}
-				else
-				{
+				else {
 					this.receiveRadioMessage((AKSpeak)command, this.receivedMessages);
 				}
 			}
 		}
 	}
 
-	private void receiveRadioMessage(
-			AKSpeak akSpeak, List<CommunicationMessage> list)
-	{
-		if (akSpeak.getContent() == null || list == null)
-		{ return; }
+	private void receiveRadioMessage(AKSpeak akSpeak, List<CommunicationMessage> list)	{
+		if (akSpeak.getContent() == null || list == null) {
+			return;
+		}
+		
 		BitStreamReader bsr = new BitStreamReader(akSpeak.getContent());
 		int msgID = bsr.getBits(this.radioConfig.getSizeOfMessageID());
 		//MessageProvider provider = this.providerList[bsr.getBits(this.radioConfig.getSizeOfMessageID())];
 		MessageProvider provider = this.providerList[msgID];
 		//		System.out.println("MSGID: " + msgID);
 		int lastRemainBufferSize = bsr.getRemainBuffer();
-		while(bsr.getRemainBuffer() > 0)
-		{
-			try
-			{
+		while(bsr.getRemainBuffer() > 0) {
+			try {
 				CommunicationMessage msg =
 					provider.create(this, bsr, akSpeak.getAgentID());
 				list.add(msg);
@@ -190,38 +194,35 @@ public class MessageManager
 			}
 
 			// TODO: Check!!
-			if (bsr.getRemainBuffer() == lastRemainBufferSize)  { break; }
-			else { lastRemainBufferSize = bsr.getRemainBuffer(); }
+			if (bsr.getRemainBuffer() == lastRemainBufferSize) {
+				break;
+			} else {
+				lastRemainBufferSize = bsr.getRemainBuffer();
+			}
 
 			//System.out.println("MSG : " + msgID + ", RemainBuf : " + bsr.getRemainBuffer());
 		}
 	}
 
 	// TODO: refactoring
-	private void receiveVoiceMessage(
-			AKSpeak akSpeak, String[] data, List<CommunicationMessage> list)
-	{
-		if (data == null || (data.length & 0x01) == 1 || list == null) //?
-		{ return; }
-		for (int count = 0; count < data.length; count += 2)
-		{
+	private void receiveVoiceMessage(AKSpeak akSpeak, String[] data, List<CommunicationMessage> list) {
+		if (data == null || (data.length & 0x01) == 1 || list == null) {
+			return;
+		}
+		for (int count = 0; count < data.length; count += 2) {
 			int id = Integer.parseInt(data[count]);
-			String[] messageData =
-				data[count + 1].split(this.voiceConfig.getDataSeparator());
-			list.add(
-					this.providerList[id].create(this, messageData, akSpeak.getAgentID())
-					);
+			String[] messageData = data[count + 1].split(this.voiceConfig.getDataSeparator());
+			list.add(this.providerList[id].create(this, messageData, akSpeak.getAgentID()));
 		}
 	}
 
-	public List<Message> createSendMessage(EntityID agentID)
-	{
+	public List<Message> createSendMessage(EntityID agentID) {
 		List<Message> messages = new ArrayList<Message>();
 
 		int bosNum = 0;
 		boolean isFirstLoop = true;
-		for (int ch = 1; ch <= numRadio; ch++)
-		{
+		Logger.trace(String.format("Will send messages. providerList.length=%d, bosList.length=%d", providerList.length, bitOutputStreamList.length));
+		for (int ch = 1; ch <= numRadio; ch++) {
 			int sentMessageSize = 0;
 
 			// for (; bosNum < bitOutputStreamList.length; bosNum++)
@@ -235,28 +236,24 @@ public class MessageManager
 			// 	messages.add(
 			// 			new AKSpeak(agentID, this.getTime(), ch, bos.toByteArray()));
 			// }
-			for (int priority = 0; priority < PRIORITY_DEPTH; priority++)
-			{
-				for (int kind = 0; kind < providerList.length; kind++)
-				{
-					BitOutputStream bos =
-						bitOutputStreamList[this.getBitOutputStreamNumber(priority, kind)];
-					if (bos.size() <= 0)
-					{ continue; }
-					if ((sentMessageSize + bos.size()) > getMaxBandWidth(ch)) { 
-						Logger.warn("Message does not fit in bandwidth");		
+			for (int priority = 0; priority < PRIORITY_DEPTH; priority++) {
+				for (int kind = 0; kind < providerList.length; kind++) {
+					BitOutputStream bos = bitOutputStreamList[this.getBitOutputStreamNumber(priority, kind)];
+					if (bos.size() <= 0) {
 						continue;
 					}
+					if ((sentMessageSize + bos.size()) > getMaxBandWidth(ch)) {
+						Logger.warn("Message does not fit in bandwidth");
+						continue;
+					}
+					Logger.trace("msg content: " + bos.toByteArray());
 					sentMessageSize += bos.size();
-					messages.add(
-							new AKSpeak(agentID, this.getTime(), ch, bos.toByteArray())
-							);
+					messages.add(new AKSpeak(agentID, this.getTime(), ch, bos.toByteArray()));
 					Logger.trace("Added message to queue. Msg size: " + bos.size());
 				}
 			}
 
-			if (ch == numRadio && isFirstLoop)
-			{
+			if (ch == numRadio && isFirstLoop) {
 				isFirstLoop = false;
 				ch = 1;
 				bosNum = 0;
@@ -347,22 +344,17 @@ public class MessageManager
 		//this.register(CommunicationMessage.positionMessageID, new PositionMessageProvider(this.event));
 	}
 
-	private void registerStandardProvider(MessageProvider provider)
-	{
+	private void registerStandardProvider(MessageProvider provider)	{
 		this.providerList[provider.getMessageID()] = provider;
 	}
 
-	public boolean registerProvider(MessageProvider provider)
-	{
+	public boolean registerProvider(MessageProvider provider) {
 		int messageID = provider.getMessageID();
-		if (
-				!this.developerMode || this.kernelTime != -1
-				|| provider == null || messageID < 0
-			 )
-		{ return false; }
+		if (!this.developerMode || this.kernelTime != -1 || provider == null || messageID < 0) {
+			return false;
+		}
 
-		if (messageID >= this.providerList.length)
-		{
+		if (messageID >= this.providerList.length) {
 			this.providerList = Arrays.copyOf(this.providerList, messageID +1);
 			// this.bitOutputStreamList =
 			// 	Arrays.copyOf(this.bitOutputStreamList,
@@ -370,11 +362,13 @@ public class MessageManager
 			// 			);
 
 			//TODO: refactoring
-			for(int bosl = 0; bosl < this.bitOutputStreamList.length; bosl++)
-			{ this.bitOutputStreamList[bosl] = new BitOutputStream(); }
+			for (int bosl = 0; bosl < this.bitOutputStreamList.length; bosl++) {
+				this.bitOutputStreamList[bosl] = new BitOutputStream();
+			}
 		}
-		else if (this.providerList[messageID] != null)
-		{ return false; }
+		else if (this.providerList[messageID] != null) {
+			return false;
+		}
 
 		this.registerStandardProvider(provider);
 		this.radioConfig.updateMessageIDSize(messageID);
@@ -393,9 +387,10 @@ public class MessageManager
 
 	private void searchProvider(MessageEvent event)
 	{
-		for (MessageProvider provider : this.providerList)
-		{
-			if(provider != null) { provider.trySetEvent(event); }
+		for (MessageProvider provider : this.providerList) {
+			if (provider != null) {
+				provider.trySetEvent(event);
+			}
 		}
 	}
 
@@ -404,7 +399,8 @@ public class MessageManager
 		// if (this.eventList.size() < 1)
 		// {	return; }
 
-		for (MessageEvent event : this.eventList)
-		{ provider.trySetEvent(event); }
+		for (MessageEvent event : this.eventList) {
+			provider.trySetEvent(event);
+		}
 	}
 }
