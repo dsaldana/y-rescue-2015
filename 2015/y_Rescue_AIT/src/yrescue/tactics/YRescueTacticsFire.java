@@ -5,9 +5,15 @@ import static rescuecore2.misc.Handy.objectsToIDs;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
+import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
+import org.apache.log4j.PropertyConfigurator;
+import org.apache.log4j.spi.LoggerFactory;
 
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
@@ -49,6 +55,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 
     private List<StandardEntity> refugeIDs;
 	private List<StandardEntity> hydrantIDs;
+	public Map<EntityID, Integer> busyHydrants;
 
 	@Override
     public String getTacticsName() {
@@ -77,19 +84,37 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         this.routeSearcher = this.initRouteSearcher();
         this.buildingSelector = this.initBuildingSelector();
         
+        busyHydrants = new HashMap<>();
+        
         //Building the Lists of Refuge and Hydrant
         Collection<StandardEntity> refuge = this.world.getEntitiesOfType(StandardEntityURN.REFUGE);
         refugeIDs = new ArrayList<StandardEntity>();
         refugeIDs.addAll(refuge);
         Collection<StandardEntity> hydrant = this.world.getEntitiesOfType(StandardEntityURN.HYDRANT);
         hydrantIDs = new ArrayList<StandardEntity>();
-        hydrant.addAll(hydrant);
+        hydrantIDs.addAll(hydrant);
         
         this.hydrant_rate = this.config.getIntValue("fire.tank.refill_hydrant_rate");
         this.tank_maximum = this.config.getIntValue("fire.tank.maximum");
         
         MDC.put("agent", this);
         MDC.put("location", location());
+        /*
+        Log4JLogger lf = new Log4JLogger();
+        
+        org.apache.log4j.Logger d_logger = lf.getLogger();
+        String logFileName = "doSomething"+me.getID()+".log";
+
+        Properties prop = new Properties();
+        prop.setProperty("doSomething"+me.getID(),"TRACE, WORKLOG");
+        prop.setProperty("log4j.appender.WORKLOG","org.apache.log4j.FileAppender");
+        prop.setProperty("log4j.appender.WORKLOG.File", logFileName);
+        prop.setProperty("log4j.appender.WORKLOG.layout","org.apache.log4j.PatternLayout");
+        prop.setProperty("log4j.appender.WORKLOG.layout.ConversionPattern","%d %c{1} - %m%n");
+        //prop.setProperty("log4j.appender.WORKLOG.Threshold","INFO"); 
+
+        PropertyConfigurator.configure(prop);
+        */
         
         Logger.debug(String.format("---- FireFighter ON. maxDistance=%d, sightDistance=%d ----", this.maxDistance, this.sightDistance));
     }

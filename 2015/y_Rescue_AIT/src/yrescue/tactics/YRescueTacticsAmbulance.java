@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
 
 import adf.util.map.PositionUtil;
@@ -150,7 +151,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 			"HP: %d, B'ness: %d, Dmg: %d, Direction: %d, SmOnBrd? %s", 
 			me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection(), someoneOnBoard()
 		));
-        
         
         heatMap.writeMapToFile();
 
