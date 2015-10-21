@@ -38,6 +38,7 @@ import yrescue.heatmap.HeatMap;
 import yrescue.heatmap.HeatNode;
 import yrescue.message.event.MessageHydrantEvent;
 import yrescue.message.information.MessageBlockedArea;
+import yrescue.message.information.MessageHydrant;
 import yrescue.util.YRescueBuildingSelector;
 //import yrescue.util.YRescueRouteSearcher;
 import adk.sample.basic.event.BasicBuildingEvent;
@@ -234,7 +235,11 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         }
         
         if(onWaterSource() && isWaterLessThan(1.0)) {
-        	Logger.info("Refilling...");
+        	if(me.isWaterDefined() && me.getWater() < maxPower){
+        		if(location instanceof Hydrant)
+        			manager.addSendMessage(new MessageHydrant(this, currentTime, me.getWater(),this.hydrant_rate, this.maxWater, me.getPosition()));
+        	}
+        	Logger.info("Refilling..." + me.getWater());
             return new ActionRest(this);
         }
         
