@@ -7,16 +7,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import rescuecore2.worldmodel.EntityID;
+import rescuecore2.log.Logger;
 import rescuecore2.standard.entities.*;
 
-public class kmeans {
+public class KMeans {
 	private int k;
     private List<Building> buildings;
     private List<EntityID> partition;
     private Map<EntityID, EntityID> classification;
     
     // Construtor: Definir numero de particoes
-	public kmeans(int numberPartitions) {
+	public KMeans(int numberPartitions) {
 		k = numberPartitions;
 		buildings = new ArrayList<Building>();
 		partition = new ArrayList<EntityID>();
@@ -50,7 +51,9 @@ public class kmeans {
                  if(count == mInterval){
                 	 partition.add(b.getID());
                  }
-             }else System.out.println( "Not a Building" );
+             } else {
+            	 Logger.debug("Not a Building");
+             }
              count++;
              if(count == interval) count = 0;
          }
@@ -132,9 +135,9 @@ public class kmeans {
 	        	 partitionAnterior.add(nextP);
 	         }
    		 }      
-         System.out.println(":: Numero de Predios =  " + allBuildings.size());
-         System.out.println(":: Particoes =  " + partition);
-         System.out.println(":: Classificacao =  " + classification);
+         Logger.info(":: Numero de Predios =  " + allBuildings.size());
+         Logger.info(":: Particoes =  " + partition);
+         Logger.info(":: Classificacao =  " + classification);
          return classification;
     } 
 }
