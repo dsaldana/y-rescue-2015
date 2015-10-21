@@ -247,8 +247,13 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         		if(location instanceof Hydrant)
         			manager.addSendMessage(new MessageHydrant(this, currentTime, me.getWater(),this.hydrant_rate, this.maxWater, me.getPosition()));
         	}
-        	Logger.info("Refilling..." + me.getWater());
-            return new ActionRest(this);
+        	if(!(this.tacticsAgent.commandHistory.get(currentTime-1) instanceof ActionRest) || lastWater != me.getWater()){
+        		Logger.info("Refilling..." + me.getWater());
+                return new ActionRest(this);
+        	}else{
+        		if(location instanceof Hydrant)
+        			busyHydrantIDs.put(locationID, currentTime+(this.maxWater-me.getWater()/this.hydrant_rate));
+        	}
         }
         
         // Update BusyHydrants
