@@ -261,34 +261,34 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
                 //Logger.debug("\n"+"\n"+"\n");
                 //Logger.debug("INDEX " +index);
                 //Logger.debug("\n"+"\n"+"\n");
-                if (index == 0){ //ROADS
-                	Collection<StandardEntity> areas = this.getWorld().getEntitiesOfType(StandardEntityURN.ROAD);
-                    index2 = ran.nextInt(areas.size());
-                    randomDestination = areas.toArray(new StandardEntity[0])[index].getID();
+                if (index == 0 && (this.getWorld().getEntitiesOfType(StandardEntityURN.ROAD).size() != 0)){ //ROADS
+                	Collection<StandardEntity> areas0 = this.getWorld().getEntitiesOfType(StandardEntityURN.ROAD);
+                    index2 = ran.nextInt(areas0.size());
+                    randomDestination = areas0.toArray(new StandardEntity[0])[index2].getID();
                     //Logger.debug("\n"+"\n"+"\n");
                     //Logger.debug("ROAD " +randomDestination);
                     //Logger.debug("\n"+"\n"+"\n");
                 }
-                if (index == 1 && this.getWorld().getEntitiesOfType(StandardEntityURN.BUILDING).size()!=0){ //BUILDINGS
-                    Collection<StandardEntity> areas = this.getWorld().getEntitiesOfType(StandardEntityURN.BUILDING);
-                    index2 = ran.nextInt(areas.size());
-                    randomDestination = areas.toArray(new StandardEntity[0])[index].getID();
+                if (index == 1 && (this.getWorld().getEntitiesOfType(StandardEntityURN.BUILDING).size()!= 0)){ //BUILDINGS
+                    Collection<StandardEntity> areas1 = this.getWorld().getEntitiesOfType(StandardEntityURN.BUILDING);
+                    index2 = ran.nextInt(areas1.size());
+                    randomDestination = areas1.toArray(new StandardEntity[0])[index2].getID();
                     //Logger.debug("\n"+"\n"+"\n");
                     //Logger.debug("BUILDING " +randomDestination);
                     //Logger.debug("\n"+"\n"+"\n");
                 }
-                if (index == 2 && this.getWorld().getEntitiesOfType(StandardEntityURN.GAS_STATION).size() != 0){ //GAS_STATIONS
-                    Collection<StandardEntity> areas = this.getWorld().getEntitiesOfType(StandardEntityURN.GAS_STATION);
-                    index2 = ran.nextInt(areas.size());
-                    randomDestination = areas.toArray(new StandardEntity[0])[index].getID();
+                if (index == 2 && (this.getWorld().getEntitiesOfType(StandardEntityURN.GAS_STATION).size() != 0)){ //GAS_STATIONS
+                    Collection<StandardEntity> areas2 = this.getWorld().getEntitiesOfType(StandardEntityURN.GAS_STATION);
+                    index2 = ran.nextInt(areas2.size());
+                    randomDestination = areas2.toArray(new StandardEntity[0])[index2].getID();
                     //Logger.debug("\n"+"\n"+"\n");
                     //Logger.debug("GAS_STATION " +randomDestination);
                     //Logger.debug("\n"+"\n"+"\n");
                 }
-                if (index == 3 && this.getWorld().getEntitiesOfType(StandardEntityURN.HYDRANT).size() != 0){ // HYDRANTS
-                    Collection<StandardEntity> areas = this.getWorld().getEntitiesOfType(StandardEntityURN.HYDRANT);
-                    index2 = ran.nextInt(areas.size());
-                    randomDestination = areas.toArray(new StandardEntity[0])[index].getID();
+                if (index == 3 && (this.getWorld().getEntitiesOfType(StandardEntityURN.HYDRANT).size() != 0)){ // HYDRANTS
+                    Collection<StandardEntity> areas3 = this.getWorld().getEntitiesOfType(StandardEntityURN.HYDRANT);
+                    index2 = ran.nextInt(areas3.size());
+                    randomDestination = areas3.toArray(new StandardEntity[0])[index2].getID();
                     //Logger.debug("\n"+"\n"+"\n");
                     //Logger.debug("HYDRANT " +randomDestination);
                     //Logger.debug("\n"+"\n"+"\n");
