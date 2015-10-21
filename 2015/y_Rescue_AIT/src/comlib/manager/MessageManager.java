@@ -19,6 +19,7 @@ import rescuecore2.standard.kernel.comms.ChannelCommunicationModel;
 import rescuecore2.standard.messages.AKSpeak;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.message.provider.MessageBlockedAreaProvider;
+import yrescue.message.provider.MessageHydrantProvider;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -335,6 +336,10 @@ public class MessageManager
 		//adding MessageBlockedArea
 		this.registerStandardProvider(
 			new MessageBlockedAreaProvider(MessageID.blockedAreaMessage)
+		);
+		
+		this.registerStandardProvider(
+			new MessageHydrantProvider(MessageID.hydrantMessage)
 		);
 		//this.register(CommunicationMessage.buildingMessageID, new MessageBuildingProvider(this.event));
 		//this.register(CommunicationMessage.blockadeMessageID, new BlockadeMessageProvider(this.event));

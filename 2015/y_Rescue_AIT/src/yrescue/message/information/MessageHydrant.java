@@ -8,20 +8,30 @@ import rescuecore2.worldmodel.EntityID;
 public class MessageHydrant extends MessageMap {
 	
 	public EntityID hydrantID;
-	EntityID agentID;
-	int timesteps;
+	public EntityID agentID;
+	public int timestep_free;
 
+	/**
+	 * 
+	 * @param fireBrigadeAgent
+	 * @param currentTime
+	 * @param waterOnTank
+	 * @param rate
+	 * @param maximumWater
+	 * @param locationID
+	 */
 	public MessageHydrant(Tactics<?> fireBrigadeAgent, int currentTime, int waterOnTank, int rate, int maximumWater, EntityID locationID) {
-		super(MessageID.fireBrigadeMessage); 
+		super(MessageID.hydrantMessage); 
 		this.agentID = fireBrigadeAgent.me().getID();
 		this.hydrantID = locationID;
-		this.timesteps = (maximumWater-waterOnTank)/rate;
+		this.timestep_free = currentTime + (maximumWater-waterOnTank)/rate; 	//time in which the hydrant will be free again
 	}
 	
-	public MessageHydrant(Tactics<?> fireBrigadeAgent, int currentTime,  int waterOnTank, int rate, int maximumWater, int rawHydrantID) {
-		super(MessageID.fireBrigadeMessage);
-		this.agentID = fireBrigadeAgent.me().getID();
+	public MessageHydrant(int rawAgentID, int rawHydrantID,  int timesteps) {
+		super(MessageID.hydrantMessage);
+		this.agentID = new EntityID(rawAgentID);
 		this.hydrantID = new EntityID(rawHydrantID);
-		this.timesteps = (maximumWater-waterOnTank)/rate;
+		this.timestep_free = timesteps;
 	}
+	
 }

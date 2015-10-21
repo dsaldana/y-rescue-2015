@@ -19,4 +19,6 @@ public interface MessageID
 	int ambulanceCommand = 8;
 	int fireCommand = 9;
 	int scoutCommand = 10;
+	
+	int hydrantMessage = 16;		//message for reporting busy hydrant
 }

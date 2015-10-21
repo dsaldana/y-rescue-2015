@@ -62,17 +62,6 @@ public class BlockedAreaSelector {
     		target = getNewTarget(time);
     	}
     	
-    	/*
-    	ArrayList<Blockade> blockList = new ArrayList<Blockade>(
-			tactics.getBlockadesInSquare(tactics.me().getX(), tactics.me().getY(), tactics.clearRange)
-    	);
-    	
-    	if (! this.tactics.blockadeUtil.anyBlockadeInClearArea(blockList, new Point2D(target.x, target.y))){
-    		Logger.trace(String.format("Point %d,%d has no blockades in it", target.x, target.y));
-    		this.blockedAreas.remove(target.areaID);
-    		target = getNewTarget(time);
-    		
-    	}*/
         return target;
     }
 }
