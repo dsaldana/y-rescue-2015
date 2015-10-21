@@ -2,7 +2,7 @@
 
 # heat_low 	= 1.0
 # heat_med 	= 1.0
-# heat_high 	= 1.0
+# heat_high = 1.0
 
 # for i in xrange(50):
 # 	heat_low = heat_low - (heat_low * 0.07)
@@ -15,16 +15,14 @@
 
 from math import sin, cos, pi, sqrt, atan2, degrees
 import random
-#from shapely.geometry import *
-#from shapely import affinity
 import pygame
 import re
 import sys
-#from shapely.geometry import *
-#from shapely import affinity
 import json
 import time
 import math
+import argparse
+import os.path
 
 sys.setrecursionlimit(1500)
 
@@ -37,6 +35,26 @@ YELLOW = (255, 255,   0)
 
 IMAGE_WIDTH = 800
 IMAGE_HEIGHT = 600
+
+agent_entity_id = ''
+heatmap_file_name = ''
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument('-id', action='store', dest='entity_id', type=int,
+                    help='EntityID of the agent')
+
+args = parser.parse_args()
+
+if not (args.entity_id):
+    parser.error('No agent ID defined!')
+
+agent_entity_id = args.entity_id
+
+heatmap_file_name = '/tmp/heatmap_' + str(agent_entity_id) + '.txt'
+if(not os.path.exists(heatmap_file_name)):
+    print "The file ", heatmap_file_name, "do not exists, verify the agent ID!"
+    sys.exit(2)
 
 pygame.init()
 mono_font = pygame.font.SysFont("monospace", 12)
@@ -74,7 +92,7 @@ def rotate2d(degrees,point,origin):
 def update_heat_map():
     global heat_map
 
-    heat_data = open('/tmp/heatmap_941331988.txt')
+    heat_data = open(heatmap_file_name)
     for line in heat_data:
 
         values = line.split()
@@ -115,8 +133,11 @@ print heat_map;
 while is_loop_active:
 
     background.fill(BLACK)
-    update_heat_map()
-
+    try:
+        update_heat_map()
+    except Exception: 
+        pass
+    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             is_loop_active = False
