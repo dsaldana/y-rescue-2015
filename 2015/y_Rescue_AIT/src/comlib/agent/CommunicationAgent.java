@@ -61,24 +61,30 @@ public abstract class CommunicationAgent<E extends StandardEntity> extends Stand
     	this.startProcessTime = System.currentTimeMillis();
 
     	Logger.info(String.format("----------- Start of Timestep %d --------------", time));
-        
-        if (time <= this.ignoreTime)
-        {
-            send(new AKSubscribe(getID(), time, 1));
-        }
-        else {
-            this.receiveBeforeEvent(time, changed);
-//        try
-//        {
-            this.manager.receiveMessage(time, heard);
-//        } catch (Exception s) { System.out.println("'");}
-        }
-        this.think(time, changed);
+    	
+    	try{
 
-        if (time > this.ignoreTime) {
-            this.send(this.manager.createSendMessage(super.getID()));
-            this.sendAfterEvent(time, changed);
-        }
+			if (time <= this.ignoreTime) {
+				send(new AKSubscribe(getID(), time, 1));
+			} else {
+				this.receiveBeforeEvent(time, changed);
+				try {
+					this.manager.receiveMessage(time, heard);
+				} 
+				catch (Exception s) {
+					Logger.error("Error while receiving message!", s);
+				}
+			}
+			this.think(time, changed);
+
+			if (time > this.ignoreTime) {
+				this.send(this.manager.createSendMessage(super.getID()));
+				this.sendAfterEvent(time, changed);
+			}
+    	}
+    	catch (Exception e){
+    		Logger.error("This is bad! An odd error occurred during think of CommunicationAgent!.", e);
+    	}
         Logger.info(String.format("----------- End of Timestep %d --------------\n", time));
     }
 
