@@ -93,4 +93,8 @@ public abstract class Tactics<E extends Human> implements WorldProvider<E> {
     public List<Refuge> getRefugeList() {
         return this.refugeList;
     }
+
+	public void sendAfterEvent() {
+		
+	}
 }

@@ -60,6 +60,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     private List<StandardEntity> refugeIDs;
 	private List<StandardEntity> hydrants;
 	public Map<EntityID, Integer> busyHydrantIDs;
+	private int lastWater;
 
 	@Override
     public String getTacticsName() {
@@ -84,12 +85,17 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         manager.registerEvent(new MessageHydrantEvent(this));
     }
     
+    public void sendAfterEvent(){
+    	this.lastWater = me.getWater();
+    }
+    
     @Override
     public void preparation(Config config, MessageManager messageManager) {
         this.routeSearcher = this.initRouteSearcher();
         this.buildingSelector = this.initBuildingSelector();
         
         busyHydrantIDs = new HashMap<>();
+        lastWater = me.getWater();
         
         //Building the Lists of Refuge and Hydrant
         Collection<StandardEntity> refuge = this.world.getEntitiesOfType(StandardEntityURN.REFUGE);
@@ -172,9 +178,11 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         MDC.put("location", location());
         
         Logger.info(String.format(
-			"HP: %d, B'ness: %d, Damage: %d, Direction: %d, Water: %d", 
-			me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection(), me.getWater()
+			"HP: %d, B'ness: %d, Damage: %d, Direction: %d, Water: %d, lastWater: %d", 
+			me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection(), me.getWater(), lastWater
 		));
+        
+        Logger.info("Busy Hydrants: " + busyHydrantIDs);
         
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
@@ -249,6 +257,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         		busyHydrantIDs.remove(e.getKey());
         	}
         }
+        
+        Logger.info("New Busy Hydrants:" + busyHydrantIDs);
+        
         // Refill
         if(me.isWaterDefined() && me.getWater() < maxPower) {
         	Logger.info("Insufficient water, going to refill.");
@@ -257,12 +268,13 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         		if (next instanceof Hydrant) {
     	            Hydrant h = (Hydrant)next;
     	            
-    	            if(busyHydrantIDs.containsKey(h.getID())){
+    	            if(! busyHydrantIDs.containsKey(h.getID())){
     	            	freeHydrants.add(h);
     	            }
-    	            else if(currentTime >= busyHydrantIDs.get(h.getID())){
+    	            
+    	            /*else if(currentTime >= busyHydrantIDs.get(h.getID())){
     	            	freeHydrants.add(h);
-    	            }
+    	            }*/
     	        }	
         	}
         	return new ActionRefill(this, refugeIDs, freeHydrants);

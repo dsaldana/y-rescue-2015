@@ -21,30 +21,31 @@ public class ActionRefill extends Action {
         super(tactics);
         this.tactics = tactics;
         
-        Logger.trace("ActionRefill. #refuges=" + refugeIDs + ", #hydrants=" + hydrantIDs);
+        Logger.trace("ActionRefill. refuges=" + refugeIDs + ", hydrants=" + hydrantIDs);
         
         // Search for the closest water source
-        double dist = -1;
+        int dist = Integer.MAX_VALUE;
         List<EntityID> pathTemp = new ArrayList<EntityID>();
         for(StandardEntity next: refugeIDs){
         	pathTemp = tactics.routeSearcher.getPath(tactics.getCurrentTime(), tactics.me().getPosition(), next.getID());
-        	if(dist == -1 || dist < pathTemp.size()){
+        	if(pathTemp.size() < dist){
         		dist = pathTemp.size();
         		this.path = pathTemp;
         		this.destination = next;
         	}
         }
         for(StandardEntity next: hydrantIDs){
-        	pathTemp = tactics.routeSearcher.getPath(tactics.getCurrentTime(), tactics.getOwnerID(), next.getID());
+        	pathTemp = tactics.routeSearcher.getPath(tactics.getCurrentTime(), tactics.me.getPosition(), next.getID());
         	if (pathTemp == null){
         		Logger.warn("\nnull path to hydrant! " + next + ". It will be ignored.\n");
         	}
-        	else if(dist == -1 || dist < pathTemp.size()){
+        	else if(pathTemp.size() < dist){
         		dist = pathTemp.size();
         		this.path = pathTemp;
         		this.destination = next;
         	}
         }
+        Logger.trace("Selected destination to refill: " + this.destination);
     }
     
 

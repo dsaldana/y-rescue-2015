@@ -128,6 +128,7 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     public void sendAfterEvent(int time, ChangeSet changed) {
     	//added by Anderson: registers the current action in history
     	this.commandHistory.put(time, this.action);
+    	this.tactics.sendAfterEvent();
     }
 
     @Override
