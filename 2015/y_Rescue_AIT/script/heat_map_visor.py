@@ -65,16 +65,17 @@ screen = pygame.display.set_mode( (IMAGE_WIDTH, IMAGE_HEIGHT) )
 monoFont = pygame.font.SysFont("monospace", 14)
 
 biggest_val_x = IMAGE_WIDTH
-biggest_val_y = IMAGE_HEIGHT 
+biggest_val_y = 250
 
-map_centroid= (350, IMAGE_HEIGHT)
+smallest_val_x = 0
+smallest_val_y = 0
+
+map_centroid= (350, biggest_val_y)
 movement_map = (0, 0)
 
 background = pygame.Surface((biggest_val_x + (map_centroid[0] * 2), biggest_val_y + (map_centroid[1] * 2)))
 background = background.convert()
 background.fill(BLACK)
-
-
 
 is_loop_active = True
 
@@ -116,6 +117,8 @@ class update_heat_thread(Thread):
         global heat_map
         global biggest_val_y
         global biggest_val_x
+        global smallest_val_y
+        global smallest_val_x
 
         heat_data = open(self.file_name)
         for line in heat_data:
@@ -145,6 +148,12 @@ class update_heat_thread(Thread):
                 if(int(y2) > biggest_val_y):
                     biggest_val_y = int(y2)
 
+                if(int(y2) < smallest_val_x):
+                    smallest_val_x = int(y2)
+                if(int(y2) < smallest_val_y):
+                    smallest_val_y = int(y2)
+                
+
             info = {
                 'edges' : edges,
                 'heat_value' : values[-1],
@@ -161,15 +170,22 @@ thread_01 = update_heat_thread(heatmap_file_name)
 thread_01.daemon = True
 thread_01.start()
 
-#print heat_map;
-
 while is_loop_active:
 
     background.fill(BLACK)
     screen.fill(BLACK)
 
+    if(smallest_val_y < 0 and map_centroid[1] != IMAGE_HEIGHT):
+        map_centroid = (map_centroid[0], IMAGE_HEIGHT)
+        print "map centroid updated", map_centroid, "biggest_val_y", biggest_val_y
+
+    #print "biggest_val_y", biggest_val_y
+    #print "smallest_val_y", smallest_val_y
+
     if(background.get_width() < biggest_val_x or background.get_height() < biggest_val_y):
-        background = pygame.Surface((biggest_val_x + (map_centroid[0] * 2), biggest_val_y + (map_centroid[1] * 2)))
+        background_size = (biggest_val_x + (map_centroid[0] * 2), biggest_val_y + (map_centroid[1] * 2))
+        print "surface updated", background_size
+        background = pygame.Surface(background_size)
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
