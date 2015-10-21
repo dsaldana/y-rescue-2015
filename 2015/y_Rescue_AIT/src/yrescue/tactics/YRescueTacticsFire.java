@@ -8,12 +8,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.spi.LoggerFactory;
+
 
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
@@ -34,6 +36,7 @@ import yrescue.util.GeometricUtil;
 import yrescue.action.ActionRefill;
 import yrescue.heatmap.HeatMap;
 import yrescue.heatmap.HeatNode;
+import yrescue.message.event.MessageHydrantEvent;
 import yrescue.message.information.MessageBlockedArea;
 import yrescue.util.YRescueBuildingSelector;
 //import yrescue.util.YRescueRouteSearcher;
@@ -77,6 +80,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     @Override
     public void registerEvent(MessageManager manager) {
         manager.registerEvent(new BasicBuildingEvent(this, this));
+        manager.registerEvent(new MessageHydrantEvent(this));
     }
     
     @Override
@@ -234,10 +238,29 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             return new ActionRest(this);
         }
         
+        // Update BusyHydrants
+        for(Entry<EntityID,Integer> e : busyHydrants.entrySet()){
+        	if(currentTime >= e.getValue()){
+        		busyHydrants.remove(e.getKey());
+        	}
+        }
         // Refill
         if(me.isWaterDefined() && me.getWater() < maxPower) {
         	Logger.info("Insufficient water, going to refill.");
-        	return new ActionRefill(this, refugeIDs, hydrantIDs);
+        	List<StandardEntity> freeHydrantIDs = new ArrayList<StandardEntity>();
+        	for(StandardEntity next : hydrantIDs) {
+        		if (next instanceof Hydrant) {
+    	            Hydrant h = (Hydrant)next;
+    	            if(busyHydrants.containsKey(next)){
+    	            	freeHydrantIDs.add(next);
+    	            	continue;
+    	            }
+    	            if(currentTime >= busyHydrants.get(h.getID())){
+    	            	freeHydrantIDs.add(next);
+    	            }
+    	        }	
+        	}
+        	return new ActionRefill(this, refugeIDs, freeHydrantIDs);
         }
         
         // Select new target
