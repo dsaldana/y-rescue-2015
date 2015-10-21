@@ -10,12 +10,11 @@ public class RadioConfig {
 
     private int sizeOfTime;
 
-    public RadioConfig(Config config)
-		{
-        this.channel    = config.getIntValue("comlib.message.channel", 1);
-        this.sizeOfTime = config.getIntValue("comlib.size.time", 9);
-        this.updateMessageIDSize(config.getIntValue("comlib.message.messageID", 16) - 1);
-    }
+	public RadioConfig(Config config) {
+		this.channel = config.getIntValue("comlib.message.channel", 1);
+		this.sizeOfTime = config.getIntValue("comlib.size.time", 9);
+		this.updateMessageIDSize(config.getIntValue("comlib.message.messageID", 32) - 1);
+	}
 
     public void updateMessageIDSize(int id) {
         int size = IntegerDataHelper.getBitSize(id);

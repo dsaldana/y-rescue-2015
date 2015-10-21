@@ -27,8 +27,7 @@ import java.util.Collection;
 import java.util.List;
 
 
-public class MessageManager
-{
+public class MessageManager {
 	private final int PRIORITY_DEPTH = 16;
 	private final int NORMAL_PRIORITY = 8;
 
@@ -143,16 +142,23 @@ public class MessageManager
 
 		for (Command command : heard) {
 			if (command instanceof AKSpeak) {
-				if (agentID == command.getAgentID()) { continue; }
+				if (agentID == command.getAgentID()) { 
+					Logger.trace("Ignoring message 'cuz I'm the sender");
+					continue; 
+				}
 
 				byte[] data = ((AKSpeak)command).getContent();
-				if (data.length <= 0) { continue; }
+				if (data.length <= 0) {
+					Logger.trace("Ignoring message 'cuz it has no data");
+					continue; 
+				}
 
 				if (((AKSpeak) command).getChannel() == 0) {
 					String voice = new String(data);
 					if ("Help".equalsIgnoreCase(voice) || "Ouch".equalsIgnoreCase(voice)) {
 						//System.out.println(voice + " : " + command.getAgentID() + " : " );
 						this.heardAgentHelp = true;
+						Logger.trace("I heard Help or Ouch.");
 						continue;
 					}
 					String[] voiceData =
@@ -173,13 +179,17 @@ public class MessageManager
 
 	private void receiveRadioMessage(AKSpeak akSpeak, List<CommunicationMessage> list)	{
 		if (akSpeak.getContent() == null || list == null) {
+			Logger.trace("Ignoring radio message 'cuz it has no content or my list is null");
 			return;
 		}
 		
 		BitStreamReader bsr = new BitStreamReader(akSpeak.getContent());
 		int msgID = bsr.getBits(this.radioConfig.getSizeOfMessageID());
 		//MessageProvider provider = this.providerList[bsr.getBits(this.radioConfig.getSizeOfMessageID())];
+		//Logger.trace("Received MessageID: " + msgID);
 		MessageProvider provider = this.providerList[msgID];
+		//Logger.trace("MessageProvider:" + provider);
+		
 		//		System.out.println("MSGID: " + msgID);
 		int lastRemainBufferSize = bsr.getRemainBuffer();
 		while(bsr.getRemainBuffer() > 0) {
@@ -187,9 +197,11 @@ public class MessageManager
 				CommunicationMessage msg =
 					provider.create(this, bsr, akSpeak.getAgentID());
 				list.add(msg);
+				//Logger.trace("Added message " + msg + " to list ");
 			} catch(Exception e) {
+				Logger.error("Error receiving message!", e);
 				//System.err.println("Received message is corrupt or format is different.");
-				e.printStackTrace();
+				//e.printStackTrace();
 				return;
 			}
 
@@ -199,9 +211,10 @@ public class MessageManager
 			} else {
 				lastRemainBufferSize = bsr.getRemainBuffer();
 			}
-
+			//Logger.trace("Processed MSG : " + msgID + ", RemainBuf : " + bsr.getRemainBuffer());
 			//System.out.println("MSG : " + msgID + ", RemainBuf : " + bsr.getRemainBuffer());
 		}
+		Logger.debug("MessageList: " + list);
 	}
 
 	// TODO: refactoring

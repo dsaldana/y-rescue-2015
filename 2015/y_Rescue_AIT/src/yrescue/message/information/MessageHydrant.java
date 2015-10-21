@@ -34,4 +34,9 @@ public class MessageHydrant extends MessageMap {
 		this.timestep_free = timesteps;
 	}
 	
+	@Override
+	public String toString(){
+		return String.format("MessageHydrant (hydrantID=%s, agentID=%s, timestep_free=%s)", hydrantID, agentID, timestep_free);
+	}
+	
 }

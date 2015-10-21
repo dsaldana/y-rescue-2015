@@ -18,12 +18,11 @@ public class MessageHydrantProvider extends MapMessageProvider<MessageHydrant, M
 		super(id);
 	}
 
-	protected void writeMessage(RadioConfig config, BitOutputStream bos, MessageHydrant msg)
-	{
+	protected void writeMessage(RadioConfig config, BitOutputStream bos, MessageHydrant msg) {
 		super.writeMessage(config, bos, msg);
 		
-		bos.writeBits(msg.hydrantID.getValue(), 32);
 		bos.writeBits(msg.agentID.getValue(), 32);
+		bos.writeBits(msg.hydrantID.getValue(), 32);
 		bos.writeBits(msg.timestep_free, 32);
 	}
 
@@ -32,8 +31,7 @@ public class MessageHydrantProvider extends MapMessageProvider<MessageHydrant, M
 		//config.appendData(sb, String.valueOf(msg.getValue()));
 	}
 
-	protected MessageHydrant createMessage(RadioConfig config, int time, BitStreamReader bsr)
-	{
+	protected MessageHydrant createMessage(RadioConfig config, int time, BitStreamReader bsr) {
 		return new MessageHydrant(
 			bsr.getBits(32),
 			bsr.getBits(32),
@@ -55,7 +53,7 @@ public class MessageHydrantProvider extends MapMessageProvider<MessageHydrant, M
 
 	@Override
 	public Class<? extends MessageEvent> getEventClass() {
-		return MessageBlockedAreaEvent.class;
+		return MessageHydrantEvent.class;
 	}
 
 
