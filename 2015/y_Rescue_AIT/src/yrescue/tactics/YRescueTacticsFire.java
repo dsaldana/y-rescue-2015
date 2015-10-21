@@ -57,8 +57,8 @@ import comlib.message.information.MessageFireBrigade;
 public class YRescueTacticsFire extends BasicTacticsFire {
 
     private List<StandardEntity> refugeIDs;
-	private List<StandardEntity> hydrantIDs;
-	public Map<EntityID, Integer> busyHydrants;
+	private List<StandardEntity> hydrants;
+	public Map<EntityID, Integer> busyHydrantIDs;
 
 	@Override
     public String getTacticsName() {
@@ -88,15 +88,15 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         this.routeSearcher = this.initRouteSearcher();
         this.buildingSelector = this.initBuildingSelector();
         
-        busyHydrants = new HashMap<>();
+        busyHydrantIDs = new HashMap<>();
         
         //Building the Lists of Refuge and Hydrant
         Collection<StandardEntity> refuge = this.world.getEntitiesOfType(StandardEntityURN.REFUGE);
         refugeIDs = new ArrayList<StandardEntity>();
         refugeIDs.addAll(refuge);
         Collection<StandardEntity> hydrant = this.world.getEntitiesOfType(StandardEntityURN.HYDRANT);
-        hydrantIDs = new ArrayList<StandardEntity>();
-        hydrantIDs.addAll(hydrant);
+        hydrants = new ArrayList<StandardEntity>();
+        hydrants.addAll(hydrant);
         
         this.hydrant_rate = this.config.getIntValue("fire.tank.refill_hydrant_rate");
         this.tank_maximum = this.config.getIntValue("fire.tank.maximum");
@@ -239,28 +239,28 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         }
         
         // Update BusyHydrants
-        for(Entry<EntityID,Integer> e : busyHydrants.entrySet()){
+        for(Entry<EntityID,Integer> e : busyHydrantIDs.entrySet()){
         	if(currentTime >= e.getValue()){
-        		busyHydrants.remove(e.getKey());
+        		busyHydrantIDs.remove(e.getKey());
         	}
         }
         // Refill
         if(me.isWaterDefined() && me.getWater() < maxPower) {
         	Logger.info("Insufficient water, going to refill.");
-        	List<StandardEntity> freeHydrantIDs = new ArrayList<StandardEntity>();
-        	for(StandardEntity next : hydrantIDs) {
+        	List<StandardEntity> freeHydrants = new ArrayList<StandardEntity>();
+        	for(StandardEntity next : hydrants) {
         		if (next instanceof Hydrant) {
     	            Hydrant h = (Hydrant)next;
-    	            if(busyHydrants.containsKey(next)){
-    	            	freeHydrantIDs.add(next);
-    	            	continue;
+    	            
+    	            if(busyHydrantIDs.containsKey(h.getID())){
+    	            	freeHydrants.add(h);
     	            }
-    	            if(currentTime >= busyHydrants.get(h.getID())){
-    	            	freeHydrantIDs.add(next);
+    	            else if(currentTime >= busyHydrantIDs.get(h.getID())){
+    	            	freeHydrants.add(h);
     	            }
     	        }	
         	}
-        	return new ActionRefill(this, refugeIDs, freeHydrantIDs);
+        	return new ActionRefill(this, refugeIDs, freeHydrants);
         }
         
         // Select new target
