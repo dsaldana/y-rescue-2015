@@ -45,6 +45,7 @@ import rescuecore2.standard.entities.PoliceForce;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
+import rescuecore2.standard.entities.StandardEntityConstants;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.Entity;
@@ -129,6 +130,10 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                 Building b = (Building) entity;
                 if(b.isOnFire()) {
                     manager.addSendMessage(new MessageBuilding(b));
+                }
+                if(b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT)){
+                	Logger.trace("Removing completely burnt Building from heatMap" + b);
+                	heatMap.removeEntityID(b.getID());
                 }
             }
             /*else if(entity instanceof Blockade) {

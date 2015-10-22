@@ -27,6 +27,7 @@ import rescuecore2.standard.entities.Hydrant;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
+import rescuecore2.standard.entities.StandardEntityConstants;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.Entity;
@@ -153,6 +154,14 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                     Logger.trace("Added outgoin' msg about burning building: " + b);
                 }
                 
+                if(b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT)){
+                	Logger.trace("Removing completely burnt Building from heatMap" + b);
+                	heatMap.removeEntityID(b.getID());
+                }
+                else {
+                	heatMap.updateNode(b.getID(), currentTime);
+                }
+                
             }
             else if(entity instanceof Civilian) {
                 Civilian civilian = (Civilian)entity;
@@ -239,20 +248,23 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                         }
                     }
                 }
+                Logger.warn("This should not happen! I'm in a burning building and can't get out!");
             }
         }
         
         if(onWaterSource() && isWaterLessThan(1.0)) {
         	if(me.isWaterDefined() && me.getWater() < maxPower){
-        		if(location instanceof Hydrant)
+        		if(location instanceof Hydrant) {
         			manager.addSendMessage(new MessageHydrant(this, currentTime, me.getWater(),this.hydrant_rate, this.maxWater, me.getPosition()));
+        		}
         	}
         	if(!(this.tacticsAgent.commandHistory.get(currentTime-1) instanceof ActionRest) || lastWater != me.getWater()){
-        		Logger.info("Refilling..." + me.getWater());
+        		Logger.info("Refilling. CurrWater: " + me.getWater() + ", lastWater: " + lastWater);
                 return new ActionRest(this);
         	}else{
-        		if(location instanceof Hydrant)
-        			busyHydrantIDs.put(locationID, currentTime+(this.maxWater-me.getWater()/this.hydrant_rate));
+        		if(location instanceof Hydrant) {
+        			busyHydrantIDs.put(locationID, currentTime + (this.maxWater-me.getWater() / this.hydrant_rate));
+        		}
         	}
         }
         
