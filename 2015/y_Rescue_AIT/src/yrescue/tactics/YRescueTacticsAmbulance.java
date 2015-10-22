@@ -16,7 +16,6 @@ import adk.sample.basic.event.BasicFireEvent;
 import adk.sample.basic.event.BasicPoliceEvent;
 import adk.sample.basic.tactics.BasicTacticsAmbulance;
 import adk.sample.basic.util.BasicRouteSearcher;
-import adk.sample.basic.util.BasicVictimSelector;
 import adk.team.action.Action;
 import adk.team.action.ActionExtinguish;
 import adk.team.action.ActionLoad;
@@ -56,6 +55,7 @@ import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.util.DistanceSorter;
 import yrescue.util.GeometricUtil;
+import yrescue.util.YRescueVictimSelector;
 
 public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
@@ -76,7 +76,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     @Override
     public void preparation(Config config, MessageManager messageManager) {
     	this.stateMachine = new StateMachine(ActionStates.Ambulance.EXPLORING);
-    	this.victimSelector = new BasicVictimSelector(this);
+    	this.victimSelector = new YRescueVictimSelector(this);
     	this.routeSearcher = new BasicRouteSearcher(this);
     	
     	MDC.put("agent", this);
@@ -85,7 +85,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
     @Override
     public VictimSelector initVictimSelector() {
-        return new BasicVictimSelector(this);
+        return new YRescueVictimSelector(this);
     }
 
     @Override
@@ -126,7 +126,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                 
             }
             else if(entity instanceof Building) {
-                Building b = (Building)entity;
+                Building b = (Building) entity;
                 if(b.isOnFire()) {
                     manager.addSendMessage(new MessageBuilding(b));
                 }
@@ -154,7 +154,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         
         heatMap.writeMapToFile();
 
-        // CHECK THIS
         /* === -------- === *
          *   Basic actions  *
          * === -------- === */
@@ -167,12 +166,15 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             manager.addSendMessage(new MessageAmbulanceTeam(ambulanceTeam, MessageAmbulanceTeam.ACTION_REST, null));
         }
         
-        Logger.debug("#buried civilians I know: " + ((BasicVictimSelector) this.victimSelector).civilianList.size());
-        for (Civilian civ : ((BasicVictimSelector) this.victimSelector).civilianList) {
+        Logger.debug("#buried civilians I know: " + ((YRescueVictimSelector) this.victimSelector).civilianList.size());
+        for (Civilian civ : ((YRescueVictimSelector) this.victimSelector).civilianList) {
         	Logger.debug("Civilian ID:" + civ.getID() + " pos:" + civ.getPosition() + " burriedness:" + civ.getBuriedness() + " damage:" + civ.getDamage());
         }
         
-        Logger.debug("#buried agents I know: " + ((BasicVictimSelector) this.victimSelector).agentList.size());
+        Logger.debug("#buried agents I know: " + ((YRescueVictimSelector) this.victimSelector).agentList.size());
+        for (Human hum : ((YRescueVictimSelector) this.victimSelector).civilianList) {
+        	Logger.debug("Human ID:" + hum.getID() + " pos:" + hum.getPosition() + " burriedness:" + hum.getBuriedness() + " damage:" + hum.getDamage());
+        }
         
         // If we are not in the special condition exploring, update target or get a new one 
         if(!this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.EXPLORING)){
