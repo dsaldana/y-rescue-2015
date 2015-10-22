@@ -24,6 +24,7 @@ import math
 import argparse
 import os.path
 from threading import Thread
+import copy
 
 sys.setrecursionlimit(1500)
 
@@ -80,6 +81,7 @@ background.fill(BLACK)
 is_loop_active = True
 
 heat_map = {}
+heat_map['can_write'] = True
 
 conversion_factor = 300
 
@@ -95,7 +97,8 @@ class update_heat_thread(Thread):
                 self.update_heat_map()
                 print "Heat_map updated"
             except Exception:
-                time.sleep(1)
+                print "Exception..."
+            time.sleep(1)
             pass
         print "Exiting thread"
 
@@ -119,6 +122,13 @@ class update_heat_thread(Thread):
         global biggest_val_x
         global smallest_val_y
         global smallest_val_x
+
+        if(heat_map['can_write'] == False):
+            return
+
+        heat_map = {}
+        heat_map['complete'] = False
+        heat_map['can_write'] = True
 
         heat_data = open(self.file_name)
         for line in heat_data:
@@ -165,12 +175,25 @@ class update_heat_thread(Thread):
             pass
 
         heat_data.close()
+        heat_map['complete'] = True
 
 thread_01 = update_heat_thread(heatmap_file_name)
 thread_01.daemon = True
 thread_01.start()
 
+local_heat_map = {}
+
 while is_loop_active:
+
+    if('complete' not in heat_map or heat_map['complete'] != True): 
+        print "not complete"
+    else:
+        heat_map['can_write'] = False
+        local_heat_map = copy.deepcopy(heat_map)
+        heat_map['can_write'] = True
+         
+
+    #print local_heat_map
 
     background.fill(BLACK)
     screen.fill(BLACK)
@@ -201,8 +224,11 @@ while is_loop_active:
 
                 movement_map = ( (movement_map[0] + rel[0]), (movement_map[1] + rel[1]) )
 
-    for i in heat_map.keys():
-        heat_info = heat_map[i]
+    for i in local_heat_map.keys():
+        if i not in local_heat_map or i == 'can_write' or i == 'complete':
+            continue
+
+        heat_info = local_heat_map[i]
 
         #print heat_info
 
@@ -232,7 +258,8 @@ while is_loop_active:
 
     pygame.display.update()
     pygame.display.set_caption('FPS: ' + str(clock.get_fps()))
-    clock.tick(30)
+    clock.tick(15)
+    heat_map['can_write'] = True
 
     pass
 

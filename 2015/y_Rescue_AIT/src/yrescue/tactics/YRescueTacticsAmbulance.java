@@ -18,6 +18,7 @@ import adk.sample.basic.tactics.BasicTacticsAmbulance;
 import adk.sample.basic.util.BasicRouteSearcher;
 import adk.sample.basic.util.BasicVictimSelector;
 import adk.team.action.Action;
+import adk.team.action.ActionExtinguish;
 import adk.team.action.ActionLoad;
 import adk.team.action.ActionMove;
 import adk.team.action.ActionRescue;
@@ -147,8 +148,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         //this.refugeList.get(-1); //triggers exception to test failsafe
         
         Logger.info(String.format(
-			"HP: %d, B'ness: %d, Dmg: %d, Direction: %d, SmOnBrd? %s", 
-			me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection(), someoneOnBoard()
+			"HP: %d, B'ness: %d, Dmg: %d, Direction: %d, SmOnBrd? %s, Target: %s", 
+			me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection(), someoneOnBoard(), this.target
 		));
         
         heatMap.writeMapToFile();
@@ -157,6 +158,14 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         /* === -------- === *
          *   Basic actions  *
          * === -------- === */
+        
+        // Check for buriedness and tries to extinguish fire in a close building
+        if(this.me.getBuriedness() > 0) {
+        	Logger.info("I'm buried at " + me.getPosition());
+
+        	AmbulanceTeam ambulanceTeam = (AmbulanceTeam) this.me();
+            manager.addSendMessage(new MessageAmbulanceTeam(ambulanceTeam, MessageAmbulanceTeam.ACTION_REST, null));
+        }
         
         Logger.debug("#buried civilians I know: " + ((BasicVictimSelector) this.victimSelector).civilianList.size());
         for (Civilian civ : ((BasicVictimSelector) this.victimSelector).civilianList) {
@@ -167,16 +176,16 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         
         // If we are not in the special condition exploring, update target or get a new one 
         if(!this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.EXPLORING)){
-	        if(this.target != null){
+	        if(this.target != null && this.world.getEntity(this.target) instanceof Human){
 	        	this.victimSelector.updateTarget(currentTime, this.target);
 	        }
 	        else{
 	        	this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
 	        }
-	        
-	        if(this.me.getDamage() >= 100 || this.someoneOnBoard()) { 
-	        	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
-	        }
+        }
+        
+        if(this.me.getDamage() >= 20) { //|| this.someoneOnBoard()
+        	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
         }
         
         /* === ---------------------------------- === *
@@ -187,7 +196,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	Logger.info("Exploring..");
         	if(currentTime < EXPLORE_TIME_LIMIT){
         		if(this.target == null || this.target.getValue() == this.location.getID().getValue()){
-        			return getExplorationMovement(currentTime);
+        			getNewExplorationTarget(currentTime);
+                	return moveTarget(currentTime);
         		}
         		
         		return this.moveTarget(currentTime);
@@ -213,6 +223,12 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	
         	Human victim = (Human) this.world.getEntity(this.target);
         	Logger.info("Target b'ness: " + victim.getBuriedness() + ", dmg: " + victim.getDamage() + ", HP: " + victim.getHP());
+        	
+        	if(victim.getPosition().getValue() != this.location.getID().getValue()){
+        		Logger.info("Target not in place!, going to target again ...");
+        		this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_TARGET);
+        		return this.moveTarget(currentTime);
+        	}
         	
         	if(victim.getBuriedness() > 0 && victim.getHP() > 0){
         		Logger.info("Rescuing ...");
@@ -245,7 +261,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		Logger.info("Does not need to go to refugee, selecting new target..");
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         	}
-        	else if(this.target == null || ((Human) this.world.getEntity(this.target)).getHP() <= 0){
+        	else if(this.target == null || (this.world.getEntity(this.target) instanceof Human && ((Human) this.world.getEntity(this.target)).getHP() <= 0)){
         		Logger.info("The human im carrying on is dead, selecting new target..");
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         	}
@@ -275,7 +291,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             this.target = this.victimSelector.getNewTarget(currentTime);
             if(this.target == null) {
             	Logger.info("Cannot define a first new target, going to explore!");
-            	return getExplorationMovement(currentTime);
+            	getNewExplorationTarget(currentTime);
+            	return moveTarget(currentTime);
             }
             
             // Begin target basic processing
@@ -322,7 +339,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         }
         
         Logger.info("Cannot define a target or action, going to explore!");
-        return getExplorationMovement(currentTime);
+        getNewExplorationTarget(currentTime);
+        return moveTarget(currentTime);
     }
 
 	@Override
@@ -374,7 +392,16 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	 */
 	public boolean someoneOnBoard() {
 		if(this.target != null && (this.world.getEntity(this.target) instanceof Civilian || this.world.getEntity(this.target) instanceof Human)){
-			return PositionUtil.equalsPoint(this.world.getEntity(this.target).getLocation(world), this.me.getLocation(world), 500);
+			Human h = (Human) this.world.getEntity(this.target);
+			int traveledDistance = 0;
+			int burriedness = 0;
+			int hp = 0;
+			
+			if(h.isTravelDistanceDefined()) traveledDistance = h.getTravelDistance();
+			if(h.isBuriednessDefined()) burriedness = h.getBuriedness();
+			if(h.isHPDefined()) hp = h.getHP();
+					
+			return PositionUtil.equalsPoint(this.world.getEntity(this.target).getLocation(world), this.me.getLocation(world), 50) && burriedness <= 0 && hp > 0 && traveledDistance <= 0;
 		}
 		else{
 			return false;
@@ -388,13 +415,15 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	public Action moveTarget(int currentTime) {
         List<EntityID> path = getPathToTarget(currentTime);
         if(path != null && !path.isEmpty()){
-        	Entity ent = this.world.getEntity(path.get(0));
+        	Entity ent = this.world.getEntity(path.get(path.size() -1));
         	if(ent instanceof Building){
-        		if(((Building) ent).isOnFire()){
+        		Building b = (Building) ent;
+        		if(b.isOnFire()){
         			Logger.info("The next building is on FIRE, select a new exploration target");
         			//this.heatMap.updateNode(ent.getID(), time);
         			this.heatMap.removeEntityID(ent.getID());
-        			return getExplorationMovement(currentTime);
+        			getNewExplorationTarget(currentTime);
+        			path = getPathToTarget(currentTime);
         		}
         	}
         }
@@ -471,18 +500,21 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         return heatMap;
 	}
 	
-	public Action getExplorationMovement(int currentTime){
+	public EntityID getNewExplorationTarget(int currentTime){
 		EntityID nodeToVisit = heatMap.getNodeToVisit();
-        if(nodeToVisit == null){
+        
+		if(nodeToVisit == null){
         	Logger.debug("Random walk");
-        	return new ActionMove(this, this.routeSearcher.noTargetMove(currentTime, this.me));
+        	List<EntityID> path = this.routeSearcher.noTargetMove(currentTime, this.me);
+        	nodeToVisit = path.get(path.size() -1);
         }
         else{
         	Logger.debug("HeatmMap");
-        	this.stateMachine.setState(ActionStates.Ambulance.EXPLORING);
-        	this.target = nodeToVisit;
-        	return this.moveTarget(currentTime);
         }
+        
+		this.target = nodeToVisit;
+		this.stateMachine.setState(ActionStates.Ambulance.EXPLORING);
+        return this.target;
 	}
 
 	 /**
