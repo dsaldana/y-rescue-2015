@@ -41,6 +41,8 @@ import yrescue.message.event.MessageHydrantEvent;
 import yrescue.message.information.MessageBlockedArea;
 import yrescue.message.information.MessageHydrant;
 import yrescue.statemachine.ActionStates;
+import yrescue.statemachine.StateMachine;
+import yrescue.statemachine.StatusStates;
 import yrescue.util.YRescueBuildingSelector;
 //import yrescue.util.YRescueRouteSearcher;
 import adk.sample.basic.event.BasicBuildingEvent;
@@ -64,6 +66,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	public Map<EntityID, Integer> busyHydrantIDs;
 	private int lastWater;
 
+	private StateMachine actionStateMachine;
+	private StateMachine statusStateMachine;
+	
 	@Override
     public String getTacticsName() {
         return "Y-Rescue Firefighter";
@@ -216,6 +221,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	if (!updateWorldData.getChangedEntities().contains(target)){
         		Logger.warn("Warning: extinguishing same building for more than 3 timesteps without seeing it.");
         		Logger.warn("Will move to target");
+        		actionStateMachine.setState(ActionStates.MOVING_TO_TARGET);
+        		statusStateMachine.setState(StatusStates.ACTING);
         		return moveTarget(currentTime);
         	}
         	else{
@@ -233,7 +240,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                     this.target = building.getID();
                     //if (building.isOnFire() && (this.world.getDistance(this.agentID, this.target) <= this.maxDistance)) {
                     if(building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4 && building.isBrokennessDefined() && building.getBrokenness() > 10) {
-                        return new ActionExtinguish(this, this.target, this.maxPower);
+                		actionStateMachine.setState(ActionStates.FireFighter.EXTINGUISHING);
+                		statusStateMachine.setState(StatusStates.ACTING);
+                    	return new ActionExtinguish(this, this.target, this.maxPower);
                     }
                 }
             }
@@ -306,6 +315,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     	            }*/
     	        }	
         	}
+    		actionStateMachine.setState(ActionStates.FireFighter.REFILLING_WATER);
+    		statusStateMachine.setState(StatusStates.ACTING);
         	return new ActionRefill(this, refugeIDs, freeHydrants);
         }
         
@@ -335,6 +346,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         // Also goes out of water source to throw water
         if(this.world.getDistance(this.agentID, this.target) > this.sightDistance || this.onWaterSource()) {
         	Logger.debug("Going to target " + target);
+    		actionStateMachine.setState(ActionStates.MOVING_TO_TARGET);
+    		statusStateMachine.setState(StatusStates.ACTING);
             return this.moveTarget(currentTime);
         }
         
@@ -496,7 +509,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	    for (EntityID next : all) {
 	        if (model.getDistance(getID(), next) <= sightDistance) {
 	            Logger.info("Extinguishing " + next);
-	            return new ActionExtinguish(this, next, maxPower);
+        		return new ActionExtinguish(this, next, maxPower);
 	        }
 	    }
 	    // Plan a path to a fire
