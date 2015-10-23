@@ -147,6 +147,11 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             StandardEntity entity = this.getWorld().getEntity(next);
             if(entity instanceof Building) {
             	Building b = (Building) entity;
+            	
+            	Logger.trace(String.format(
+        			"I'm seeing a building. onFire=%s, fieryness=%s, fierynessEnum=%s", b.isOnFire(), b.getFieryness(), b.getFierynessEnum()
+        		));
+            	
                 
                 if (b.isOnFire()) {
                 	this.getBuildingSelector().add(b);
@@ -192,6 +197,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 		));
         
         Logger.info("Busy Hydrants: " + busyHydrantIDs);
+        
+        heatMap.writeMapToFile();
         
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
@@ -304,7 +311,19 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         if(this.target == null) {
         	EntityID explorationTgt = heatMap.getNodeToVisit();
         	Logger.info("No target... Heatmapping to: " + explorationTgt);
-            return new ActionMove(this, this.routeSearcher.getPath(currentTime, me, explorationTgt));
+        	List<EntityID> path = this.routeSearcher.getPath(currentTime, me, explorationTgt);
+        	
+        	if(path.size() > 1) {
+        		if(world.getEntity(path.get(path.size() - 1 )) instanceof Building) {
+        			Logger.info("Last path item is a building, I'll go to its door");
+        			path.remove(path.size() - 1);
+        		}
+        	}
+        	else {
+        		Logger.info("Path is too short... but I'll follow it anyway");
+        	}
+        	
+            return new ActionMove(this, path);
         }
         
         // Check if the robot is not close to the target then get closer
