@@ -24,7 +24,7 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
 	
     public static final String LOS_MAX_DISTANCE_KEY = "perception.los.max-distance";
     
-    protected Tactics tactics;
+    protected Tactics<?> tactics;
     protected Action action;						//current action of this agent
     public Map<Integer, Action> commandHistory;	//history of commands
     public int ignoreTime;
@@ -108,8 +108,8 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     	
     	Message message = this.action == null ? new AKRest(this.getID(), time) : this.action.getCommand(this.getID(), time);
         //System.out.println(message.getClass());
-        System.out.println("Selected action:" + this.action.getClass());
-        Logger.info("Action: " + message.getClass());
+        System.out.println("Selected action:" + this.action);
+        Logger.info("AKMessage: " + message);
         this.send(message);
         
     }
