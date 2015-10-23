@@ -23,6 +23,7 @@ import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Civilian;
 import rescuecore2.standard.entities.FireBrigade;
+import rescuecore2.standard.entities.FireStation;
 import rescuecore2.standard.entities.Hydrant;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.Road;
@@ -550,13 +551,16 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     	HeatMap heatMap = new HeatMap(this.agentID, this.world);
         for (Entity next : this.getWorld()) {
             if (next instanceof Area) {
-            	// Ignore very small areas to explore
-            	//if(GeometricUtil.getAreaOfEntity(next.getID(), this.world) < EXPLORE_AREA_SIZE_TRESH) continue;
+            	if(!(next instanceof Building)) continue;	//ignore non building areas
             	
-            	// Ignore non building areas
-            	if(!(next instanceof Building)) continue;
+            	HeatNode.PriorityLevel priority = HeatNode.PriorityLevel.LOW;
             	
-            	heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.LOW, 0);
+            	//prioritizes FireStations
+            	if(next instanceof FireStation) {
+            		priority = HeatNode.PriorityLevel.HIGH;
+            	}
+            	
+            	heatMap.addEntityID(next.getID(), priority, 0);
             }
         }
         
