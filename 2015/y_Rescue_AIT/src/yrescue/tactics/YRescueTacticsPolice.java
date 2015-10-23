@@ -43,6 +43,7 @@ import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
+import rescuecore2.worldmodel.properties.IntArrayProperty;
 import yrescue.heatmap.HeatMap;
 import yrescue.heatmap.HeatNode;
 import yrescue.message.event.MessageBlockedAreaEvent;
@@ -83,6 +84,10 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     
     public Set<EntityID> cleanRefuges;
     public List<EntityID> visitedBuildingsandDoors;
+    
+    //Stores when entities were last visited
+    //protected Map<EntityID, Integer> lastVisit;
+    //protected CircularFifoQueue<EntityID> lastVisitQueue = new CircularFifoQueue<EntityID>(20);
 
 
     @Override
@@ -139,10 +144,41 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         
         Logger.info("Preparation complete!");
     }
+    
+private void updateVisitHistory(){
+    	  	
+    	IntArrayProperty positionHist = (IntArrayProperty) me().getProperty("urn:rescuecore2.standard:property:positionhistory");
+    	int[] positionList = positionHist.getValue();
+
+    	Logger.debug(("Position hist: " + positionHist));
+    	if (!positionHist.isDefined()) {
+    		Logger.info("Empty position list. I'm (possibly stopped) at " + location());
+    		return;
+    	}
+    	
+    	for (int i = 0; i < positionList.length; i++){
+    		int x = positionList[i];
+    		int y = positionList[i+1];
+    		i++;
+    		
+    		Collection<StandardEntity> intersectz = model.getObjectsInRectangle(x, y, x, y);	//obtains the object that intersect with a point where the agent has been
+    		
+    		//Logger.info(String.format("Found %d entities @ (%d,%d)", intersectz.size(), x, y));
+    		Logger.trace("Visited Areas" +intersectz);
+    		for(StandardEntity entity: intersectz){
+    			if (entity instanceof Area) {
+    				//updates
+    				visitedBuildingsandDoors.add(entity.getID());	
+    			}
+    		}
+    	}
+    }
+    
 
     @Override
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
-        for (EntityID next : updateWorldInfo.getChangedEntities()) {
+    	updateVisitHistory();
+    	for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);
             /*if(entity instanceof Blockade) {
                 this.impassableSelector.add((Blockade) entity);
@@ -214,6 +250,12 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         	}
         	return new ActionClear(this, closest);//closest.getX(), closest.getY() );
         }
+        
+        if(this.me.getDamage() >= 100) { //|| this.someoneOnBoard()
+        	return moveRefuge(currentTime);
+        	
+        }
+        
         
         if(this.stuckClearLoop(currentTime)) {
         	Logger.warn("Warning: clearing the same position for more than 3 timesteps");

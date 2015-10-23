@@ -48,6 +48,6 @@
 	<classpathentry kind="lib" path="library/rescue/core/sources/sample-sources.jar"/>
 	<classpathentry kind="lib" path="library/rescue/core/sources/standard-sources.jar"/>
 	<classpathentry kind="lib" path="library/rescue/core/sources/traffic3-sources.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.launching.macosx.MacOSXType/Java SE 8"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

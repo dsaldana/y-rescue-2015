@@ -190,7 +190,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	        	this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
 	        }
         }
-        
+   
         if(this.me.getDamage() >= 20) { //|| this.someoneOnBoard()
         	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
         }

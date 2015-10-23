@@ -40,6 +40,7 @@ import yrescue.heatmap.HeatNode;
 import yrescue.message.event.MessageHydrantEvent;
 import yrescue.message.information.MessageBlockedArea;
 import yrescue.message.information.MessageHydrant;
+import yrescue.statemachine.ActionStates;
 import yrescue.util.YRescueBuildingSelector;
 //import yrescue.util.YRescueRouteSearcher;
 import adk.sample.basic.event.BasicBuildingEvent;
@@ -199,6 +200,10 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	Logger.trace("I'm blocked. Added a MessageBlockedArea");
     		return new ActionRest(this);	//does nothing...
     	}
+        
+        if(this.me.getDamage() >= 100) { //|| this.someoneOnBoard()
+        	return moveRefuge(currentTime);
+        }
         
         if(this.stuckExtinguishLoop(currentTime)) {
         	if (!updateWorldData.getChangedEntities().contains(target)){
