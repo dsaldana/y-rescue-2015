@@ -66,7 +66,7 @@ import yrescue.util.target.HumanTarget;
 
 public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
-	protected final int EXPLORE_TIME_STEP_TRESH = 25;
+	protected final int EXPLORE_TIME_STEP_TRESH = 20;
 	protected int EXPLORE_TIME_LIMIT = EXPLORE_TIME_STEP_TRESH;
 	protected StateMachine stateMachine = null;
 	protected int timeoutAction = 0;
@@ -259,6 +259,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	Logger.info("Going to cluster location..");
         	
     		if(this.target == null || this.target.getValue() == this.location.getID().getValue() || this.tacticsAgent.stuck(time)){
+    			this.EXPLORE_TIME_LIMIT = currentTime + this.EXPLORE_TIME_STEP_TRESH;
     			this.stateMachine.setState(ActionStates.Ambulance.EXPLORING);
     		}
     		else{
@@ -267,7 +268,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         }
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.EXPLORING)){
         	Logger.info("Exploring..");
-        	if(currentTime < EXPLORE_TIME_LIMIT){
+        	if(currentTime < this.EXPLORE_TIME_LIMIT){
         		if(this.target == null || this.target.getValue() == this.location.getID().getValue()){
         			getNewExplorationTarget(currentTime);
                 	return moveTarget(currentTime);
