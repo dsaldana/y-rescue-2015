@@ -30,6 +30,7 @@ public class ActionStates {
 		public static final ActionState CARRYING_WOUNDED = new ActionState("CARRYING_WOUNDED");	//transporting a person
 		public static final ActionState SEARCHING_BUILDINGS = new ActionState("SEARCHING_BUILDINGS");
 		public static final ActionState EXPLORING = new ActionState("EXPLORING");
+		public static final ActionState GOING_TO_CLUSTER_LOCATION = new ActionState("GOING_TO_CLUSTER_LOCATION");
 		public static final ActionState GOING_TO_TARGET = new ActionState("GOING_TO_TARGET");
 		public static final ActionState GOING_TO_REFUGE = new ActionState("GOING_TO_REFUGE");
 		public static final ActionState SELECT_NEW_TARGET = new ActionState("SELECT_NEW_TARGET");

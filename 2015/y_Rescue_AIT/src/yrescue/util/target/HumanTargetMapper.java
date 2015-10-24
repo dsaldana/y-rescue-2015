@@ -75,6 +75,10 @@ public class HumanTargetMapper {
         }
 	}
 	
+	public List<HumanTarget> getAllHumanTargets(){
+		return new ArrayList<HumanTarget>(this.humanMap.values());
+	}
+	
     public void removeTarget(Civilian civilian) {
         this.humanMap.remove(civilian.getID());
     }
@@ -90,7 +94,7 @@ public class HumanTargetMapper {
     
     public HumanTarget getBestTarget(int time){
     	List<HumanTarget> ambulanceList = new LinkedList<HumanTarget>();
-    	List<HumanTarget> humanList = new ArrayList<HumanTarget>(humanMap.values());
+    	List<HumanTarget> humanList = new ArrayList<HumanTarget>(this.humanMap.values());
     	
     	for(HumanTarget ht : humanList){
     		if(ht.getHumanType().equals(HumanTarget.HumanTypes.AMBULANCE)){

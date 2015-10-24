@@ -24,6 +24,10 @@ public class KMeans {
 		classification = new HashMap<EntityID, EntityID>(); 
 	}
 	
+	public List<EntityID> getPartitions(){
+		return this.partition;
+	}
+	
 	// Separar o mapa em K celulas
     public Map<EntityID, EntityID> calculatePartitions(StandardWorldModel model){
     	 

@@ -1,11 +1,16 @@
 package yrescue.precompute;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+
 import adk.team.util.RouteSearcher;
 import adk.team.util.VictimSelector;
 import adk.team.util.provider.RouteSearcherProvider;
 import adk.team.util.provider.VictimSelectorProvider;
 import adk.team.tactics.TacticsAmbulance;
 import adk.team.action.Action;
+import adk.team.action.ActionRest;
 import adk.team.precompute.PrecomputeAmbulance;
 import adk.team.util.graph.RouteManager;
 import comlib.manager.MessageManager;
@@ -54,5 +59,20 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
 	public HeatMap initializeHeatMap() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	@Override
+	public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
+		PrintWriter writer;
+		try {
+			writer = new PrintWriter("/tmp/ambulance_pre_compute.txt", "UTF-8");
+			writer.println("The first line");
+			writer.println("The second line");
+			writer.close();
+		} catch (FileNotFoundException | UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return new ActionRest(this);
 	}
 }
