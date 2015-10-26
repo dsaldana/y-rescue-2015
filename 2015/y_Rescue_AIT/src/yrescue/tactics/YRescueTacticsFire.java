@@ -15,7 +15,7 @@ import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.spi.LoggerFactory;
-
+import org.hamcrest.core.IsInstanceOf;
 
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
@@ -115,6 +115,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         this.hydrant_rate = this.config.getIntValue("fire.tank.refill_hydrant_rate");
         this.tank_maximum = this.config.getIntValue("fire.tank.maximum");
+        
+        this.actionStateMachine = new StateMachine(ActionStates.Policeman.AWAITING_ORDERS);
+        this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
         
         MDC.put("agent", this);
         MDC.put("location", location());
@@ -274,13 +277,59 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             }
         }
         
+        // Update BusyHydrants
+        for(Entry<EntityID,Integer> e : busyHydrantIDs.entrySet()){
+        	if(currentTime >= e.getValue()){
+        		busyHydrantIDs.remove(e.getKey());
+        	}
+        }
+        Logger.info("New Busy Hydrants:" + busyHydrantIDs);
+        
+        
+        if(onWaterSource() && isWaterLessThan(1.0)) {
+    		return new ActionRest(this);
+        }
+        
+        // Check if there is another agent refilling water at the same hydrant
+        if(this.statusStateMachine.currentState() == StatusStates.ACTING && this.actionStateMachine.currentState() == ActionStates.FireFighter.REFILLING_WATER){
+        	Collection<StandardEntity> objects = world.getObjectsInRange(getOwnerID(), sightDistance);
+        	boolean flagAgentsCloser = false;
+        	for(StandardEntity objH : objects){
+        		if(objH instanceof Hydrant){
+        			for(StandardEntity objA : objects){
+                		if(objA instanceof FireBrigade){
+                    		if(objA.getID().getValue() < this.me().getID().getValue()){
+                    			flagAgentsCloser = true;
+                    			busyHydrantIDs.put(objH.getID(), currentTime + (this.maxWater-me.getWater() / this.hydrant_rate));
+                    			break;
+                    		}
+                    	}
+                	}
+        			if(flagAgentsCloser){
+        				List<StandardEntity> freeHydrants = new ArrayList<StandardEntity>();
+        	        	for(StandardEntity next : hydrants) {
+        	        		if (next instanceof Hydrant) {
+        	    	            Hydrant h = (Hydrant)next;
+        	    	            if(! busyHydrantIDs.containsKey(h.getID())){
+        	    	            	freeHydrants.add(h);
+        	    	            }
+        	    	        }	
+        	        	}
+        	        	return new ActionRefill(this, refugeIDs, freeHydrants);
+        			}
+        			break;
+            	}
+        	}
+        }
+        
+        /*
         if(onWaterSource() && isWaterLessThan(1.0)) {
         	if(me.isWaterDefined() && me.getWater() < maxPower){
         		if(location instanceof Hydrant) {
         			manager.addSendMessage(new MessageHydrant(this, currentTime, me.getWater(),this.hydrant_rate, this.maxWater, me.getPosition()));
         		}
         	}
-        	if(!(this.tacticsAgent.commandHistory.get(currentTime-1) instanceof ActionRest) || lastWater != me.getWater()){
+        	/*if(!(this.tacticsAgent.commandHistory.get(currentTime-1) instanceof ActionRest) || lastWater != me.getWater()){
         		Logger.info("Refilling. CurrWater: " + me.getWater() + ", lastWater: " + lastWater);
                 return new ActionRest(this);
         	}else{
@@ -288,16 +337,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         			busyHydrantIDs.put(locationID, currentTime + (this.maxWater-me.getWater() / this.hydrant_rate));
         		}
         	}
-        }
-        
-        // Update BusyHydrants
-        for(Entry<EntityID,Integer> e : busyHydrantIDs.entrySet()){
-        	if(currentTime >= e.getValue()){
-        		busyHydrantIDs.remove(e.getKey());
-        	}
-        }
-        
-        Logger.info("New Busy Hydrants:" + busyHydrantIDs);
+        }*/
         
         // Refill
         if(me.isWaterDefined() && me.getWater() < maxPower) {
@@ -306,14 +346,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	for(StandardEntity next : hydrants) {
         		if (next instanceof Hydrant) {
     	            Hydrant h = (Hydrant)next;
-    	            
     	            if(! busyHydrantIDs.containsKey(h.getID())){
     	            	freeHydrants.add(h);
     	            }
-    	            
-    	            /*else if(currentTime >= busyHydrantIDs.get(h.getID())){
-    	            	freeHydrants.add(h);
-    	            }*/
     	        }	
         	}
     		actionStateMachine.setState(ActionStates.FireFighter.REFILLING_WATER);
