@@ -73,6 +73,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected Set<Road> impassableRoadList = new HashSet<>();
 	protected int EXPLORE_AREA_SIZE_TRESH = 10000010;
 	protected List<EntityID> clusterToVisit;
+	protected EntityID clusterCenter;
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
@@ -120,14 +121,14 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     		}
     		
     		if(pos != -1){
-    			EntityID selectedPartition  = partitions.get(pos);
+    			clusterCenter = partitions.get(pos);
         		final Set<Map.Entry<EntityID, EntityID>> entries = kmeansResult.entrySet();
 
         		for (Map.Entry<EntityID, EntityID> entry : entries) {
         		    EntityID key = entry.getKey();
         		    EntityID partition= entry.getValue();
 
-        		    if(partition.getValue() == selectedPartition.getValue()){
+        		    if(partition.getValue() == clusterCenter.getValue()){
         		    	clusterToVisit.add(key);
         		    }
         		}	
@@ -136,7 +137,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
     	Logger.info("Cluster to visit :" + clusterToVisit);
     	if(clusterToVisit.size() > 0){
-    		this.target = clusterToVisit.get(0);
+    		this.target = clusterCenter; //clusterToVisit.get(0);
     		this.stateMachine = new StateMachine(ActionStates.Ambulance.GOING_TO_CLUSTER_LOCATION);
     	}
     }
