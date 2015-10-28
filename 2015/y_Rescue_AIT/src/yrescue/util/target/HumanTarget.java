@@ -87,9 +87,10 @@ public class HumanTarget {
 	}
 	
 	public void updateUtility(int time, Human ambulance, List<HumanTarget> ambulanceList){
-		if(time > 120) this.priorityWeight = 1.33f;
-		float actualUtility = 0;
+		if(time == this.lastTimeUpdated) return;
+		if(time > 120) this.priorityWeight = 1.0f;
 		
+		float actualUtility = 0;
 		try {
 			
 			int duration = getTimeToPerformTask(time, ambulance, ambulanceList);
@@ -99,22 +100,22 @@ public class HumanTarget {
 			int deathTimFactor = 0;
 
 			switch (time / 100) {
-			case 0:
-				durationFactor = 2;
-				deathTimFactor = 1;
-				break;
-			case 1:
-				durationFactor = 1;
-				deathTimFactor = 2;
-				break;
-			case 2:
-				durationFactor = 0;
-				deathTimFactor = 3;
-				break;
-			default:
-				durationFactor = 1;
-				deathTimFactor = 1;
-				break;
+				case 0:
+					durationFactor = 2;
+					deathTimFactor = 1;
+					break;
+				case 1:
+					durationFactor = 1;
+					deathTimFactor = 2;
+					break;
+				case 2:
+					durationFactor = 0;
+					deathTimFactor = 3;
+					break;
+				default:
+					durationFactor = 1;
+					deathTimFactor = 1;
+					break;
 			}
 
 			actualUtility = (duration * durationFactor) * 10 + ((deathTime - time) * deathTimFactor) * 5;
@@ -193,7 +194,7 @@ public class HumanTarget {
 		return extra;
 	}
 	
-	private int estimatedDeathTime(int hp, double dmg,int updatetime) {
+	private int estimatedDeathTime(int hp, double dmg, int updatetime) {
 		int agenttime = 1000;
 		int count = agenttime - updatetime;
 		if (count <= 0 || dmg == 0) return hp;

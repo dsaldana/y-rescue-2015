@@ -14,7 +14,9 @@ public class HeatNode {
 	public static enum PriorityLevel {
 		HIGH(1),
 		MEDIUM(2),
-		LOW(3);
+		LOW(3),
+		VERY_SLOW(4),
+		ULTRA_SLOW(5);
 		
 		private int priorityValue;
 
@@ -29,6 +31,12 @@ public class HeatNode {
 	
 	public static final float MAX_HEAT = 1.0f;
 	public static final float MIN_HEAT = 0.0f;
+	
+	public static final float HIGH_HEAT_FACTOR = 0.7f;
+	public static final float MEDIUM_HEAT_FACTOR = 0.05f;
+	public static final float LOW_HEAT_FACTOR = 0.03f;
+	public static final float VERY_LOW_HEAT_FACTOR = 0.015f;
+	public static final float ULTRA_SLOW_HEAT_FACTOR = 0.01f;
 	
 	private EntityID entity = null;
 	private PriorityLevel priority = null;
@@ -46,9 +54,13 @@ public class HeatNode {
 		this.time = time;
 		
 		// Define heatFactor early
-		if(this.priority.equals(PriorityLevel.LOW)) heatFactor = 0.03f;
-		else if(this.priority.equals(PriorityLevel.MEDIUM)) heatFactor = 0.05f;
-		else heatFactor = 0.07f;
+		if(this.priority.equals(PriorityLevel.HIGH)) heatFactor = HIGH_HEAT_FACTOR;
+		else if(this.priority.equals(PriorityLevel.MEDIUM)) heatFactor = MEDIUM_HEAT_FACTOR;
+		else if(this.priority.equals(PriorityLevel.LOW)) heatFactor = LOW_HEAT_FACTOR;
+		else if(this.priority.equals(PriorityLevel.VERY_SLOW)) heatFactor = VERY_LOW_HEAT_FACTOR;
+		else if(this.priority.equals(PriorityLevel.ULTRA_SLOW)) heatFactor = ULTRA_SLOW_HEAT_FACTOR;
+		
+		if(heatFactor == 0.0f) heatFactor = LOW_HEAT_FACTOR;
 	}
 	
 	/**

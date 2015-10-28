@@ -93,19 +93,8 @@ public class HumanTargetMapper {
     }
     
     public HumanTarget getBestTarget(int time){
-    	List<HumanTarget> ambulanceList = new LinkedList<HumanTarget>();
-    	List<HumanTarget> humanList = new ArrayList<HumanTarget>(this.humanMap.values());
-    	
-    	for(HumanTarget ht : humanList){
-    		if(ht.getHumanType().equals(HumanTarget.HumanTypes.AMBULANCE)){
-    			ambulanceList.add(ht);
-    		}
-    	}
-    	
-    	for(HumanTarget ht : humanList){
-    		ht.updateUtility(time, this.owner, ambulanceList);
-    	}
-    	
+    	updateUtilities(time);
+    	List<HumanTarget> humanList = getAllHumanTargets();
     	humanList = orderHumanTargetList(humanList);
     	
     	if(humanList.size() <= 0) return null;
@@ -128,6 +117,21 @@ public class HumanTargetMapper {
 		});
 
 		return htList;
+	}
+	
+	public void updateUtilities(int time){
+		List<HumanTarget> ambulanceList = new LinkedList<HumanTarget>();
+    	List<HumanTarget> humanList = new ArrayList<HumanTarget>(this.humanMap.values());
+    	
+    	for(HumanTarget ht : humanList){
+    		if(ht.getHumanType().equals(HumanTarget.HumanTypes.AMBULANCE)){
+    			ambulanceList.add(ht);
+    		}
+    	}
+    	
+    	for(HumanTarget ht : humanList){
+    		ht.updateUtility(time, this.owner, ambulanceList);
+    	}
 	}
 	
 }
