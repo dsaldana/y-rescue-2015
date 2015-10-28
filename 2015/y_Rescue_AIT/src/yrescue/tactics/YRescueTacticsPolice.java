@@ -283,6 +283,13 @@ private void updateVisitHistory(){
         	
         }
         
+        //Ensuring the police stays in the refuge until the damage drops to 0
+        Refuge result = PositionUtil.getNearTarget(this.world, this.me, this.getRefuges());
+        EntityID results = result.getID();           
+        EntityID local = this.location.getID();        
+        if((local == results) && (this.me.getDamage() > 0)){        
+        		return new ActionRest(this);
+        	}        
         
         if(this.stuckClearLoop(currentTime)) {
         	Logger.warn("Warning: clearing the same position for more than 3 timesteps");
