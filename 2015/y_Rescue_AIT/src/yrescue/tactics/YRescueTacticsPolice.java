@@ -19,9 +19,7 @@ import adk.team.action.ActionMove;
 import adk.team.action.ActionRest;
 import adk.team.util.ImpassableSelector;
 import adk.team.util.RouteSearcher;
-import adk.sample.basic.event.BasicRoadEvent;
-import adk.sample.basic.tactics.BasicTacticsPolice;
-import adk.sample.basic.util.BasicRouteSearcher;
+import adk.team.util.graph.PositionUtil;
 import comlib.manager.MessageManager;
 import comlib.message.information.MessageBuilding;
 import comlib.message.information.MessageCivilian;
@@ -42,6 +40,7 @@ import rescuecore2.standard.entities.Hydrant;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
+import rescuecore2.standard.entities.StandardEntityConstants;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.Entity;
@@ -58,17 +57,8 @@ import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
 import yrescue.util.GeometricUtil;
+import yrescue.util.PathUtil;
 import yrescue.util.YRescueImpassableSelector;
-import adk.sample.basic.util.*;
-
-import java.awt.Polygon;
-import java.awt.Rectangle;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.PriorityQueue;
-
-import org.apache.log4j.MDC;
 
 public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedAreaSelectorProvider {
 
@@ -191,6 +181,32 @@ private void updateVisitHistory(){
     @Override
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
     	updateVisitHistory();
+    	
+    	//marks building as visited
+    	if (location instanceof Building){
+    		heatMap.updateNode(location.getID(), currentTime);
+    	}
+    	
+    	//also mark the building as visited if standing on its door and way is cleared
+    	for (EntityID id : ((Area)location).getNeighbours()){
+    		Area neighbor = (Area) world.getEntity(id);
+    		
+    		if(neighbor instanceof Building){
+    			List<EntityID> mineAndBuilding = new ArrayList<>();
+    			mineAndBuilding.add(location.getID());
+    			mineAndBuilding.add(neighbor.getID());
+    		
+				//if there is no blockade on way to building, mark it as visited
+				if(!checkBlockadeOnWayTo(mineAndBuilding, new BlockedArea(neighbor.getID(), neighbor.getID(), neighbor.getX(), neighbor.getY()))){
+					Logger.debug("Marked a building as visited without entering it. " + neighbor);
+					heatMap.updateNode(neighbor.getID(), currentTime);
+					break;
+				}
+    		}
+    	}
+    	
+    	
+    	
     	for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);
             /*if(entity instanceof Blockade) {
@@ -207,39 +223,27 @@ private void updateVisitHistory(){
                 if(b.isOnFire()) {
                     manager.addSendMessage(new MessageBuilding(b));
                 }
+
+                if(b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT)){
+                	Logger.trace("Removing completely burnt Building from heatMap" + b);
+                	heatMap.removeEntityID(b.getID());
+                }
+                /*else {
+                	heatMap.updateNode(b.getID(), currentTime);
+                }*/
             }
         }
     }
 
-
-    @Override
-    public void preparation(Config config, MessageManager messageManager) {
-        this.routeSearcher = this.initRouteSearcher();
-        this.impassableSelector = this.initImpassableSelector();
-        this.blockedAreaSelector = new BlockedAreaSelector(this);
-        this.beforeMove = false;
-        this.agentPoint = new Point2D[2];
-        this.posInit = true;
-        clearRange = 10000;
-        clearWidth = 1200;
-        
-        this.actionStateMachine = new StateMachine(ActionStates.Policeman.AWAITING_ORDERS);
-        this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
-        this.blockadeUtil = new BlockadeUtil(this);
-        
-        MDC.put("agent", this);
-        MDC.put("location", location());
-        
-        Logger.info("Preparation complete!");
-    }
-
     public void ignoreTimeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
     	Logger.debug("\nRadio channel: " + manager.getRadioConfig().getChannel());
+    	if(this.me.getBuriedness() > 0) {
+            this.buriednessAction(manager);
+        }
     }
     
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
-    	Logger.info("\nTimestep:" + currentTime);
     	Logger.debug("Radio channel: " + manager.getRadioConfig().getChannel());
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
         
@@ -250,34 +254,19 @@ private void updateVisitHistory(){
 			me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection()
 		));
         
+        Logger.trace("The heatmap " +heatMap);
+    	if(heatMap == null){
+    		Logger.warn("WARNING: null heatmap. Will build a new one");
+    		heatMap = initializeHeatMap();
+    	}
+        
+        heatMap.writeMapToFile();
+        
         Logger.trace("The received message: " + manager.getReceivedMessage());
-        
-        
         
         //if I am buried, send a message and attempt to clear the entrance to my building
         if(this.me.getBuriedness() > 0) {
-            this.beforeMove = false;
-            statusStateMachine.setState(StatusStates.BURIED);
-            actionStateMachine.setState(ActionStates.IDLE);
-            manager.addSendMessage(new MessagePoliceForce(this.me, MessagePoliceForce.ACTION_REST, this.agentID));
-            List<EntityID> neighbours = ((Area)this.location).getNeighbours();
-            if(neighbours.isEmpty()) {
-            	return new ActionRest(this);
-            }
-            if(this.count <= 0) {
-                this.count = neighbours.size();
-            }
-            this.count--;
-            Area area = (Area)this.world.getEntity(neighbours.get(this.count));
-            
-            if(area != null && this.agentPoint[0] != null) {
-	            Vector2D vector = (new Point2D(area.getX(), area.getY())).minus(this.agentPoint[0]).normalised().scale(1000000);
-	            actionStateMachine.setState(ActionStates.Policeman.CLEARING);
-	            return new ActionClear(this, (int) (this.me.getX() + vector.getX()), (int) (this.me.getY() + vector.getY()));
-            }
-            else{
-            	return new ActionRest(this);
-            }
+            return this.buriednessAction(manager);
         }
         
         if (this.tacticsAgent.stuck(currentTime)){
@@ -289,7 +278,7 @@ private void updateVisitHistory(){
         	return new ActionClear(this, closest);//closest.getX(), closest.getY() );
         }
         
-        if(this.me.getDamage() >= 100) { //|| this.someoneOnBoard()
+        if(this.me.getDamage() >= 100) { 
         	return moveRefuge(currentTime);
         	
         }
@@ -297,13 +286,18 @@ private void updateVisitHistory(){
         
         if(this.stuckClearLoop(currentTime)) {
         	Logger.warn("Warning: clearing the same position for more than 3 timesteps");
+        	EntityID theTarget = null;
         	if(blockedAreaTarget != null){
-        		return new ActionMove(this, this.routeSearcher.getPath(currentTime, this.me, this.blockedAreaTarget.getOriginID()));
+        		theTarget =  this.blockedAreaTarget.getOriginID();
+        		
         	}
         	else{
         		Logger.info("I have no target, using heatmap exploration...");
-        		return new ActionMove(this, this.routeSearcher.getPath(currentTime, location.getID(), heatMap.getNodeToVisit()));
+        		theTarget = heatMap.getNodeToVisit();
         	}
+        	List<EntityID> path = this.routeSearcher.getPath(currentTime, location.getID(), theTarget);
+    		PathUtil.makeSafePath(this, path);
+    		return new ActionMove(this, path);
         }
         
         
@@ -323,6 +317,7 @@ private void updateVisitHistory(){
         Logger.debug("#blocked roads: " + blockedAreaSelector.blockedAreas.size());
         Logger.debug("They are: " + blockedAreaSelector.blockedAreas.values());
         
+        /*
         if (blockedAreaSelector.blockedAreas.size() == 0){
         	EntityID randomDestination = null;
         	Random ran = new Random();
@@ -382,15 +377,13 @@ private void updateVisitHistory(){
         	Area a = (Area) this.world.getEntity(randomDestination);
         	
         	this.getBlockedAreaSelector().add(new BlockedArea(randomDestination, null, a.getX(), a.getY()));
-        }
+        }*/
         
         if(this.blockedAreaTarget != null) {
             this.blockedAreaTarget = this.blockedAreaSelector.updateTarget(currentTime, this.blockedAreaTarget);    
         } else { // Select a new Target Destination
         	this.blockedAreaTarget = this.blockedAreaSelector.getNewTarget(currentTime);
         }
-        
-        
         
         // Determines the path to be followed
         List<EntityID> path;
@@ -407,12 +400,15 @@ private void updateVisitHistory(){
         		heatMap = initializeHeatMap();
         	}
         	path = this.routeSearcher.getPath(currentTime, me, heatMap.getNodeToVisit());// noTargetMove(currentTime, this.me);
-        	Logger.debug("HeatMap exploration - path: " + path);
+        	Logger.debug(String.format("HeatMap exploration. Tgt: %s; path: %s",  heatMap.getNodeToVisit(), path));
         } else {
         	path = this.routeSearcher.getPath(currentTime, this.me, this.blockedAreaTarget.getOriginID());
         	Logger.debug("Path to target: " + path);
         }
         
+        PathUtil.makeSafePath(this, path);
+        
+        /*
         //------Pegar a lista de predios a visitar:
         
         //TODO: Melhorar a selecão de prédios pra visitar.
@@ -433,6 +429,7 @@ private void updateVisitHistory(){
         //-----Path ja ajustado com os predios a visitar
         
         Logger.debug("The new path, including surrounded buildings is: " + path);
+        */
         
         /**** Go towards the chosen path ****/
         
@@ -504,23 +501,52 @@ private void updateVisitHistory(){
     			Logger.trace(String.format("Moving to %d,%d of path %s", this.blockedAreaTarget.xOrigin, this.blockedAreaTarget.yOrigin, path)); 
     			return new ActionMove(this, path, this.blockedAreaTarget.xOrigin, this.blockedAreaTarget.yOrigin);
     		}
-    		
-        	
         }
         /**** END: Go towards the chosen path ****/
             
         //return new ActionRest(this);
     }
     
-    protected Point2D getTargetPoint(List<EntityID> path, BlockedArea bTarget){
+    @Override
+    public Action moveRefuge(int currentTime) {
+        Refuge result = PositionUtil.getNearTarget(this.world, this.me, this.getRefuges());
+        List<EntityID> path = routeSearcher.getPath(currentTime, this.me(), result);
+        
+        Logger.trace(String.format("moveRefuge called. dest=%s, path=%s, me=%s", result, path, this.me()));
+        
+        return new ActionMove(this, path != null ? path : routeSearcher.noTargetMove(currentTime, this.me()));
+    }
+    
+    private Action buriednessAction(MessageManager manager) {
+    	this.beforeMove = false;
+        statusStateMachine.setState(StatusStates.BURIED);
+        actionStateMachine.setState(ActionStates.IDLE);
+        manager.addSendMessage(new MessagePoliceForce(this.me, MessagePoliceForce.ACTION_REST, this.agentID));
+        List<EntityID> neighbours = ((Area)this.location).getNeighbours();
+        if(neighbours.isEmpty()) {
+        	return new ActionRest(this);
+        }
+        if(this.count <= 0) {
+            this.count = neighbours.size();
+        }
+        this.count--;
+        Area area = (Area)this.world.getEntity(neighbours.get(this.count));
+        
+        if(area != null && this.agentPoint[0] != null) {
+            Vector2D vector = (new Point2D(area.getX(), area.getY())).minus(this.agentPoint[0]).normalised().scale(1000000);
+            actionStateMachine.setState(ActionStates.Policeman.CLEARING);
+            return new ActionClear(this, (int) (this.me.getX() + vector.getX()), (int) (this.me.getY() + vector.getY()));
+        }
+        else{
+        	return new ActionRest(this);
+        }
+	}
+
+	protected Point2D getTargetPoint(List<EntityID> path, BlockedArea bTarget){
 		
-		//EntityID dest = dest_path.get(0);
-	
 		Area area0 = (Area) this.world.getEntity(this.location.getID());
 		Area area1 = (Area) this.world.getEntity(path.get(0));
 		
-		
-		//System.out.println(""+area0 + " - " + area1);
 		Point2D target;
 		
 		if (area0 == area1) {
@@ -640,16 +666,26 @@ private void updateVisitHistory(){
 	
 	@Override
 	public HeatMap initializeHeatMap() {
-    	HeatMap heatMap = new HeatMap(this.agentID, this.world);
+    	this.heatMap = new HeatMap(this.agentID, this.world);
         for (Entity next : this.getWorld()) {
-            if (next instanceof Area) {
+            if (next instanceof Building) {
             	// Ignore very small areas to explore
             	//if(GeometricUtil.getAreaOfEntity(next.getID(), this.world) < EXPLORE_AREA_SIZE_TRESH) continue;
             	
             	// Ignore non Road areas
-            	if(!(next instanceof Road)) continue;
+            	//if(!(next instanceof Road)) continue;
             	
-            	heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.LOW, 0);
+            	if (next instanceof Refuge){
+            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.HIGH, 0);
+            	}
+            	
+            	else if (next instanceof GasStation){
+            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.HIGH, 0);
+            	}
+            	
+            	else {
+            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.LOW, 0);
+            	}
             }
         }
         

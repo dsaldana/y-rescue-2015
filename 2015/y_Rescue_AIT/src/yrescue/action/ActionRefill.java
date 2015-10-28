@@ -34,16 +34,18 @@ public class ActionRefill extends Action {
         		this.destination = next;
         	}
         }
-        for(StandardEntity next: hydrantIDs){
-        	pathTemp = tactics.routeSearcher.getPath(tactics.getCurrentTime(), tactics.me.getPosition(), next.getID());
-        	if (pathTemp == null){
-        		Logger.warn("\nnull path to hydrant! " + next + ". It will be ignored.\n");
-        	}
-        	else if(pathTemp.size() < dist){
-        		dist = pathTemp.size();
-        		this.path = pathTemp;
-        		this.destination = next;
-        	}
+        if(hydrantIDs != null){
+	        for(StandardEntity next: hydrantIDs){
+	        	pathTemp = tactics.routeSearcher.getPath(tactics.getCurrentTime(), tactics.me.getPosition(), next.getID());
+	        	if (pathTemp == null){
+	        		Logger.warn("\nnull path to hydrant! " + next + ". It will be ignored.\n");
+	        	}
+	        	else if(pathTemp.size() < dist){
+	        		dist = pathTemp.size();
+	        		this.path = pathTemp;
+	        		this.destination = next;
+	        	}
+	        }
         }
         Logger.trace("Selected destination to refill: " + this.destination);
     }

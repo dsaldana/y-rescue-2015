@@ -81,7 +81,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     public String getTacticsName() {
         return "Y-Rescue Ambulance";
     }
-    
+
     @Override
     public void preparation(Config config, MessageManager messageManager) {
     	this.stateMachine = new StateMachine(ActionStates.Ambulance.EXPLORING);
@@ -164,7 +164,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
         for (EntityID next : updateWorldInfo.getChangedEntities()) {
             StandardEntity entity = this.getWorld().getEntity(next);
-            Logger.trace("I'm seeing: " + entity);
+            //Logger.trace("I'm seeing: " + entity);
             
             if(entity instanceof Civilian) {
             	Civilian c = (Civilian) entity;
@@ -207,18 +207,47 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     }
     
     @Override
+    public void ignoreTimeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
+    	this.organizeUpdateInfo(currentTime, updateWorldData, manager);
+    	Logger.info(String.format(
+			"AGENT AMBULANCE IGNORE TIME %d HP: %d, B'ness: %d, Dmg: %d, Direction: %d, SmOnBrd? %s, Target: %s", 
+			me.getID().getValue(), me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection(), someoneOnBoard(), this.target
+		));
+    	
+        if(this.me.getBuriedness() > 0) {
+        	Logger.info("I'm buried at " + me.getPosition());
+
+        	AmbulanceTeam ambulanceTeam = (AmbulanceTeam) this.me();
+            manager.addSendMessage(new MessageAmbulanceTeam(ambulanceTeam, MessageAmbulanceTeam.ACTION_REST, null));
+        }
+    	
+    };
+    
+    @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
         MDC.put("location", location());
         
+        /* === ---- === *
+         *     MISC     *
+         * === ---- === */
+        
         //this.refugeList.get(-1); //triggers exception to test failsafe
         
         Logger.info(String.format(
-			"HP: %d, B'ness: %d, Dmg: %d, Direction: %d, SmOnBrd? %s, Target: %s", 
-			me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection(), someoneOnBoard(), this.target
+			"AGENT AMBULANCE %d HP: %d, B'ness: %d, Dmg: %d, Direction: %d, SmOnBrd? %s, Target: %s", 
+			me.getID().getValue(), me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection(), someoneOnBoard(), this.target
 		));
         
-        heatMap.writeMapToFile();
+        //heatMap.writeMapToFile();
+        
+        /*
+        ((YRescueVictimSelector) this.victimSelector).humanTargetM.updateUtilities(time);
+        List<HumanTarget> humanTargets = ((YRescueVictimSelector) this.victimSelector).humanTargetM.getAllHumanTargets();
+        for (HumanTarget hum : humanTargets) {
+        	Logger.debug("Human Target: "+ hum.getHuman() + " Utility: "+ hum.getUtility() + " Human ID:" + hum.getHuman().getID() + " pos:" + hum.getHuman().getPosition() + " burriedness:" + hum.getHuman().getBuriedness() + " damage:" + hum.getHuman().getDamage());
+        }
+        */
 
         /* === -------- === *
          *   Basic actions  *
@@ -230,11 +259,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
         	AmbulanceTeam ambulanceTeam = (AmbulanceTeam) this.me();
             manager.addSendMessage(new MessageAmbulanceTeam(ambulanceTeam, MessageAmbulanceTeam.ACTION_REST, null));
-        }
-        
-        List<HumanTarget> humanTargets = ((YRescueVictimSelector) this.victimSelector).humanTargetM.getAllHumanTargets();
-        for (Human hum : ((YRescueVictimSelector) this.victimSelector).civilianList) {
-        	Logger.debug("Human Target: "+ hum + " Human ID:" + hum.getID() + " pos:" + hum.getPosition() + " burriedness:" + hum.getBuriedness() + " damage:" + hum.getDamage());
         }
         
         // If we are not in the special condition exploring, update target or get a new one 
@@ -576,7 +600,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             	// Ignore non building areas
             	if(!(next instanceof Building)) continue;
             	
-            	heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.LOW, 0);
+            	heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.VERY_SLOW, 0);
             }
         }
         
