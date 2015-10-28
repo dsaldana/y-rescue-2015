@@ -10,6 +10,8 @@ import java.util.Set;
 
 import org.apache.log4j.MDC;
 
+import com.vividsolutions.jts.geom.Geometry;
+
 import adk.sample.basic.event.BasicRoadEvent;
 import adk.sample.basic.tactics.BasicTacticsPolice;
 import adk.sample.basic.util.BasicRouteSearcher;
@@ -24,6 +26,7 @@ import comlib.manager.MessageManager;
 import comlib.message.information.MessageBuilding;
 import comlib.message.information.MessageCivilian;
 import comlib.message.information.MessagePoliceForce;
+import jdk.nashorn.internal.runtime.linker.JavaAdapterFactory;
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
 import rescuecore2.misc.geometry.GeometryTools2D;
@@ -385,7 +388,8 @@ private void updateVisitHistory(){
         	
         	this.getBlockedAreaSelector().add(new BlockedArea(randomDestination, null, a.getX(), a.getY()));
         }*/
-        
+       // java.awt.geom.Arc2D
+    
         if(this.blockedAreaTarget != null) {
             this.blockedAreaTarget = this.blockedAreaSelector.updateTarget(currentTime, this.blockedAreaTarget);    
         } else { // Select a new Target Destination
@@ -437,6 +441,7 @@ private void updateVisitHistory(){
         
         Logger.debug("The new path, including surrounded buildings is: " + path);
         */
+       
         
         /**** Go towards the chosen path ****/
         
