@@ -8,6 +8,7 @@ import comlib.manager.RadioConfig;
 import comlib.manager.VoiceConfig;
 import comlib.util.BitOutputStream;
 import comlib.util.BitStreamReader;
+import rescuecore2.log.Logger;
 import rescuecore2.worldmodel.EntityID;
 
 
@@ -75,8 +76,11 @@ public abstract class MessageProvider<M extends CommunicationMessage, E extends 
 		try
 		{
 			msg = this.createMessage(config, manager.getTime() -1, bsr);
-		} catch (Exception e)
-		{ return null; }
+		} catch (Exception e){
+			//System.out.println("[ERROR] ");
+			Logger.error("Error in create msg", e);
+			return null;
+		}
 
 		if (this.event != null)
 		{
