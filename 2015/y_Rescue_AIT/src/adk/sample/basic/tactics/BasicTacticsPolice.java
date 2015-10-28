@@ -7,10 +7,13 @@ import adk.team.util.RouteSearcher;
 import adk.team.util.graph.PositionUtil;
 import adk.team.util.provider.ImpassableSelectorProvider;
 import adk.team.util.provider.RouteSearcherProvider;
+
 import com.google.common.collect.Lists;
+
 import comlib.manager.MessageManager;
 import comlib.message.information.MessagePoliceForce;
 import rescuecore2.config.Config;
+import rescuecore2.log.Logger;
 import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.misc.geometry.Vector2D;
 import rescuecore2.standard.entities.*;
@@ -247,8 +250,11 @@ public abstract class BasicTacticsPolice extends TacticsPolice implements RouteS
     
     public Action moveRefuge(int currentTime) {
         Refuge result = PositionUtil.getNearTarget(this.world, this.me, this.getRefuges());
-        List<EntityID> path = this.routeSearcher.getPath(currentTime, this.me, result);
-        return new ActionMove(this, path != null ? path : this.routeSearcher.noTargetMove(currentTime, this.me));
+        List<EntityID> path = getRouteSearcher().getPath(currentTime, this.me(), result);
+        
+        Logger.trace(String.format("moveRefuge called. dest=%s, path=%s, me=%s", result, path, this.me()));
+        
+        return new ActionMove(this, path != null ? path : getRouteSearcher().noTargetMove(currentTime, this.me()));
     }
 
     public void analysisRoad(Road road) {
