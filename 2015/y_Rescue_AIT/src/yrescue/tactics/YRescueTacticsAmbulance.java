@@ -600,7 +600,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             	// Ignore non building areas
             	if(!(next instanceof Building)) continue;
             	
-            	heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.VERY_SLOW, 0);
+            	heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.VERY_LOW, 0);
             }
         }
         
