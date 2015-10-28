@@ -284,14 +284,26 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	}
         }
         Logger.info("New Busy Hydrants:" + busyHydrantIDs);
-        
-        
-        if(onWaterSource() && isWaterLessThan(1.0)) {
-    		return new ActionRest(this);
+                
+        // Check if the agent should look for water even though the tank is not empty
+        if(this.statusStateMachine.currentState() == StatusStates.ACTING && this.actionStateMachine.currentState() == ActionStates.FireFighter.REFILLING_WATER_ANYWAY){
+        	Logger.info("I have water, but Im going to refill anyway.");
+        	if(me().getWater() == maxWater){
+        		actionStateMachine.setState(ActionStates.IDLE);
+        		statusStateMachine.setState(StatusStates.EXPLORING);
+        	}else if(onWaterSource()){
+        		return new ActionRest(this);
+        	}
         }
         
         // Check if there is another agent refilling water at the same hydrant
         if(this.statusStateMachine.currentState() == StatusStates.ACTING && this.actionStateMachine.currentState() == ActionStates.FireFighter.REFILLING_WATER){
+        	if(me().getWater() == maxWater){
+        		actionStateMachine.setState(ActionStates.IDLE);
+        		statusStateMachine.setState(StatusStates.EXPLORING);
+        	}else if(onWaterSource()){
+        		return new ActionRest(this);
+        	}
         	Collection<StandardEntity> objects = world.getObjectsInRange(getOwnerID(), sightDistance);
         	boolean flagAgentsCloser = false;
         	for(StandardEntity objH : objects){
@@ -322,23 +334,6 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	}
         }
         
-        /*
-        if(onWaterSource() && isWaterLessThan(1.0)) {
-        	if(me.isWaterDefined() && me.getWater() < maxPower){
-        		if(location instanceof Hydrant) {
-        			manager.addSendMessage(new MessageHydrant(this, currentTime, me.getWater(),this.hydrant_rate, this.maxWater, me.getPosition()));
-        		}
-        	}
-        	/*if(!(this.tacticsAgent.commandHistory.get(currentTime-1) instanceof ActionRest) || lastWater != me.getWater()){
-        		Logger.info("Refilling. CurrWater: " + me.getWater() + ", lastWater: " + lastWater);
-                return new ActionRest(this);
-        	}else{
-        		if(location instanceof Hydrant) {
-        			busyHydrantIDs.put(locationID, currentTime + (this.maxWater-me.getWater() / this.hydrant_rate));
-        		}
-        	}
-        }*/
-        
         // Refill
         if(me.isWaterDefined() && me.getWater() < maxPower) {
         	Logger.info("Insufficient water, going to refill.");
@@ -361,9 +356,24 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         // If there is no target then walk randomly
         if(this.target == null) {
+        	List<EntityID> path;
+        	// Refuge is close and the agent has less water than 0.6 of the tank and more water than the maxPower 
+        	if(me().getWater() > maxPower && me().getWater() < (maxWater*0.7)){
+        		Collection<StandardEntity> objects = world.getObjectsInRange(getOwnerID(), sightDistance);
+            	for(StandardEntity obj : objects){
+            		if(obj instanceof Refuge){ // Only Refuge
+            			path = this.routeSearcher.getPath(currentTime, me, obj.getID());
+                		actionStateMachine.setState(ActionStates.FireFighter.REFILLING_WATER_ANYWAY);
+                		statusStateMachine.setState(StatusStates.ACTING);
+                    	// Only Refuge 
+                    	return new ActionRefill(this, refugeIDs, null);
+            		}
+            	}	
+        	}
+        	
         	EntityID explorationTgt = heatMap.getNodeToVisit();
         	Logger.info("No target... Heatmapping to: " + explorationTgt);
-        	List<EntityID> path = this.routeSearcher.getPath(currentTime, me, explorationTgt);
+        	path = this.routeSearcher.getPath(currentTime, me, explorationTgt);
         	
         	if(path.size() > 1) {
         		if(world.getEntity(path.get(path.size() - 1 )) instanceof Building) {
@@ -373,7 +383,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	}
         	else {
         		Logger.info("Path is too short... but I'll follow it anyway");
-        	}
+        	}       	
         	
             return new ActionMove(this, path);
         }
@@ -386,7 +396,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     		statusStateMachine.setState(StatusStates.ACTING);
             return this.moveTarget(currentTime);
         }
-        
+                
         // Check if the target is still on fire
         // If it's not then select a new target
         do{
@@ -395,6 +405,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             //if (building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4/* && building.isBrokennessDefined() && building.getBrokenness() > 10*/){
             if(building.isOnFire()){
             	Logger.trace(String.format("%s on fire, I'll tackle it", building));
+            	//return new ActionExtinguish(this, this.target, this.maxPower);
                 return this.world.getDistance(this.agentID, this.target) <= this.sightDistance ? new ActionExtinguish(this, this.target, this.maxPower) : this.moveTarget(currentTime);
             } else {
             	//System.out.println(">>>>>> it's not on fire anymore. Target OK  = " + this.target.getValue());
