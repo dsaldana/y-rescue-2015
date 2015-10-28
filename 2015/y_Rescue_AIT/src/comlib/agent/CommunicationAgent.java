@@ -85,7 +85,9 @@ public abstract class CommunicationAgent<E extends StandardEntity> extends Stand
     	catch (Exception e){
     		Logger.error("This is bad! An odd error occurred during think of CommunicationAgent!.", e);
     	}
-        Logger.info(String.format("----------- End of Timestep %d --------------\n", time));
+    	
+    	long secsToProcess = (System.currentTimeMillis() - this.startProcessTime);
+        Logger.info(String.format("----------- End of Timestep %d, Time to process [%d] msecs --------------\n", time, secsToProcess));
     }
 
     public void receiveBeforeEvent(int time, ChangeSet changed) {
