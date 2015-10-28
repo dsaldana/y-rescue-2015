@@ -244,6 +244,12 @@ public abstract class BasicTacticsPolice extends TacticsPolice implements RouteS
             return min == null ? targetPos.minus(agentPos).normalised().scale(1000000) : min.minus(agentPos).normalised().scale(1000000);
         }
     }
+    
+    public Action moveRefuge(int currentTime) {
+        Refuge result = PositionUtil.getNearTarget(this.world, this.me, this.getRefuges());
+        List<EntityID> path = this.routeSearcher.getPath(currentTime, this.me, result);
+        return new ActionMove(this, path != null ? path : this.routeSearcher.noTargetMove(currentTime, this.me));
+    }
 
     public void analysisRoad(Road road) {
         EntityID roadID = road.getID();

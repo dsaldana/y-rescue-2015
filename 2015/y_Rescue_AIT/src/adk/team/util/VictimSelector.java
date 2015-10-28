@@ -12,4 +12,5 @@ public interface VictimSelector extends TargetSelector {
     public void remove(Civilian civilian);
 
     public void remove(Human agent);
+
 }

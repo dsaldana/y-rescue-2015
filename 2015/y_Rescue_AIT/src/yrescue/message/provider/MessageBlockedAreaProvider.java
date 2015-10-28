@@ -23,9 +23,11 @@ public class MessageBlockedAreaProvider extends MapMessageProvider<MessageBlocke
 	protected void writeMessage(RadioConfig config, BitOutputStream bos, MessageBlockedArea msg)
 	{
 		super.writeMessage(config, bos, msg);
-		bos.writeBits(msg.roadID.getValue(), 32);
-		bos.writeBits(msg.x, 32);
-		bos.writeBits(msg.y, 32);
+		int destinationValue = msg.destinationID == null ? 0 : msg.destinationID.getValue();
+		bos.writeBits(msg.originID.getValue(), 32);
+		bos.writeBits(destinationValue, 32);
+		bos.writeBits(msg.xOrigin, 32);
+		bos.writeBits(msg.yOrigin, 32);
 		//bos.writeBits(BooleanHelper.toInt(msg.isPassable()), 1);
 	}
 
@@ -37,6 +39,7 @@ public class MessageBlockedAreaProvider extends MapMessageProvider<MessageBlocke
 	protected MessageBlockedArea createMessage(RadioConfig config, int time, BitStreamReader bsr)
 	{
 		return new MessageBlockedArea(
+			bsr.getBits(32),
 			bsr.getBits(32),
 			bsr.getBits(32),
 			bsr.getBits(32)

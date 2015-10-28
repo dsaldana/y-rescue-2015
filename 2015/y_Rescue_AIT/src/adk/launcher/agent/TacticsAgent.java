@@ -15,7 +15,6 @@ import rescuecore2.standard.messages.AKRest;
 import rescuecore2.misc.Pair;
 import rescuecore2.log.Logger;
 
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,9 +24,9 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
 	
     public static final String LOS_MAX_DISTANCE_KEY = "perception.los.max-distance";
     
-    protected Tactics tactics;
+    protected Tactics<?> tactics;
     protected Action action;						//current action of this agent
-    protected Map<Integer, Action> commandHistory;	//history of commands
+    public Map<Integer, Action> commandHistory;	//history of commands
     public int ignoreTime;
     protected Pair<Integer, Integer> lastPosition;
     
@@ -52,8 +51,11 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
         //this.tactics.setWorldInfo(this);
         this.setAgentUniqueValue();
         this.setAgentEntity();
+        
+        this.tactics.heatMap = this.tactics.initializeHeatMap();
         this.tactics.preparation(this.config, manager);
         this.tactics.registerTacticsAgent(this);
+        
         
         lastPosition = me().getLocation(model);
         
@@ -76,17 +78,40 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     
     @Override
     public void think(int time, ChangeSet changed) {
-        if(time <= this.ignoreTime) {
-            this.tactics.agentID = this.getID();
-            this.tactics.ignoreTimeThink(time, changed, this.manager);
-            return;
-        }
-        this.action = this.tactics.think(time, changed, this.manager);
-        lastPosition = me().getLocation(model); //updates lastPosition
-        Message message = this.action == null ? new AKRest(this.getID(), time) : this.action.getCommand(this.getID(), time);
+    	try{
+    		this.action = null;
+    		
+	        if (this.tactics.heatMap != null){
+	        	this.tactics.heatMap.updateNode(this.tactics.location.getID(), time);
+	        }
+	        else {
+	        	Logger.warn("Heatmap not initialized by agent " + this.tactics);
+	        	Logger.warn("Will attempt to initialize it now.");
+	        	this.tactics.heatMap = this.tactics.initializeHeatMap();
+	        }
+	        
+	        if(time <= this.ignoreTime) {
+	            this.tactics.agentID = this.getID();
+	            this.tactics.ignoreTimeThink(time, changed, this.manager);
+	            return;
+	        }
+	        
+	        this.action = this.tactics.think(time, changed, this.manager);
+	        lastPosition = me().getLocation(model); //updates lastPosition
+    	}
+    	catch (Exception e){
+    		Logger.error(("An exception has occurred!"), e);
+    		if (this.action == null){
+    			this.action = this.tactics.failsafeThink(time, changed, this.manager);
+    		}
+    	}
+    	
+    	Message message = this.action == null ? new AKRest(this.getID(), time) : this.action.getCommand(this.getID(), time);
         //System.out.println(message.getClass());
-        System.out.println(this.action.getClass());
+        System.out.println("Selected action:" + this.action);
+        Logger.info("AKMessage: " + message);
         this.send(message);
+        
     }
 
     @Override
@@ -103,6 +128,7 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     public void sendAfterEvent(int time, ChangeSet changed) {
     	//added by Anderson: registers the current action in history
     	this.commandHistory.put(time, this.action);
+    	this.tactics.sendAfterEvent();
     }
 
     @Override

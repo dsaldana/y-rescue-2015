@@ -3,9 +3,11 @@ package comlib.agent;
 
 import comlib.manager.MessageManager;
 import comlib.message.CommunicationMessage;
+import rescuecore2.log.Logger;
 import rescuecore2.messages.Command;
 import rescuecore2.messages.Message;
 import rescuecore2.standard.components.StandardAgent;
+import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.messages.AKSubscribe;
 import rescuecore2.worldmodel.ChangeSet;
@@ -56,24 +58,34 @@ public abstract class CommunicationAgent<E extends StandardEntity> extends Stand
     @Override
     protected final void think(int time, ChangeSet changed, Collection<Command> heard)
     {
-        this.startProcessTime = System.currentTimeMillis();
-        if (time <= this.ignoreTime)
-        {
-            send(new AKSubscribe(getID(), time, 1));
-        }
-        else {
-            this.receiveBeforeEvent(time, changed);
-//        try
-//        {
-            this.manager.receiveMessage(time, heard);
-//        } catch (Exception s) { System.out.println("'");}
-        }
-        this.think(time, changed);
+    	this.startProcessTime = System.currentTimeMillis();
 
-        if (time > this.ignoreTime) {
-            this.send(this.manager.createSendMessage(super.getID()));
-            this.sendAfterEvent(time, changed);
-        }
+    	Logger.info(String.format("----------- Start of Timestep %d --------------", time));
+    	
+    	try{
+
+			if (time <= this.ignoreTime) {
+				send(new AKSubscribe(getID(), time, 1));
+			} else {
+				this.receiveBeforeEvent(time, changed);
+				try {
+					this.manager.receiveMessage(time, heard);
+				} 
+				catch (Exception s) {
+					Logger.error("Error while receiving message!", s);
+				}
+			}
+			this.think(time, changed);
+
+			if (time > this.ignoreTime) {
+				this.send(this.manager.createSendMessage(super.getID()));
+				this.sendAfterEvent(time, changed);
+			}
+    	}
+    	catch (Exception e){
+    		Logger.error("This is bad! An odd error occurred during think of CommunicationAgent!.", e);
+    	}
+        Logger.info(String.format("----------- End of Timestep %d --------------\n", time));
     }
 
     public void receiveBeforeEvent(int time, ChangeSet changed) {

@@ -11,21 +11,23 @@ import rescuecore2.worldmodel.EntityID;
 
 public class MessageBlockedArea extends MessageMap {
 	
-	public EntityID roadID;
-	public int x, y;		//agent coordinates
+	public EntityID originID, destinationID;
+	public int xOrigin, yOrigin;		//agent coordinates
 
-	public MessageBlockedArea(Tactics<?> blockedAgent, EntityID locationID) {
+	public MessageBlockedArea(Tactics<?> blockedAgent, EntityID origin, EntityID destination) {
 		super(MessageID.blockedAreaMessage);
-		this.roadID = locationID;
-		this.x = blockedAgent.me().getX();
-		this.y = blockedAgent.me().getY();
+		this.originID = origin;
+		this.destinationID = destination;
+		this.xOrigin = blockedAgent.me().getX();
+		this.yOrigin = blockedAgent.me().getY();
 	}
 	
-	public MessageBlockedArea(int rawRoadID, int x, int y) {
+	public MessageBlockedArea(int rawOriginID, int rawDestinationID, int x, int y) {
 		super(MessageID.blockedAreaMessage);
-		this.roadID = new EntityID(rawRoadID);
-		this.x = x;
-		this.y = y;
+		this.originID = new EntityID(rawOriginID);
+		this.destinationID = rawDestinationID == 0 ? null : new EntityID(rawDestinationID);
+		this.xOrigin = x;
+		this.yOrigin = y;
 	 
 	}
 

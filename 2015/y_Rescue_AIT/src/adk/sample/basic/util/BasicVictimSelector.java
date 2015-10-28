@@ -78,9 +78,9 @@ public class BasicVictimSelector implements VictimSelector {
 
     @Override
     public EntityID getNewTarget(int time) {
-        StandardEntity result = PositionUtil.getNearTarget(this.provider.getWorld(), this.provider.getOwner(), this.civilianList);
+        StandardEntity result = PositionUtil.getNearTarget(this.provider.getWorld(), this.provider.getOwner(), this.agentList);
         if(result == null) {
-            result = PositionUtil.getNearTarget(this.provider.getWorld(), this.provider.getOwner(), this.agentList);
+            result = PositionUtil.getNearTarget(this.provider.getWorld(), this.provider.getOwner(), this.civilianList);
         }
         return result != null ? result.getID() : null;
     }

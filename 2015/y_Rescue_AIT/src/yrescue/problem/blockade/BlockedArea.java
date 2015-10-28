@@ -3,36 +3,38 @@ import rescuecore2.worldmodel.EntityID;
 
 public class BlockedArea{
 	
-	public EntityID areaID;
-	public int x, y;
+	public EntityID originID;
+	public EntityID destinationID;
+	public int xOrigin, yOrigin;
 
-	public BlockedArea(EntityID areaID, int x, int y) {
-		this.areaID = areaID;
-		this.x = x;
-		this.y = y;
+	public BlockedArea(EntityID originID, EntityID destinationID, int xOrigin, int yOrigin) {
+		this.originID = originID;
+		this.destinationID = destinationID;
+		this.xOrigin = xOrigin;
+		this.yOrigin = yOrigin;
 	}
 	
-	public EntityID getEntityID(){
-		return areaID;
+	public EntityID getOriginID(){
+		return originID;
 	}
 	
 	@Override
 	public int hashCode() {
-		return String.format("%s|%s%s", areaID.getValue(), x, y).hashCode();
+		return String.format("%s|%s|%s|%s", originID.getValue(), destinationID.getValue(), xOrigin, yOrigin).hashCode();
 	}
 	
 	@Override
 	public boolean equals(Object other){
 		if (other instanceof BlockedArea) {
 			BlockedArea theOther = (BlockedArea) other;
-			return areaID.equals(theOther.areaID) && x == theOther.x && y == theOther.y;
+			return originID.equals(theOther.originID) && xOrigin == theOther.xOrigin && yOrigin == theOther.yOrigin && destinationID.equals(theOther.destinationID);
 		}
 		return false;
 	}
 	
 	@Override
 	public String toString() {
-		return String.format("BlockedArea: id=%d, x=%d, y=%d", getEntityID().getValue(), x, y);
+		return String.format("BlockedArea: origin=%s, x=%d, y=%d, destination=%s", originID, xOrigin, yOrigin, destinationID);
 	}
 	
 }

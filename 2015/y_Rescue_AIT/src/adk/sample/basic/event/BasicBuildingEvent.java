@@ -5,6 +5,8 @@ import adk.team.util.provider.WorldProvider;
 import comlib.event.information.MessageBuildingEvent;
 import comlib.manager.MessageReflectHelper;
 import comlib.message.information.MessageBuilding;
+import rescuecore2.log.Logger;
+import rescuecore2.standard.entities.Building;
 
 public class BasicBuildingEvent implements MessageBuildingEvent{
 
@@ -18,7 +20,16 @@ public class BasicBuildingEvent implements MessageBuildingEvent{
 
     @Override
     public void receivedRadio(MessageBuilding message) {
-        this.bsp.getBuildingSelector().add(MessageReflectHelper.reflectedMessage(this.provider.getWorld(), message));
+    	Building b = (Building) provider.getWorld().getEntity(message.getBuildingID());
+    	if(provider.getUpdateWorldData().getChangedEntities().contains(b.getID())){
+    		Logger.trace("Skipping building found in ChangeSet: " + b);
+    	}
+    	else {
+    		Logger.trace("" + b + " not in changeset, updating info and adding to targets");
+    		b = MessageReflectHelper.reflectedMessage(this.provider.getWorld(), message);
+    	}
+    	
+        this.bsp.getBuildingSelector().add(b);
     }
 
     @Override

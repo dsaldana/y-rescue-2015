@@ -17,7 +17,7 @@ public class MessageBlockedAreaEvent implements MessageEvent<MessageBlockedArea>
     }
 
     public void receivedRadio(MessageBlockedArea message) {
-    	this.basp.getBlockedAreaSelector().add(new BlockedArea(message.roadID, message.x, message.y));
+    	this.basp.getBlockedAreaSelector().add(new BlockedArea(message.originID, message.destinationID, message.xOrigin, message.yOrigin));
     }
 
     public void receivedVoice(MessageBlockedArea message) {

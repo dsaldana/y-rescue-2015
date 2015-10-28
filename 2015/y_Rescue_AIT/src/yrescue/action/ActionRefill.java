@@ -1,9 +1,8 @@
 package yrescue.action;
 
 import adk.team.action.Action;
-import adk.team.action.ActionRest;
+import rescuecore2.log.Logger;
 import rescuecore2.messages.Message;
-import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.messages.AKMove;
 import rescuecore2.worldmodel.EntityID;
@@ -22,25 +21,31 @@ public class ActionRefill extends Action {
         super(tactics);
         this.tactics = tactics;
         
+        Logger.trace("ActionRefill. refuges=" + refugeIDs + ", hydrants=" + hydrantIDs);
+        
         // Search for the closest water source
-        double dist = -1;
+        int dist = Integer.MAX_VALUE;
         List<EntityID> pathTemp = new ArrayList<EntityID>();
         for(StandardEntity next: refugeIDs){
         	pathTemp = tactics.routeSearcher.getPath(tactics.getCurrentTime(), tactics.me().getPosition(), next.getID());
-        	if(dist == -1 || dist < pathTemp.size()){
+        	if(pathTemp.size() < dist){
         		dist = pathTemp.size();
         		this.path = pathTemp;
         		this.destination = next;
         	}
         }
         for(StandardEntity next: hydrantIDs){
-        	pathTemp = tactics.routeSearcher.getPath(tactics.getCurrentTime(), tactics.getOwnerID(), next.getID());
-        	if(dist == -1 || dist < pathTemp.size()){
+        	pathTemp = tactics.routeSearcher.getPath(tactics.getCurrentTime(), tactics.me.getPosition(), next.getID());
+        	if (pathTemp == null){
+        		Logger.warn("\nnull path to hydrant! " + next + ". It will be ignored.\n");
+        	}
+        	else if(pathTemp.size() < dist){
         		dist = pathTemp.size();
         		this.path = pathTemp;
         		this.destination = next;
         	}
         }
+        Logger.trace("Selected destination to refill: " + this.destination);
     }
     
 
