@@ -280,8 +280,16 @@ private void updateVisitHistory(){
         
         if(this.me.getDamage() >= 100) { 
         	return moveRefuge(currentTime);
+        	
         }
         
+        //Ensuring the police stays in the refuge until the damage drops to 0
+        Refuge result = PositionUtil.getNearTarget(this.world, this.me, this.getRefuges());
+        EntityID results = result.getID();           
+        EntityID local = this.location.getID();        
+        if((local == results) && (this.me.getDamage() > 0)){        
+        		return new ActionRest(this);
+        	}        
         
         if(this.stuckClearLoop(currentTime)) {
         	Logger.warn("Warning: clearing the same position for more than 3 timesteps");
@@ -312,6 +320,7 @@ private void updateVisitHistory(){
         Logger.debug("#blocked roads: " + yis.impassableRoadList.size());
         Logger.debug("They are: " + yis.impassableRoadList);
         */
+        
         Logger.debug("#blocked roads: " + blockedAreaSelector.blockedAreas.size());
         Logger.debug("They are: " + blockedAreaSelector.blockedAreas.values());
         
@@ -391,6 +400,12 @@ private void updateVisitHistory(){
         		Logger.debug("Refuge cleaned " +location.getID());
         	}
         	
+        	
+        	System.out.println("The heatmap " +heatMap);
+        	if(heatMap == null){
+        		Logger.info("WARNING: null heatmap. Will build a new one");
+        		heatMap = initializeHeatMap();
+        	}
         	path = this.routeSearcher.getPath(currentTime, me, heatMap.getNodeToVisit());// noTargetMove(currentTime, this.me);
         	Logger.debug(String.format("HeatMap exploration. Tgt: %s; path: %s",  heatMap.getNodeToVisit(), path));
         } else {
@@ -448,6 +463,8 @@ private void updateVisitHistory(){
             		statusStateMachine.setState(StatusStates.ACTING);
                 	return new ActionClear(this, (int)target.getX(), (int)target.getY());
         		}
+        			
+        		
         	}
         }
         
@@ -461,6 +478,13 @@ private void updateVisitHistory(){
     		
     		//CHECK IF DISTANCE TO FRONTIER IS SHORT
     		Vector2D agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
+    		//System.out.println("Distance to midpoint: " + agentToTarget.getLength());
+    		/*if (agentToTarget.getLength() < 1000){
+    			Logger.warn("Mid point of frontier is very close, will aim to next area's centroid");
+    			Area next = (Area) this.world.getEntity(path.get(0));
+    			target = new Point2D(next.getX(), next.getY());
+    			agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
+    		}*/
     		
     		//MAKES SURE THE AGENT WILL SHOOT AT THE MAXIMUM RANGE
     		Vector2D normalagentToTarget = agentToTarget.normalised();

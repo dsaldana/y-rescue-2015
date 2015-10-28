@@ -36,7 +36,8 @@ public class KMeans {
     	 List<EntityID> partitionAnterior = new ArrayList<EntityID>();
     	 
     	 // Dividir o vetor em intervalos iguais, quando possivel, para a selecao aleatoria dos centroides 
-    	 int interval = allBuildings.size()/k;
+    	 int size = allBuildings.size();
+    	 int interval = size/k;
     	 
     	 //////////////////////////////////////////////////
     	 // Gerar os k primeiros centroides das k celulas
@@ -50,9 +51,9 @@ public class KMeans {
     	 //  count   0   1   0   1   0   1
          for(StandardEntity next : allBuildings){
              if (next instanceof Building) {
-                 Building b = (Building)next;
+                 Building b = (Building) next;
                  buildings.add(b);
-                 if(count == mInterval){
+                 if(count == mInterval && partition.size() < k){
                 	 partition.add(b.getID());
                  }
              } else {
@@ -84,7 +85,7 @@ public class KMeans {
 	        		 StandardEntity temp = model.getEntity(nextP);
 	        		 Building b = (Building)temp;
         			 distanceTemp = Math.sqrt( Math.pow(nextB.getX()/100-b.getX()/100,2)+Math.pow(nextB.getY()/100-b.getY()/100,2) );
-        			 if(distanceTemp < distance){
+        			 if(distanceTemp <= distance){
         				 distance = distanceTemp;
         				 idTemp = nextP;
         			 }
