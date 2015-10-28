@@ -8,7 +8,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import javax.sound.sampled.Line;
+
 import org.apache.log4j.MDC;
+
+import com.vividsolutions.jts.geom.Polygon;
 
 import adk.sample.basic.event.BasicRoadEvent;
 import adk.sample.basic.tactics.BasicTacticsPolice;
@@ -20,6 +24,7 @@ import adk.team.action.ActionRest;
 import adk.team.util.ImpassableSelector;
 import adk.team.util.RouteSearcher;
 import adk.team.util.graph.PositionUtil;
+import clear.Geometry;
 import comlib.manager.MessageManager;
 import comlib.message.information.MessageBuilding;
 import comlib.message.information.MessageCivilian;
@@ -242,6 +247,31 @@ private void updateVisitHistory(){
         }
     }
     
+    
+    public boolean CheckBlockadesAround(){
+    	if(location instanceof Area){
+    		Area temp = (Area)this.location;
+    		List<EntityID> listOfBlockades = temp.getBlockades();
+    		if(listOfBlockades != null){
+		    	for(EntityID e : listOfBlockades ){
+		    		Blockade b = (Blockade)world.getEntity(e);
+		    		java.awt.Polygon pol = new java.awt.Polygon();
+		    		int [] apexes = b.getApexes();
+		    		for(int i = 0; i < apexes.length; i++){
+		    			int x = apexes[i];
+		    			int y = apexes[i+1];
+		    			i++;
+		    			pol.addPoint(x, y);
+		    		}
+		    		if(pol.contains(me.getX(), me.getY())) return true;
+		    	}
+    		}
+    	}
+    	return false;
+        
+    }
+    
+    
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
     	Logger.debug("Radio channel: " + manager.getRadioConfig().getChannel());
@@ -268,6 +298,12 @@ private void updateVisitHistory(){
         if(this.me.getBuriedness() > 0) {
             return this.buriednessAction(manager);
         }
+        Logger.debug("                          BLOCKADE AROUND TESTING!!!");
+        if(CheckBlockadesAround()){
+        	Blockade closest = BlockadeUtil.getClosestBlockadeInMyRoad(this);
+        	Logger.debug("                          BLOCKADE AROUND DETECTED!!!");
+        	return new ActionClear(this,closest);
+        }
         
         if (this.tacticsAgent.stuck(currentTime)){
         	Logger.warn("I'm STUCK! How's that possible?");
@@ -277,9 +313,10 @@ private void updateVisitHistory(){
         	}
         	return new ActionClear(this, closest);//closest.getX(), closest.getY() );
         }
-        
-        if(this.me.getDamage() >= 100) { 
-        	return moveRefuge(currentTime);
+        if(this.location instanceof Road){
+	        if(this.me.getDamage() >= 100) { 
+	        	return moveRefuge(currentTime);
+	        }
         }
         
         
@@ -298,7 +335,6 @@ private void updateVisitHistory(){
     		PathUtil.makeSafePath(this, path);
     		return new ActionMove(this, path);
         }
-        
         
         
         /***************************************
