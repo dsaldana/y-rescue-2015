@@ -19,6 +19,7 @@ public class ActionStates {
 		public static final ActionState EXTINGUISHING = new ActionState("EXTINGUISHING");		//throwing water in building
         public static final ActionState OUT_OF_WATER = new ActionState("OUT_OF_WATER");		
 		public static final ActionState REFILLING_WATER = new ActionState("FILLING_WATER");
+		public static final ActionState REFILLING_WATER_ANYWAY = new ActionState("FILLING_WATER_ANYWAY");
 		
 		private FireFighter() {}
 	}
