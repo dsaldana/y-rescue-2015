@@ -500,6 +500,10 @@ private void updateVisitHistory(){
         	actionStateMachine.setState(ActionStates.MOVING_TO_TARGET);
     		statusStateMachine.setState(StatusStates.ACTING);
     		
+    		
+    		///Testing if the cop will visit burning buildings
+    		PathUtil.makeSafePath(this, path);
+    		   		
     		if (blockedAreaTarget == null) {
     			Logger.trace("Null target, moving with " + path);
     			return new ActionMove(this, path);
