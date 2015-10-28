@@ -8,11 +8,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import javax.sound.sampled.Line;
-
 import org.apache.log4j.MDC;
-
-import com.vividsolutions.jts.geom.Polygon;
 
 import adk.sample.basic.event.BasicRoadEvent;
 import adk.sample.basic.tactics.BasicTacticsPolice;
@@ -24,7 +20,6 @@ import adk.team.action.ActionRest;
 import adk.team.util.ImpassableSelector;
 import adk.team.util.RouteSearcher;
 import adk.team.util.graph.PositionUtil;
-import clear.Geometry;
 import comlib.manager.MessageManager;
 import comlib.message.information.MessageBuilding;
 import comlib.message.information.MessageCivilian;
@@ -313,12 +308,19 @@ private void updateVisitHistory(){
         	}
         	return new ActionClear(this, closest);//closest.getX(), closest.getY() );
         }
-        if(this.location instanceof Road){
-	        if(this.me.getDamage() >= 100) { 
-	        	return moveRefuge(currentTime);
-	        }
+        
+        if(this.me.getDamage() >= 100) { 
+        	return moveRefuge(currentTime);
+        	
         }
         
+        //Ensuring the police stays in the refuge until the damage drops to 0
+        Refuge result = PositionUtil.getNearTarget(this.world, this.me, this.getRefuges());
+        EntityID results = result.getID();           
+        EntityID local = this.location.getID();        
+        if((local == results) && (this.me.getDamage() > 0)){        
+        		return new ActionRest(this);
+        	}        
         
         if(this.stuckClearLoop(currentTime)) {
         	Logger.warn("Warning: clearing the same position for more than 3 timesteps");
@@ -337,6 +339,7 @@ private void updateVisitHistory(){
         }
         
         
+        
         /***************************************
          * 
          * The strategy here First selects the closest blockage and sends the policeman there
@@ -348,6 +351,7 @@ private void updateVisitHistory(){
         Logger.debug("#blocked roads: " + yis.impassableRoadList.size());
         Logger.debug("They are: " + yis.impassableRoadList);
         */
+        
         Logger.debug("#blocked roads: " + blockedAreaSelector.blockedAreas.size());
         Logger.debug("They are: " + blockedAreaSelector.blockedAreas.values());
         
@@ -427,6 +431,12 @@ private void updateVisitHistory(){
         		Logger.debug("Refuge cleaned " +location.getID());
         	}
         	
+        	
+        	System.out.println("The heatmap " +heatMap);
+        	if(heatMap == null){
+        		Logger.info("WARNING: null heatmap. Will build a new one");
+        		heatMap = initializeHeatMap();
+        	}
         	path = this.routeSearcher.getPath(currentTime, me, heatMap.getNodeToVisit());// noTargetMove(currentTime, this.me);
         	Logger.debug(String.format("HeatMap exploration. Tgt: %s; path: %s",  heatMap.getNodeToVisit(), path));
         } else {
@@ -484,6 +494,8 @@ private void updateVisitHistory(){
             		statusStateMachine.setState(StatusStates.ACTING);
                 	return new ActionClear(this, (int)target.getX(), (int)target.getY());
         		}
+        			
+        		
         	}
         }
         
@@ -497,6 +509,13 @@ private void updateVisitHistory(){
     		
     		//CHECK IF DISTANCE TO FRONTIER IS SHORT
     		Vector2D agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
+    		//System.out.println("Distance to midpoint: " + agentToTarget.getLength());
+    		/*if (agentToTarget.getLength() < 1000){
+    			Logger.warn("Mid point of frontier is very close, will aim to next area's centroid");
+    			Area next = (Area) this.world.getEntity(path.get(0));
+    			target = new Point2D(next.getX(), next.getY());
+    			agentToTarget = new Vector2D(target.getX() - me().getX(), target.getY() - me().getY());
+    		}*/
     		
     		//MAKES SURE THE AGENT WILL SHOOT AT THE MAXIMUM RANGE
     		Vector2D normalagentToTarget = agentToTarget.normalised();
@@ -695,15 +714,15 @@ private void updateVisitHistory(){
             	//if(!(next instanceof Road)) continue;
             	
             	if (next instanceof Refuge){
-            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.HIGH, 0);
+            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.MEDIUM, 0);
             	}
             	
             	else if (next instanceof GasStation){
-            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.HIGH, 0);
+            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.MEDIUM, 0);
             	}
             	
             	else {
-            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.LOW, 0);
+            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.VERY_LOW, 0);
             	}
             }
         }

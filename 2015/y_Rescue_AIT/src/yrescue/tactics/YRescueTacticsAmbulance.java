@@ -57,6 +57,9 @@ import rescuecore2.worldmodel.EntityID;
 import yrescue.heatmap.HeatMap;
 import yrescue.heatmap.HeatNode;
 import yrescue.kMeans.KMeans;
+import yrescue.message.event.MessageRecruitmentEvent;
+import yrescue.message.information.MessageRecruitment;
+import yrescue.message.information.Task;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.util.DistanceSorter;
@@ -158,6 +161,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         manager.registerEvent(new BasicAmbulanceEvent(this, this));
         manager.registerEvent(new BasicFireEvent(this, this));
         manager.registerEvent(new BasicPoliceEvent(this, this));
+        manager.registerEvent(new MessageRecruitmentEvent(this));
     }
 
     @Override
@@ -238,6 +242,9 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 			"AGENT AMBULANCE %d HP: %d, B'ness: %d, Dmg: %d, Direction: %d, SmOnBrd? %s, Target: %s", 
 			me.getID().getValue(), me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection(), someoneOnBoard(), this.target
 		));
+        
+        manager.addSendMessage(new MessageRecruitment(me.getID(), 4, me.getPosition(), Task.RESCUE));
+        manager.addSendMessage(new MessageRecruitment(me.getID(), 4, me.getPosition(), Task.RESCUE));
         
         //heatMap.writeMapToFile();
         
@@ -388,8 +395,9 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	                	this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
 	                }
 	            }
-	        	
-	        	return this.moveRefuge(currentTime);
+	        	else{
+	        		return this.moveRefuge(currentTime);
+	        	}
         	}
         }
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.SELECT_NEW_TARGET)){
@@ -600,7 +608,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             	// Ignore non building areas
             	if(!(next instanceof Building)) continue;
             	
-            	heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.VERY_SLOW, 0);
+            	heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.VERY_LOW, 0);
             }
         }
         

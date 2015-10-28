@@ -9,7 +9,6 @@ import comlib.provider.information.*;
 import comlib.provider.topdown.*;
 import comlib.util.BitOutputStream;
 import comlib.util.BitStreamReader;
-
 import rescuecore2.Constants;
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
@@ -20,6 +19,7 @@ import rescuecore2.standard.messages.AKSpeak;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.message.provider.MessageBlockedAreaProvider;
 import yrescue.message.provider.MessageHydrantProvider;
+import yrescue.message.provider.MessageRecruitmentProvider;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -186,7 +186,7 @@ public class MessageManager {
 		BitStreamReader bsr = new BitStreamReader(akSpeak.getContent());
 		int msgID = bsr.getBits(this.radioConfig.getSizeOfMessageID());
 		//MessageProvider provider = this.providerList[bsr.getBits(this.radioConfig.getSizeOfMessageID())];
-		//Logger.trace("Received MessageID: " + msgID);
+		Logger.trace("Received MessageID: " + msgID);
 		MessageProvider provider = this.providerList[msgID];
 		//Logger.trace("MessageProvider:" + provider);
 		
@@ -350,6 +350,10 @@ public class MessageManager {
 		
 		this.registerStandardProvider(
 			new MessageHydrantProvider(MessageID.hydrantMessage)
+		);
+		
+		this.registerStandardProvider(
+			new MessageRecruitmentProvider(MessageID.recruitmentMessage)
 		);
 		//this.register(CommunicationMessage.buildingMessageID, new MessageBuildingProvider(this.event));
 		//this.register(CommunicationMessage.blockadeMessageID, new BlockadeMessageProvider(this.event));
