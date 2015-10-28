@@ -687,15 +687,15 @@ private void updateVisitHistory(){
             	//if(!(next instanceof Road)) continue;
             	
             	if (next instanceof Refuge){
-            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.HIGH, 0);
+            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.MEDIUM, 0);
             	}
             	
             	else if (next instanceof GasStation){
-            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.HIGH, 0);
+            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.MEDIUM, 0);
             	}
             	
             	else {
-            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.LOW, 0);
+            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.VERY_LOW, 0);
             	}
             }
         }

@@ -15,7 +15,7 @@ public class HeatNode {
 		HIGH(1),
 		MEDIUM(2),
 		LOW(3),
-		VERY_SLOW(4),
+		VERY_LOW(4),
 		ULTRA_SLOW(5);
 		
 		private int priorityValue;
@@ -57,7 +57,7 @@ public class HeatNode {
 		if(this.priority.equals(PriorityLevel.HIGH)) heatFactor = HIGH_HEAT_FACTOR;
 		else if(this.priority.equals(PriorityLevel.MEDIUM)) heatFactor = MEDIUM_HEAT_FACTOR;
 		else if(this.priority.equals(PriorityLevel.LOW)) heatFactor = LOW_HEAT_FACTOR;
-		else if(this.priority.equals(PriorityLevel.VERY_SLOW)) heatFactor = VERY_LOW_HEAT_FACTOR;
+		else if(this.priority.equals(PriorityLevel.VERY_LOW)) heatFactor = VERY_LOW_HEAT_FACTOR;
 		else if(this.priority.equals(PriorityLevel.ULTRA_SLOW)) heatFactor = ULTRA_SLOW_HEAT_FACTOR;
 		
 		if(heatFactor == 0.0f) heatFactor = LOW_HEAT_FACTOR;
