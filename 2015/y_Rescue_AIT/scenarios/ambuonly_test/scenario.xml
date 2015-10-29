@@ -16,6 +16,8 @@
   <rcr:firebrigade rcr:location="278"/>
   <rcr:firebrigade rcr:location="257"/>
 -->
+  <rcr:policeforce rcr:location="268"/>
+  <rcr:policeforce rcr:location="270"/>
   <rcr:ambulanceteam rcr:location="297"/>
   <rcr:ambulanceteam rcr:location="969"/>
   <rcr:ambulanceteam rcr:location="976"/>
