@@ -1,5 +1,6 @@
 package yrescue.util;
 
+import java.awt.Polygon;
 import java.util.List;
 
 import rescuecore2.standard.entities.Area;
@@ -15,6 +16,16 @@ public class GeometricUtil {
 	 * @param world
 	 * @return
 	 */
+	
+    public static Polygon getPolygon(int [] apexes){
+    	Polygon p = new Polygon();
+    	for(int i = 0; i < apexes.length; i++){
+    		p.addPoint(apexes[i], apexes[i+1]);
+    		i++;
+    	}
+    	return p;
+    }
+	
 	public static int getAreaOfEntity(EntityID entity, StandardWorldModel world){
 		Area area0 = (Area) world.getEntity(entity);
 		List<Edge> edgeList = area0.getEdges();

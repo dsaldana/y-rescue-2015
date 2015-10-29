@@ -20,8 +20,11 @@ import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.spi.LoggerFactory;
 import org.hamcrest.core.IsInstanceOf;
 
+import com.sun.xml.internal.ws.addressing.ProblemAction;
+
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
+import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Civilian;
@@ -76,7 +79,10 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	
 	protected List<EntityID> clusterToVisitP;
 	protected List<EntityID> clusterToVisitNP;
+	private List<EntityID> lastpath;
 	protected EntityID clusterCenter;
+	
+	private boolean isStuck = false;
 	
 	protected final int EXPLORE_TIME_STEP_TRESH = 20;
 	protected int EXPLORE_TIME_LIMIT = EXPLORE_TIME_STEP_TRESH;
@@ -112,6 +118,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     public void preparation(Config config, MessageManager messageManager) {
         this.routeSearcher = this.initRouteSearcher();
         this.buildingSelector = this.initBuildingSelector();
+        lastpath = new ArrayList<>();
         
         busyHydrantIDs = new HashMap<>();
         lastWater = me.getWater();
@@ -283,6 +290,10 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
+        	//isStuck = true;
+        	//Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)this.world.getEntity(me.getID()), (Area)this.world.getEntity(lastpath.get(0)), this);
+        	//List<EntityID> newPath = new ArrayList<>();
+        	
         	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
         	Logger.trace("I'm blocked. Added a MessageBlockedArea");
     		return new ActionRest(this);	//does nothing...
@@ -327,6 +338,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                         Road road = (Road)entity;
                         List<EntityID> path = this.routeSearcher.getPath(currentTime, this.me, road);
                         if(path != null) {
+                        	lastpath = path;
                             return new ActionMove(this, path);
                         }
                     }
@@ -463,7 +475,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	else {
         		Logger.info("Path is too short... but I'll follow it anyway");
         	}       	
-        	
+        	lastpath = path;
             return new ActionMove(this, path);
         }
         
@@ -536,7 +548,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     	else {
     		Logger.info("Path is too short... but I'll follow it anyway");
     	}
-    	
+    	lastpath = path;
         return new ActionMove(this, path);
     }
 
@@ -571,6 +583,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             	this.target = null;
             }
             else {
+            	lastpath = path;
                 return new ActionMove(this, path);
             }
         }
@@ -578,6 +591,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         EntityID explorationTgt = heatMap.getNodeToVisit();
     	Logger.info("Target is null... Heatmapping to: " + explorationTgt);
     	path = this.safePathToBuilding(explorationTgt);
+    	lastpath = path;
         return new ActionMove(this, path);
     }
     
