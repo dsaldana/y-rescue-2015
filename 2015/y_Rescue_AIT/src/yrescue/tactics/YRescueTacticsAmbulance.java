@@ -298,7 +298,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         if (this.tacticsAgent.stuck(currentTime)){
         	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
         	Logger.trace("I'm blocked. Added a MessageBlockedArea");
-    		return new ActionRest(this);	//does nothing...
     	}
         
         // If we are not in the special condition exploring, update target or get a new one 
