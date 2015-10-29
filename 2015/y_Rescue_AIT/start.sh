@@ -12,10 +12,10 @@ echo "$5 Police Offices,"
 echo "$6 Ambulances and"
 echo "$7 Ambulance Centers."
 
-#command: ./start.sh [SERVER IP] [TEAM NAME] [NUMBER OF FIREFIGHTERS] [NUMBER OF FIRESTATIONS] [NUMBER OF POLICEMEN] [NUMBER OF POLICE OFFICES] [NUMBER OF AMBULANCES] [NUMBER OF AMBULANCE CENTERS]
+#command: ./start.sh [#FIREFIGHTERS] [#FIRESTATIONS] [#POLICEMEN] [#POLICE OFFICES] [#AMBULANCES] [#AMBULANCE CENTERS] [SERVER]
 #number of AGENTS (-1 = Max)
  
-java -Xms1G -Xmx2G -classpath $classpath adk.Main -h:$1 -fb:$2 -fs:$3 -pf:$4 -po:$5 -at:$6 -ac:$7
+java -Xms3G -Xmx7G -classpath $classpath adk.Main -h:$7 -fb:$1 -fs:$2 -pf:$3 -po:$4 -at:$5 -ac:$6
 
 echo "Agents launched. To terminate them, hit Ctrl+C in this terminal."
 

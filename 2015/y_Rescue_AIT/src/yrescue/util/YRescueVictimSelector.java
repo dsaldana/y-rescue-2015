@@ -104,6 +104,11 @@ public class YRescueVictimSelector implements VictimSelector {
         }
         return result != null ? result.getID() : null;
     }
+    
+    @Override
+    public EntityID getNewTarget(int time, List<EntityID> cluster, List<EntityID> notCluster) {
+        return getNewTarget(time);
+    }
 
     @Override
     public EntityID updateTarget(int time, EntityID target) {

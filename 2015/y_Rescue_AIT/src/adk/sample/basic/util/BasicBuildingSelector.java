@@ -8,6 +8,7 @@ import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.worldmodel.EntityID;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class BasicBuildingSelector implements BuildingSelector {
@@ -57,9 +58,20 @@ public class BasicBuildingSelector implements BuildingSelector {
         StandardEntity result = PositionUtil.getNearTarget(this.provider.getWorld(), this.provider.getOwner(), this.buildingList);
         return result != null ? result.getID() : null;
     }
+    
+    @Override
+    public EntityID getNewTarget(int time, List<EntityID> cluster, List<EntityID> notCluster) {
+    	return getNewTarget(time);
+    }
 
     @Override
     public EntityID updateTarget(int time, EntityID target) {
         return target;
     }
+    
+    // Test
+    //public Set<Building> getListBuilding(int time){
+    //	return this.buildingList;
+    //}
+ 
 }

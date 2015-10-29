@@ -5,11 +5,14 @@ import static rescuecore2.misc.Handy.objectsToIDs;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
@@ -38,6 +41,7 @@ import yrescue.util.GeometricUtil;
 import yrescue.action.ActionRefill;
 import yrescue.heatmap.HeatMap;
 import yrescue.heatmap.HeatNode;
+import yrescue.kMeans.KMeans;
 import yrescue.message.event.MessageHydrantEvent;
 import yrescue.message.information.MessageBlockedArea;
 import yrescue.message.information.MessageHydrant;
@@ -69,6 +73,13 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 
 	private StateMachine actionStateMachine;
 	private StateMachine statusStateMachine;
+	
+	protected List<EntityID> clusterToVisitP;
+	protected List<EntityID> clusterToVisitNP;
+	protected EntityID clusterCenter;
+	
+	protected final int EXPLORE_TIME_STEP_TRESH = 20;
+	protected int EXPLORE_TIME_LIMIT = EXPLORE_TIME_STEP_TRESH;
 	
 	@Override
     public String getTacticsName() {
@@ -116,8 +127,62 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         this.hydrant_rate = this.config.getIntValue("fire.tank.refill_hydrant_rate");
         this.tank_maximum = this.config.getIntValue("fire.tank.maximum");
         
-        this.actionStateMachine = new StateMachine(ActionStates.Policeman.AWAITING_ORDERS);
-        this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
+        clusterToVisitP = new LinkedList<EntityID>();
+        clusterToVisitNP = new LinkedList<EntityID>();
+    	List<StandardEntity> firebrigadeList = new ArrayList<StandardEntity>(this.getWorld().getEntitiesOfType(StandardEntityURN.FIRE_BRIGADE));
+    	
+    	KMeans kmeans;
+    	if(firebrigadeList.size() > 5) kmeans = new KMeans(5);
+    	else kmeans = new KMeans(firebrigadeList.size());
+    	
+    	Map<EntityID, EntityID> kmeansResult = kmeans.calculatePartitions(this.getWorld());
+    	List<EntityID> partitions = kmeans.getPartitions();
+    	
+    	firebrigadeList.sort(new Comparator<StandardEntity>() {
+			@Override
+			public int compare(StandardEntity o1, StandardEntity o2) {
+				return Integer.compare(o1.getID().getValue(), o2.getID().getValue());
+			}
+		});
+    	
+    	partitions.sort(new Comparator<EntityID>() {
+			@Override
+			public int compare(EntityID o1, EntityID o2) {
+				return Integer.compare(o1.getValue(), o2.getValue());
+			}
+		});
+    	
+    	if(firebrigadeList.size() == partitions.size()){
+    		int pos = -1;
+    		for(int i = 0; i < firebrigadeList.size(); i++){
+    			if(me.getID().getValue() == firebrigadeList.get(i).getID().getValue()){
+    				pos = i;
+    				break;
+    			}
+    		}
+    		
+    		if(pos != -1){
+    			clusterCenter = partitions.get(pos);
+        		final Set<Map.Entry<EntityID, EntityID>> entries = kmeansResult.entrySet();
+
+        		for (Map.Entry<EntityID, EntityID> entry : entries) {
+        		    EntityID key = entry.getKey();
+        		    EntityID partition= entry.getValue();
+        		    if(partition.getValue() == clusterCenter.getValue()){
+        		    	clusterToVisitP.add(key);
+        		    }else{
+        		    	clusterToVisitNP.add(key);
+        		    }
+        		}	
+    		}
+    	}
+    	
+    	Logger.info("Cluster to visit :" + clusterToVisitP);
+    	if(clusterToVisitP.size() > 0){
+    		this.target = clusterCenter;
+    		this.actionStateMachine = new StateMachine(ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION);
+    		this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
+    	}   
         
         MDC.put("agent", this);
         MDC.put("location", location());
@@ -193,6 +258,12 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     
     public void ignoreTimeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
     	Logger.debug("\nRadio channel: " + manager.getRadioConfig().getChannel());
+    	
+    	// Check for buriedness and tries to extinguish fire in a close building
+        if(this.me.getBuriedness() > 0) {
+        	Logger.info("I'm buried at " + me.getPosition());
+            this.buriednessAction(manager);
+        }
     }
 
     @Override
@@ -237,20 +308,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         // Check for buriedness and tries to extinguish fire in a close building
         if(this.me.getBuriedness() > 0) {
         	Logger.info("I'm buried at " + me.getPosition());
-            manager.addSendMessage(new MessageFireBrigade(this.me, MessageFireBrigade.ACTION_REST, this.agentID));
-            for(StandardEntity entity : this.world.getObjectsInRange(this.me, this.maxDistance)) {
-                if(entity instanceof Building) {
-                    Building building = (Building)entity;
-                    this.target = building.getID();
-                    //if (building.isOnFire() && (this.world.getDistance(this.agentID, this.target) <= this.maxDistance)) {
-                    if(building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4 && building.isBrokennessDefined() && building.getBrokenness() > 10) {
-                		actionStateMachine.setState(ActionStates.FireFighter.EXTINGUISHING);
-                		statusStateMachine.setState(StatusStates.ACTING);
-                    	return new ActionExtinguish(this, this.target, this.maxPower);
-                    }
-                }
-            }
-            return new ActionRest(this);
+            return this.buriednessAction(manager);
         }
         
         YRescueBuildingSelector bs = (YRescueBuildingSelector) buildingSelector;
@@ -277,6 +335,18 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             }
         }
         
+        // Make the agent head to the cluster
+        if(this.actionStateMachine.getCurrentState().equals(ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION)){
+        	Logger.info("Going to cluster location..");
+    		if(this.target == null || this.target.getValue() == this.location.getID().getValue() || this.tacticsAgent.stuck(time)){
+    			this.EXPLORE_TIME_LIMIT = currentTime + this.EXPLORE_TIME_STEP_TRESH;
+    			this.actionStateMachine.setState(ActionStates.IDLE);
+    		}
+    		else{
+    			return this.moveTarget(currentTime);
+    		}
+        }
+        
         // Update BusyHydrants
         for(Entry<EntityID,Integer> e : busyHydrantIDs.entrySet()){
         	if(currentTime >= e.getValue()){
@@ -301,35 +371,38 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	if(me().getWater() == maxWater){
         		actionStateMachine.setState(ActionStates.IDLE);
         		statusStateMachine.setState(StatusStates.EXPLORING);
-        	}else if(onWaterSource()){
+        	}else if(this.location instanceof Refuge){
         		return new ActionRest(this);
-        	}
-        	Collection<StandardEntity> objects = world.getObjectsInRange(getOwnerID(), sightDistance);
-        	boolean flagAgentsCloser = false;
-        	for(StandardEntity objH : objects){
-        		if(objH instanceof Hydrant){
-        			for(StandardEntity objA : objects){
-                		if(objA instanceof FireBrigade){
-                    		if(objA.getID().getValue() < this.me().getID().getValue()){
-                    			flagAgentsCloser = true;
-                    			busyHydrantIDs.put(objH.getID(), currentTime + (this.maxWater-me.getWater() / this.hydrant_rate));
-                    			break;
-                    		}
+        	}else{
+        		Collection<StandardEntity> objects = world.getObjectsInRange(getOwnerID(), sightDistance);
+            	boolean flagAgentsCloser = false;
+            	for(StandardEntity objH : objects){
+            		if(objH instanceof Hydrant){
+            			for(StandardEntity objA : objects){
+                    		if(objA instanceof FireBrigade){
+                        		if(objA.getID().getValue() < this.me().getID().getValue()){
+                        			flagAgentsCloser = true;
+                        			busyHydrantIDs.put(objH.getID(), currentTime + (this.maxWater-me.getWater() / this.hydrant_rate));
+                        			break;
+                        		}
+                        	}
                     	}
+            			if(flagAgentsCloser){
+            				List<StandardEntity> freeHydrants = new ArrayList<StandardEntity>();
+            	        	for(StandardEntity next : hydrants) {
+            	        		if (next instanceof Hydrant) {
+            	    	            Hydrant h = (Hydrant)next;
+            	    	            if(! busyHydrantIDs.containsKey(h.getID())){
+            	    	            	freeHydrants.add(h);
+            	    	            }
+            	    	        }	
+            	        	}
+            	        	return new ActionRefill(this, refugeIDs, freeHydrants);
+            			}else if(this.location instanceof Hydrant){
+                    		return new ActionRest(this);
+                    	}
+            			break;
                 	}
-        			if(flagAgentsCloser){
-        				List<StandardEntity> freeHydrants = new ArrayList<StandardEntity>();
-        	        	for(StandardEntity next : hydrants) {
-        	        		if (next instanceof Hydrant) {
-        	    	            Hydrant h = (Hydrant)next;
-        	    	            if(! busyHydrantIDs.containsKey(h.getID())){
-        	    	            	freeHydrants.add(h);
-        	    	            }
-        	    	        }	
-        	        	}
-        	        	return new ActionRefill(this, refugeIDs, freeHydrants);
-        			}
-        			break;
             	}
         	}
         }
@@ -352,7 +425,13 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         }
         
         // Select new target
-        this.target = this.target == null ? this.buildingSelector.getNewTarget(currentTime) : this.buildingSelector.updateTarget(currentTime, this.target);
+        if(this.target == null || currentTime < this.EXPLORE_TIME_LIMIT){
+        	this.target = this.buildingSelector.getNewTarget(currentTime,this.clusterToVisitP, this.clusterToVisitNP);
+        	this.EXPLORE_TIME_LIMIT = currentTime + this.EXPLORE_TIME_STEP_TRESH;
+        }else{
+        	this.target = this.buildingSelector.updateTarget(currentTime, this.target);
+        }
+        //this.target = this.target == null ? this.buildingSelector.getNewTarget(currentTime) : this.buildingSelector.updateTarget(currentTime, this.target);
         
         // If there is no target then walk randomly
         if(this.target == null) {
@@ -413,7 +492,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                 this.buildingSelector.remove(this.target);
             }
             //EntityID newTarget = this.buildingSelector.getNewTarget(currentTime);
-            this.target = this.buildingSelector.getNewTarget(currentTime);
+            this.target = this.buildingSelector.getNewTarget(currentTime, this.clusterToVisitP, this.clusterToVisitNP);
             
             /*if(this.target != newTarget){
             	this.target = newTarget;
@@ -460,6 +539,23 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     	
         return new ActionMove(this, path);
     }
+
+	private Action buriednessAction(MessageManager manager) {
+		manager.addSendMessage(new MessageFireBrigade(this.me, MessageFireBrigade.ACTION_REST, this.agentID));
+		for(StandardEntity entity : this.world.getObjectsInRange(this.me, this.maxDistance)) {
+		    if(entity instanceof Building) {
+		        Building building = (Building)entity;
+		        this.target = building.getID();
+		        //if (building.isOnFire() && (this.world.getDistance(this.agentID, this.target) <= this.maxDistance)) {
+		        if(building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4 && building.isBrokennessDefined() && building.getBrokenness() > 10) {
+		    		actionStateMachine.setState(ActionStates.FireFighter.EXTINGUISHING);
+		    		statusStateMachine.setState(StatusStates.ACTING);
+		        	return new ActionExtinguish(this, this.target, this.maxPower);
+		        }
+		    }
+		}
+		return new ActionRest(this);
+	}
     
     // Move to a target if it exists otherwise walk randomly
     public Action moveTarget(int currentTime) {

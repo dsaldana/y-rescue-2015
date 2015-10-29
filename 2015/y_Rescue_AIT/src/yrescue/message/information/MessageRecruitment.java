@@ -61,6 +61,46 @@ public class MessageRecruitment extends MessageMap {
 		//return (int) (Integer.parseInt(Integer.toString(this.agentID) + Integer.toString(this.agentID)) + (System.currentTimeMillis() % 1000));
 	}
 	
+	public int getUID() {
+		return UID;
+	}
+
+	public void setUID(int uID) {
+		UID = uID;
+	}
+
+	public int getPositionID() {
+		return positionID;
+	}
+
+	public void setPositionID(int positionID) {
+		this.positionID = positionID;
+	}
+
+	public int getAgentID() {
+		return agentID;
+	}
+
+	public void setAgentID(int agentID) {
+		this.agentID = agentID;
+	}
+
+	public int getNumAgents() {
+		return numAgents;
+	}
+
+	public void setNumAgents(int numAgents) {
+		this.numAgents = numAgents;
+	}
+
+	public Task getTaskType() {
+		return taskType;
+	}
+
+	public void setTaskType(Task taskType) {
+		this.taskType = taskType;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();

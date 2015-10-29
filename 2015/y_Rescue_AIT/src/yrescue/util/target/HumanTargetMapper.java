@@ -1,7 +1,6 @@
 package yrescue.util.target;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -10,14 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 import adk.team.util.provider.WorldProvider;
-import rescuecore2.misc.Pair;
 import rescuecore2.standard.entities.AmbulanceTeam;
 import rescuecore2.standard.entities.Civilian;
 import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.PoliceForce;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.worldmodel.EntityID;
-import yrescue.heatmap.HeatNode;
 
 public class HumanTargetMapper {
 	private WorldProvider provider;

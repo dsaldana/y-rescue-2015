@@ -12,6 +12,7 @@ import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.heatmap.HeatMap;
+import yrescue.message.recruitment.RecruitmentManager;
 
 import java.util.List;
 
@@ -36,6 +37,7 @@ public abstract class Tactics<E extends Human> implements WorldProvider<E> {
 
     public List<Refuge> refugeList;
     public EntityID target;
+    public RecruitmentManager recruitmentManager;
 
     public abstract String getTacticsName();
 

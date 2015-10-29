@@ -23,6 +23,13 @@ public class BitOutputStream extends ByteArrayOutputStream {
 			this.writeBits(value >> i & 0x1);
 		}
 	}
+	
+	public synchronized void writeBits(Float value, int len) {
+		int localF = Float.floatToIntBits(value);
+		for (int i = len - 1; i >= 0; i--) {
+			this.writeBits(localF >> i & 0x1);
+		}
+	}
 
 	private synchronized void writeBits(int value) {
 		this.buf = this.buf | (value << --this.cnt);
