@@ -20,11 +20,8 @@ import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.spi.LoggerFactory;
 import org.hamcrest.core.IsInstanceOf;
 
-import com.sun.xml.internal.ws.addressing.ProblemAction;
-
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
-import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Civilian;
@@ -79,10 +76,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	
 	protected List<EntityID> clusterToVisitP;
 	protected List<EntityID> clusterToVisitNP;
-	private List<EntityID> lastpath;
 	protected EntityID clusterCenter;
-	
-	private boolean isStuck = false;
 	
 	protected final int EXPLORE_TIME_STEP_TRESH = 20;
 	protected int EXPLORE_TIME_LIMIT = EXPLORE_TIME_STEP_TRESH;
@@ -118,7 +112,6 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     public void preparation(Config config, MessageManager messageManager) {
         this.routeSearcher = this.initRouteSearcher();
         this.buildingSelector = this.initBuildingSelector();
-        lastpath = new ArrayList<>();
         
         busyHydrantIDs = new HashMap<>();
         lastWater = me.getWater();
@@ -138,59 +131,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         clusterToVisitNP = new LinkedList<EntityID>();
     	List<StandardEntity> firebrigadeList = new ArrayList<StandardEntity>(this.getWorld().getEntitiesOfType(StandardEntityURN.FIRE_BRIGADE));
     	
-    	KMeans kmeans;
-    	if(firebrigadeList.size() > 5) kmeans = new KMeans(5);
-    	else kmeans = new KMeans(firebrigadeList.size());
-    	
-    	Map<EntityID, EntityID> kmeansResult = kmeans.calculatePartitions(this.getWorld());
-    	List<EntityID> partitions = kmeans.getPartitions();
-    	
-    	firebrigadeList.sort(new Comparator<StandardEntity>() {
-			@Override
-			public int compare(StandardEntity o1, StandardEntity o2) {
-				return Integer.compare(o1.getID().getValue(), o2.getID().getValue());
-			}
-		});
-    	
-    	partitions.sort(new Comparator<EntityID>() {
-			@Override
-			public int compare(EntityID o1, EntityID o2) {
-				return Integer.compare(o1.getValue(), o2.getValue());
-			}
-		});
-    	
-    	if(firebrigadeList.size() == partitions.size()){
-    		int pos = -1;
-    		for(int i = 0; i < firebrigadeList.size(); i++){
-    			if(me.getID().getValue() == firebrigadeList.get(i).getID().getValue()){
-    				pos = i;
-    				break;
-    			}
-    		}
-    		
-    		if(pos != -1){
-    			clusterCenter = partitions.get(pos);
-        		final Set<Map.Entry<EntityID, EntityID>> entries = kmeansResult.entrySet();
-
-        		for (Map.Entry<EntityID, EntityID> entry : entries) {
-        		    EntityID key = entry.getKey();
-        		    EntityID partition= entry.getValue();
-        		    if(partition.getValue() == clusterCenter.getValue()){
-        		    	clusterToVisitP.add(key);
-        		    }else{
-        		    	clusterToVisitNP.add(key);
-        		    }
-        		}	
-    		}
-    	}
-    	
-    	Logger.info("Cluster to visit :" + clusterToVisitP);
-    	if(clusterToVisitP.size() > 0){
-    		this.target = clusterCenter;
-    		//this.actionStateMachine = new StateMachine(ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION);
-    		this.actionStateMachine = new StateMachine(ActionStates.IDLE);
-    		this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
-    	}   
+    	this.actionStateMachine = new StateMachine(ActionStates.IDLE);
+		this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
         
         MDC.put("agent", this);
         MDC.put("location", location());
@@ -345,7 +287,6 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                         Road road = (Road)entity;
                         List<EntityID> path = this.routeSearcher.getPath(currentTime, this.me, road);
                         if(path != null) {
-                        	lastpath = path;
                             return new ActionMove(this, path);
                         }
                     }
@@ -444,14 +385,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	return new ActionRefill(this, refugeIDs, freeHydrants);
         }
         
-        // Select new target
-        if(this.target == null || currentTime < this.EXPLORE_TIME_LIMIT){
-        	this.target = this.buildingSelector.getNewTarget(currentTime,this.clusterToVisitP, this.clusterToVisitNP);
-        	this.EXPLORE_TIME_LIMIT = currentTime + this.EXPLORE_TIME_STEP_TRESH;
-        }else{
-        	this.target = this.buildingSelector.updateTarget(currentTime, this.target);
-        }
-        //this.target = this.target == null ? this.buildingSelector.getNewTarget(currentTime) : this.buildingSelector.updateTarget(currentTime, this.target);
+        this.target = this.target == null ? this.buildingSelector.getNewTarget(currentTime) : this.buildingSelector.updateTarget(currentTime, this.target);
         
         // If there is no target then walk randomly
         if(this.target == null) {
@@ -483,7 +417,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	else {
         		Logger.info("Path is too short... but I'll follow it anyway");
         	}       	
-        	lastpath = path;
+        	
             return new ActionMove(this, path);
         }
         
@@ -511,17 +445,16 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             	Logger.trace(String.format("%s not on fire anymore, will remove from list.", building));
                 this.buildingSelector.remove(this.target);
             }
-            //EntityID newTarget = this.buildingSelector.getNewTarget(currentTime);
-            this.target = this.buildingSelector.getNewTarget(currentTime, this.clusterToVisitP, this.clusterToVisitNP);
+            EntityID newTarget = this.buildingSelector.getNewTarget(currentTime);
             
-            /*if(this.target != newTarget){
+            if(this.target != newTarget){
             	this.target = newTarget;
             	//if(this.target != null)
             	//	System.out.println(">>>>>> it's not on fire anymore. Target new = " + this.target.getValue());
             	//else
             	//	System.out.println(">>>>>> there's no target anymore.");
             	break;
-            }*/
+            }
         }while(this.target != null);
         
         /**teste antigo
@@ -556,7 +489,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     	else {
     		Logger.info("Path is too short... but I'll follow it anyway");
     	}
-    	lastpath = path;
+    	
         return new ActionMove(this, path);
     }
 
@@ -591,7 +524,6 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             	this.target = null;
             }
             else {
-            	lastpath = path;
                 return new ActionMove(this, path);
             }
         }
@@ -599,7 +531,6 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         EntityID explorationTgt = heatMap.getNodeToVisit();
     	Logger.info("Target is null... Heatmapping to: " + explorationTgt);
     	path = this.safePathToBuilding(explorationTgt);
-    	lastpath = path;
         return new ActionMove(this, path);
     }
     
@@ -629,7 +560,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     }
     
     private boolean stuckExtinguishLoop(int currentTime){
-    	if (tacticsAgent.commandHistory.size() < 4){
+    	if (tacticsAgent.commandHistory.size() < 2){
     		Logger.info("Insufficient commands in history");
     		return false;
     	}
