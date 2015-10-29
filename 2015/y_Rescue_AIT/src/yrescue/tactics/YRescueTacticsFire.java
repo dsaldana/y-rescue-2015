@@ -72,7 +72,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	private List<StandardEntity> hydrants;
 	public Map<EntityID, Integer> busyHydrantIDs;
 	private int lastWater;
-
+	private List<EntityID> lastPath;
 	private StateMachine actionStateMachine;
 	private StateMachine statusStateMachine;
 	
