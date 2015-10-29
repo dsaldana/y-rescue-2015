@@ -9,10 +9,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import java.util.Random;
+
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
 
-import adf.util.map.PositionUtil;
+
+
+//import adf.util.map.PositionUtil;
+import adk.team.util.graph.PositionUtil;
+
+
 import adk.sample.basic.event.BasicAmbulanceEvent;
 import adk.sample.basic.event.BasicCivilianEvent;
 import adk.sample.basic.event.BasicFireEvent;
@@ -313,11 +320,22 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         
         if(this.me.getDamage() >= 100) { //|| this.someoneOnBoard()
         	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
-        }
+        }       
+        
+        
+          
+        Refuge result = PositionUtil.getNearTarget(this.world, this.me, this.getRefuges());
+        EntityID results = result.getID();           
+        EntityID local = this.location.getID();        
+		if ((local == results) && (this.me.getDamage() > 0)) {
+			return new ActionRest(this);
+		}
         
         /* === ---------------------------------- === *
          *  Possible states and their implementation  *
          * === ---------------------------------- === */
+        
+      
         
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.GOING_TO_CLUSTER_LOCATION)){
         	Logger.info("Going to cluster location..");
@@ -428,7 +446,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	                	this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
 	                    return new ActionUnload(this);
 	                }
-	                
+	               
 	                if(this.me.getDamage() > 0) {
 	                    return new ActionRest(this);
 	                }
