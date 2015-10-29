@@ -24,6 +24,15 @@ public class MessageEnlistment extends MessageMap {
 		this.utility = utility;
 	}
 	
+	public MessageEnlistment(int uidFrom, int agentID, float utility){
+		super(MessageID.enlistmentMessage);
+		
+		this.UID = createNewUID();
+		this.originUID = uidFrom;
+		this.agentID = agentID;
+		this.utility = utility;
+	}
+	
 	public MessageEnlistment(int uid, int uidFrom, int agentID, float utility){
 		super(MessageID.enlistmentMessage);
 		
@@ -48,6 +57,38 @@ public class MessageEnlistment extends MessageMap {
 		//return (int) (Integer.parseInt(Integer.toString(this.agentID) + Integer.toString(this.agentID)) + (System.currentTimeMillis() % 1000));
 	}
 	
+	public int getUID() {
+		return UID;
+	}
+
+	public void setUID(int uID) {
+		UID = uID;
+	}
+
+	public int getOriginUID() {
+		return originUID;
+	}
+
+	public void setOriginUID(int originUID) {
+		this.originUID = originUID;
+	}
+
+	public int getAgentID() {
+		return agentID;
+	}
+
+	public void setAgentID(int agentID) {
+		this.agentID = agentID;
+	}
+
+	public float getUtility() {
+		return utility;
+	}
+
+	public void setUtility(float utility) {
+		this.utility = utility;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();

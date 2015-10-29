@@ -18,6 +18,7 @@ import rescuecore2.standard.kernel.comms.ChannelCommunicationModel;
 import rescuecore2.standard.messages.AKSpeak;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.message.provider.MessageBlockedAreaProvider;
+import yrescue.message.provider.MessageEnlistmentProvider;
 import yrescue.message.provider.MessageHydrantProvider;
 import yrescue.message.provider.MessageRecruitmentProvider;
 
@@ -354,6 +355,9 @@ public class MessageManager {
 		
 		this.registerStandardProvider(
 			new MessageRecruitmentProvider(MessageID.recruitmentMessage)
+		);
+		this.registerStandardProvider(
+			new MessageEnlistmentProvider(MessageID.enlistmentMessage)
 		);
 		//this.register(CommunicationMessage.buildingMessageID, new MessageBuildingProvider(this.event));
 		//this.register(CommunicationMessage.blockadeMessageID, new BlockadeMessageProvider(this.event));
