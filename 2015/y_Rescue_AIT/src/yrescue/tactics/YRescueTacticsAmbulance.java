@@ -255,7 +255,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         
         this.recruitmentManager.setMessageManager(manager);
         
-        /*if(me.getID().getValue() != 941331988){
+        if(me.getID().getValue() != 941331988){
         	if(this.recruitmentManager.getRecruitmentState() == RecruitmentManager.RecruitmentStates.NOTHING){
         		if(this.recruitmentManager.isRecruitmentAvailable()){
         			this.recruitmentManager.setRecruitmentState(RecruitmentManager.RecruitmentStates.ENLISTING);
@@ -269,7 +269,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         			Logger.info("Enlistment agent enlisted - " + this.recruitmentManager.isMyEnlistmentSelected());
         		}
         	}
-        }*/
+        }
         
         //heatMap.writeMapToFile();
         
@@ -294,7 +294,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         }
         
         // If we are not in the special condition exploring, update target or get a new one 
-        if(!this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.EXPLORING) 
+        /*if(!this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.EXPLORING) 
         		&& !this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.GOING_TO_CLUSTER_LOCATION)){
 	        if(this.target != null && this.world.getEntity(this.target) instanceof Human){
 	        	this.victimSelector.updateTarget(currentTime, this.target);
@@ -302,7 +302,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	        else{
 	        	this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
 	        }
-        }
+        }*/
         
         if(this.me.getDamage() >= 100) { //|| this.someoneOnBoard()
         	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
@@ -326,7 +326,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.EXPLORING)){
         	Logger.info("Exploring..");
         	if(currentTime < this.EXPLORE_TIME_LIMIT){
-        		if(this.target == null || this.target.getValue() == this.location.getID().getValue()){
+        		if(this.target == null || this.target.getValue() == this.location.getID().getValue() || this.tacticsAgent.stuck(time)){
         			getNewExplorationTarget(currentTime);
                 	return moveTarget(currentTime);
         		}
@@ -362,14 +362,14 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	Logger.info("Target b'ness: " + victim.getBuriedness() + ", dmg: " + victim.getDamage() + ", HP: " + victim.getHP());
         	
         	/*if(me.getID().getValue() == 941331988){
-	        	if(this.recruitmentManager.getRecruitmentState() == RecruitmentManager.RecruitmentStates.NOTHING){
-	        		this.recruitmentManager.setRecruitmentState(RecruitmentManager.RecruitmentStates.RECRUITING);
-	        		this.recruitmentManager.createNewRecruitmentMsg(Task.RESCUE, 1, time);
+	        	//if(this.recruitmentManager.getRecruitmentState() == RecruitmentManager.RecruitmentStates.NOTHING){
+	        		//this.recruitmentManager.setRecruitmentState(RecruitmentManager.RecruitmentStates.RECRUITING);
+	        		this.recruitmentManager.createNewRecruitmentMsg(Task.RESCUE, 1, time);/*
 	        	}
 	        	else if(this.recruitmentManager.getRecruitmentState() == RecruitmentManager.RecruitmentStates.RECRUITING && this.recruitmentManager.isEnlistmentAvailable()){
 	        		Logger.info("Recruitment agent enlisted - " + this.recruitmentManager.isEnlistmentAvailable() + this.recruitmentManager.getAgentsEnlisted());
-	        	}
-        	}*/
+	        	}*/
+        	//}
         	
         	if(victim.getPosition().getValue() != this.location.getID().getValue()){
         		Logger.info("Target not in place!, going to target again ...");
