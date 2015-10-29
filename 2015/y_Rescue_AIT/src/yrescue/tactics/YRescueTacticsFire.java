@@ -298,10 +298,11 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)this.world.getEntity(me.getID()), (Area)this.world.getEntity(lastpath.get(0)), this);
         	List<EntityID> newPath = new ArrayList<>();
         	newPath.add(me.getID());
+        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+        	Logger.trace("I'm blocked. Added a MessageBlockedArea");
         	return new ActionMove(this,newPath,(int)destinationStuck.getX(),(int)destinationStuck.getY());
         	
-        	/*manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
-        	Logger.trace("I'm blocked. Added a MessageBlockedArea");
+        	/*
     		return new ActionRest(this);*/	//does nothing...
     	}
         
