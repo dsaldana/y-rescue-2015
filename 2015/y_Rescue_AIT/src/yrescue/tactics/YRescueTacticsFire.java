@@ -187,7 +187,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     	Logger.info("Cluster to visit :" + clusterToVisitP);
     	if(clusterToVisitP.size() > 0){
     		this.target = clusterCenter;
-    		this.actionStateMachine = new StateMachine(ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION);
+    		//this.actionStateMachine = new StateMachine(ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION);
+    		this.actionStateMachine = new StateMachine(ActionStates.IDLE);
     		this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
     	}   
         
@@ -348,7 +349,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         }
         
         // Make the agent head to the cluster
-        if(this.actionStateMachine.getCurrentState().equals(ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION)){
+        /*if(this.actionStateMachine.getCurrentState().equals(ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION)){
         	Logger.info("Going to cluster location..");
     		if(this.target == null || this.target.getValue() == this.location.getID().getValue() || this.tacticsAgent.stuck(time)){
     			this.EXPLORE_TIME_LIMIT = currentTime + this.EXPLORE_TIME_STEP_TRESH;
@@ -357,7 +358,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     		else{
     			return this.moveTarget(currentTime);
     		}
-        }
+        	this.actionStateMachine.setState(ActionStates.IDLE);
+        }*/
         
         // Update BusyHydrants
         for(Entry<EntityID,Integer> e : busyHydrantIDs.entrySet()){
