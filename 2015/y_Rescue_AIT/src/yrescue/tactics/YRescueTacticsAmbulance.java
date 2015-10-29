@@ -609,8 +609,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         			Logger.info("The next building is on FIRE or burnOut, select a new exploration target");
         			//this.heatMap.updateNode(ent.getID(), time);
         			this.heatMap.removeEntityID(ent.getID());
-        			getNewExplorationTarget(currentTime);
-        			path = getPathToTarget(currentTime);
+        			//getNewExplorationTarget(currentTime);
+        			//path = getPathToTarget(currentTime);
         		}
         	}
         }
