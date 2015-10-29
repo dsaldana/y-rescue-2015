@@ -65,6 +65,7 @@ public class BlockadeUtil {
 	}
 	
 	public static Point2D calculateStuckMove(Area from, Area to, Tactics<?> agent){
+		System.out.println(String.format("Area1=%s, Area2=%s", from, to));
 		Edge frontier = from.getEdgeTo(to.getID());
 		Point2D origin = new Point2D(agent.me().getX(),agent.me().getY());
 		Point2D midPoint = new Point2D(frontier.getStartX() + (frontier.getEndX() - frontier.getStartX())/2, 
