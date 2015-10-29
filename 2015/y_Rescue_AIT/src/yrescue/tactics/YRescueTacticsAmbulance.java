@@ -14,8 +14,6 @@ import java.util.Random;
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
 
-
-
 //import adf.util.map.PositionUtil;
 import adk.team.util.graph.PositionUtil;
 
@@ -27,7 +25,6 @@ import adk.sample.basic.event.BasicPoliceEvent;
 import adk.sample.basic.tactics.BasicTacticsAmbulance;
 import adk.sample.basic.util.BasicRouteSearcher;
 import adk.team.action.Action;
-import adk.team.action.ActionExtinguish;
 import adk.team.action.ActionLoad;
 import adk.team.action.ActionMove;
 import adk.team.action.ActionRescue;
@@ -41,12 +38,10 @@ import comlib.message.information.MessageBuilding;
 import comlib.message.information.MessageCivilian;
 import comlib.message.information.MessageFireBrigade;
 import comlib.message.information.MessagePoliceForce;
-import comlib.message.information.MessageRoad;
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
 import rescuecore2.standard.entities.AmbulanceTeam;
 import rescuecore2.standard.entities.Area;
-import rescuecore2.standard.entities.Blockade;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Civilian;
 import rescuecore2.standard.entities.FireBrigade;
@@ -56,7 +51,6 @@ import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityConstants;
-import rescuecore2.standard.entities.StandardEntityFactory;
 import rescuecore2.standard.entities.StandardEntityURN;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.Entity;
@@ -67,10 +61,10 @@ import yrescue.kMeans.KMeans;
 import yrescue.message.event.MessageEnlistmentEvent;
 import yrescue.message.event.MessageRecruitmentEvent;
 import yrescue.message.information.MessageBlockedArea;
-import yrescue.message.information.MessageEnlistment;
 import yrescue.message.information.MessageRecruitment;
 import yrescue.message.information.Task;
 import yrescue.message.recruitment.RecruitmentManager;
+import yrescue.problem.blockade.BlockedArea;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.util.DistanceSorter;
@@ -88,6 +82,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected int EXPLORE_AREA_SIZE_TRESH = 10000010;
 	protected List<EntityID> clusterToVisit;
 	protected EntityID clusterCenter;
+	
+	private boolean DEBUG = false;
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
@@ -254,15 +250,14 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
          *     MISC     *
          * === ---- === */
         
-        //this.refugeList.get(-1); //triggers exception to test failsafe
-        
         Logger.info(String.format(
 			"AGENT AMBULANCE %d HP: %d, B'ness: %d, Dmg: %d, Direction: %d, SmOnBrd? %s, Target: %s", 
 			me.getID().getValue(), me.getHP(), me.getBuriedness(), me.getDamage(), me.getDirection(), someoneOnBoard(), this.target
 		));
         
         this.recruitmentManager.setMessageManager(manager);
-        
+
+        /*
         if(me.getID().getValue() != 941331988){
         	if(this.recruitmentManager.getRecruitmentState() == RecruitmentManager.RecruitmentStates.NOTHING){
         		if(this.recruitmentManager.isRecruitmentAvailable()){
@@ -278,16 +273,18 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		}
         	}
         }
+        */
         
-        //heatMap.writeMapToFile();
+        if(DEBUG){
+        	heatMap.writeMapToFile();
+        	printHumanTargets();
+        }
         
-        /*
         ((YRescueVictimSelector) this.victimSelector).humanTargetM.updateUtilities(time);
         List<HumanTarget> humanTargets = ((YRescueVictimSelector) this.victimSelector).humanTargetM.getAllHumanTargets();
         for (HumanTarget hum : humanTargets) {
         	Logger.debug("Human Target: "+ hum.getHuman() + " Utility: "+ hum.getUtility() + " Human ID:" + hum.getHuman().getID() + " pos:" + hum.getHuman().getPosition() + " burriedness:" + hum.getHuman().getBuriedness() + " damage:" + hum.getHuman().getDamage());
         }
-        */
 
         /* === -------- === *
          *   Basic actions  *
@@ -296,19 +293,21 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         // Check for buriedness and tries to extinguish fire in a close building
         if(this.me.getBuriedness() > 0) {
         	Logger.info("I'm buried at " + me.getPosition());
-
         	AmbulanceTeam ambulanceTeam = (AmbulanceTeam) this.me();
             manager.addSendMessage(new MessageAmbulanceTeam(ambulanceTeam, MessageAmbulanceTeam.ACTION_REST, null));
         }
         
         // Check for stuckness
         if (this.tacticsAgent.stuck(currentTime)){
-        	Logger.trace("I'm blocked. Added a MessageBlockedArea");
-        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+        	//Logger.trace("I'm blocked. Added a MessageBlockedArea");
+        	//manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+        	
+        	BlockedArea mine = new BlockedArea(location.getID(), this.target, me.getX(), me.getY());
+        	this.reportBlockedArea(mine, manager, currentTime);
     	}
         
         // If we are not in the special condition exploring, update target or get a new one 
-        /*if(!this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.EXPLORING) 
+        if(!this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.EXPLORING) 
         		&& !this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.GOING_TO_CLUSTER_LOCATION)){
 	        if(this.target != null && this.world.getEntity(this.target) instanceof Human){
 	        	this.victimSelector.updateTarget(currentTime, this.target);
@@ -316,9 +315,9 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	        else{
 	        	this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
 	        }
-        }*/
+        }
         
-        if(this.me.getDamage() >= 100) { //|| this.someoneOnBoard()
+        if(this.me.getDamage() >= 30) {
         	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
         }       
         
@@ -351,7 +350,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.EXPLORING)){
         	Logger.info("Exploring..");
         	if(currentTime < this.EXPLORE_TIME_LIMIT){
-        		if(this.target == null || this.target.getValue() == this.location.getID().getValue() || this.tacticsAgent.stuck(time)){
+        		if(this.target == null || this.target.getValue() == this.location.getID().getValue()){
+        			getNewExplorationTarget(currentTime);
+                	return moveTarget(currentTime);
+        		}
+        		
+        		if(this.target != null && this.tacticsAgent.stuck(time)){
+        			heatMap.updateNode(this.target, time, HeatNode.MAX_HEAT);
         			getNewExplorationTarget(currentTime);
                 	return moveTarget(currentTime);
         		}
@@ -382,14 +387,15 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	this.stateMachine.setState(ActionStates.Ambulance.RESCUING);
         }
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.RESCUING)){
-        	
+        	Logger.info("Rescuing..");
         	Human victim = (Human) this.world.getEntity(this.target);
         	Logger.info("Target b'ness: " + victim.getBuriedness() + ", dmg: " + victim.getDamage() + ", HP: " + victim.getHP());
         	
-        	/*if(me.getID().getValue() == 941331988){
+        	//if(me.getID().getValue() == 941331988){
 	        	//if(this.recruitmentManager.getRecruitmentState() == RecruitmentManager.RecruitmentStates.NOTHING){
 	        		//this.recruitmentManager.setRecruitmentState(RecruitmentManager.RecruitmentStates.RECRUITING);
-	        		this.recruitmentManager.createNewRecruitmentMsg(Task.RESCUE, 1, time);/*
+	        		//this.recruitmentManager.createNewRecruitmentMsg(Task.RESCUE, 1, time);
+        	/*
 	        	}
 	        	else if(this.recruitmentManager.getRecruitmentState() == RecruitmentManager.RecruitmentStates.RECRUITING && this.recruitmentManager.isEnlistmentAvailable()){
 	        		Logger.info("Recruitment agent enlisted - " + this.recruitmentManager.isEnlistmentAvailable() + this.recruitmentManager.getAgentsEnlisted());
@@ -403,7 +409,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	}
         	
         	if(victim.getBuriedness() > 0 && victim.getHP() > 0){
-        		Logger.info("Rescuing ...");
+        		Logger.info("Send rescue command..");
         		return new ActionRescue(this, this.target);
         	}
         	else if (victim.getHP() <= 0){
@@ -481,7 +487,11 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                     return this.moveTarget(currentTime);
                 }
                 
-                if (victim.getHP() <= 0) continue;
+                // Threshold to rescue
+                if (victim.getHP() <= 100){ 
+                	this.victimSelector.remove(victim.getID());
+                	continue;
+                }
                 
                 if (victim.getBuriedness() > 0) {
                 	this.stateMachine.setState(ActionStates.Ambulance.RESCUING);
@@ -694,15 +704,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 		this.stateMachine.setState(ActionStates.Ambulance.EXPLORING);
         return this.target;
 	}
+	
+	public void printHumanTargets(){
+		((YRescueVictimSelector) this.victimSelector).humanTargetM.updateUtilities(time);
+        List<HumanTarget> humanTargets = ((YRescueVictimSelector) this.victimSelector).humanTargetM.getAllHumanTargets();
+        for (HumanTarget hum : humanTargets) {
+        	Logger.debug("Human Target: "+ hum.getHuman() + " Utility: "+ hum.getUtility() + " Human ID:" + hum.getHuman().getID() + " pos:" + hum.getHuman().getPosition() + " burriedness:" + hum.getHuman().getBuriedness() + " damage:" + hum.getHuman().getDamage());
+        }
+	}
 
-	 /**
-	  * Copied from SampleAgent. Do not change
-	  * 
-	  * @return
-	  *
-	private void failSafeUpdateUnexploredBuildings(ChangeSet changed) {
-		for (EntityID next : changed.getChangedEntities()) {
-			unexploredBuildings.remove(next);
-		}
-	}*/
 }
