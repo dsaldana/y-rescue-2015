@@ -83,7 +83,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected List<EntityID> clusterToVisit;
 	protected EntityID clusterCenter;
 	
-	private boolean DEBUG = false;
+	private boolean DEBUG = true;
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
@@ -279,12 +279,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	heatMap.writeMapToFile();
         	printHumanTargets();
         }
-        
-        ((YRescueVictimSelector) this.victimSelector).humanTargetM.updateUtilities(time);
-        List<HumanTarget> humanTargets = ((YRescueVictimSelector) this.victimSelector).humanTargetM.getAllHumanTargets();
-        for (HumanTarget hum : humanTargets) {
-        	Logger.debug("Human Target: "+ hum.getHuman() + " Utility: "+ hum.getUtility() + " Human ID:" + hum.getHuman().getID() + " pos:" + hum.getHuman().getPosition() + " burriedness:" + hum.getHuman().getBuriedness() + " damage:" + hum.getHuman().getDamage());
-        }
 
         /* === -------- === *
          *   Basic actions  *
@@ -303,7 +297,12 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	//manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
         	
         	BlockedArea mine = new BlockedArea(location.getID(), this.target, me.getX(), me.getY());
-        	this.reportBlockedArea(mine, manager, currentTime);
+        	try{
+        		this.reportBlockedArea(mine, manager, currentTime);
+        	}
+        	catch(Exception e){
+        		// Do nothing
+        	}
     	}
         
         // If we are not in the special condition exploring, update target or get a new one 
@@ -469,9 +468,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.SELECT_NEW_TARGET)){
         	Logger.info("Select new target..");
         	
-        	this.recruitmentManager.setRecruitmentState(RecruitmentManager.RecruitmentStates.NOTHING);
-        	
-            this.target = this.victimSelector.getNewTarget(currentTime);
+        	//this.recruitmentManager.setRecruitmentState(RecruitmentManager.RecruitmentStates.NOTHING);
+        	this.target = this.victimSelector.getNewTarget(currentTime);
             if(this.target == null) {
             	Logger.info("Cannot define a first new target, going to explore!");
             	getNewExplorationTarget(currentTime);
@@ -522,6 +520,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                 }
                 // The target has already been rescued. Or in the case of excluded
                 this.target = this.victimSelector.getNewTarget(currentTime);
+                
             }while (this.target != null);
         }
         
@@ -708,7 +707,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 		((YRescueVictimSelector) this.victimSelector).humanTargetM.updateUtilities(time);
         List<HumanTarget> humanTargets = ((YRescueVictimSelector) this.victimSelector).humanTargetM.getAllHumanTargets();
         for (HumanTarget hum : humanTargets) {
-        	Logger.debug("Human Target: "+ hum.getHuman() + " Utility: "+ hum.getUtility() + " Human ID:" + hum.getHuman().getID() + " pos:" + hum.getHuman().getPosition() + " burriedness:" + hum.getHuman().getBuriedness() + " damage:" + hum.getHuman().getDamage());
+        	Logger.debug("Human Target: "+ hum.getHuman() + " Utility: "+ hum.getUtility() + " Human ID:" + hum.getHuman().getID() + " pos:" + hum.getHuman().getPosition() + " burriedness:" + hum.getHuman().getBuriedness() + " damage:" + hum.getHuman().getDamage() + " HP:" + hum.getHuman().getHP());
         }
 	}
 

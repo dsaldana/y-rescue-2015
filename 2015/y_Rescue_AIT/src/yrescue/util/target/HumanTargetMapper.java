@@ -127,7 +127,8 @@ public class HumanTargetMapper {
     	}
     	
     	for(HumanTarget ht : humanList){
-    		ht.updateUtility(time, this.owner, ambulanceList);
+    		if(!ht.getHuman().isHPDefined() || ht.getHuman().getHP() <= 100) removeTarget(ht.getHuman().getID());
+    		else ht.updateUtility(time, this.owner, ambulanceList);
     	}
 	}
 	
