@@ -212,11 +212,9 @@ private void updateVisitHistory(){
             /*if(entity instanceof Blockade) {
                 this.impassableSelector.add((Blockade) entity);
             }
-            else*/ if(entity instanceof Civilian) {
-                Civilian civilian = (Civilian)entity;
-                if(civilian.getBuriedness() > 0) {
-                    manager.addSendMessage(new MessageCivilian(civilian));
-                }
+            else*/ 
+            if(entity instanceof Civilian) {
+            	this.reportCivilian((Civilian) entity, manager, currentTime);
             }
             else if(entity instanceof Building) {
                 Building b = (Building)entity;

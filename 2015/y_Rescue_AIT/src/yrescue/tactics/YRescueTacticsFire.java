@@ -45,6 +45,7 @@ import yrescue.kMeans.KMeans;
 import yrescue.message.event.MessageHydrantEvent;
 import yrescue.message.information.MessageBlockedArea;
 import yrescue.message.information.MessageHydrant;
+import yrescue.problem.blockade.BlockedArea;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
@@ -225,7 +226,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             	Building b = (Building) entity;
             	
             	Logger.trace(String.format(
-        			"I'm seeing a building. onFire=%s, fieryness=%s, fierynessEnum=%s", b.isOnFire(), b.getFieryness(), b.getFierynessEnum()
+        			"I'm seeing a %s. onFire=%s, fieryness=%s, fierynessEnum=%s", b, b.isOnFire(), b.getFieryness(), b.getFierynessEnum()
         		));
             	
                 
@@ -245,10 +246,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                 
             }
             else if(entity instanceof Civilian) {
-                Civilian civilian = (Civilian)entity;
-                if(civilian.getBuriedness() > 0) {
-                    manager.addSendMessage(new MessageCivilian(civilian));
-                }
+                this.reportCivilian((Civilian) entity, manager, currentTime);
             }
             /*else if(entity instanceof Blockade) {
                 Blockade blockade = (Blockade) entity;
@@ -284,8 +282,10 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
-        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
-        	Logger.trace("I'm blocked. Added a MessageBlockedArea");
+        	BlockedArea mine = new BlockedArea(location.getID(), this.target, me.getX(), me.getY());
+        	this.reportBlockedArea(mine, manager, currentTime);
+        	//manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+        	//Logger.trace("I'm blocked. Added a MessageBlockedArea");
     		return new ActionRest(this);	//does nothing...
     	}
         
@@ -614,7 +614,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     		return false;
     	}
     	Action lastCmd = null;
-    	for(int backtime = 1; backtime <= 4; backtime++){
+    	for(int backtime = 1; backtime <= 2; backtime++){
     		if (lastCmd == null){
     			lastCmd = tacticsAgent.commandHistory.get(currentTime - backtime);
     			if(lastCmd == null){
