@@ -60,8 +60,8 @@ public abstract class CommunicationAgent<E extends StandardEntity> extends Stand
     {
     	this.startProcessTime = System.currentTimeMillis();
 
+    	System.out.println(String.format("----------- Start of Timestep %d --------------", time));
     	Logger.info(String.format("----------- Start of Timestep %d --------------", time));
-    	
     	try{
 
 			if (time <= this.ignoreTime) {
@@ -87,6 +87,8 @@ public abstract class CommunicationAgent<E extends StandardEntity> extends Stand
     	}
     	
     	long secsToProcess = (System.currentTimeMillis() - this.startProcessTime);
+    	
+        System.out.println(String.format("----------- End of Timestep %d, Time to process [%d] msecs --------------\n", time, secsToProcess));
         Logger.info(String.format("----------- End of Timestep %d, Time to process [%d] msecs --------------\n", time, secsToProcess));
     }
 

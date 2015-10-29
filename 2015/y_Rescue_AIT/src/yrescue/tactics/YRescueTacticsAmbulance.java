@@ -71,6 +71,7 @@ import yrescue.message.information.MessageEnlistment;
 import yrescue.message.information.MessageRecruitment;
 import yrescue.message.information.Task;
 import yrescue.message.recruitment.RecruitmentManager;
+import yrescue.problem.blockade.BlockedArea;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.util.DistanceSorter;
@@ -262,7 +263,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 		));
         
         this.recruitmentManager.setMessageManager(manager);
-        
+        /*
         if(me.getID().getValue() != 941331988){
         	if(this.recruitmentManager.getRecruitmentState() == RecruitmentManager.RecruitmentStates.NOTHING){
         		if(this.recruitmentManager.isRecruitmentAvailable()){
@@ -278,6 +279,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		}
         	}
         }
+        */
         
         //heatMap.writeMapToFile();
         
@@ -301,8 +303,11 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         
         // Check for stuckness
         if (this.tacticsAgent.stuck(currentTime)){
-        	Logger.trace("I'm blocked. Added a MessageBlockedArea");
-        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+        	//Logger.trace("I'm blocked. Added a MessageBlockedArea");
+        	//manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+        	
+        	BlockedArea mine = new BlockedArea(location.getID(), this.target, me.getX(), me.getY());
+        	this.reportBlockedArea(mine, manager, currentTime);
     	}
         
         // If we are not in the special condition exploring, update target or get a new one 
