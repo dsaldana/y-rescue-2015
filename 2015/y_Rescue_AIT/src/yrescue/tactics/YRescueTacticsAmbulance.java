@@ -59,6 +59,7 @@ import yrescue.heatmap.HeatNode;
 import yrescue.kMeans.KMeans;
 import yrescue.message.event.MessageEnlistmentEvent;
 import yrescue.message.event.MessageRecruitmentEvent;
+import yrescue.message.information.MessageBlockedArea;
 import yrescue.message.information.MessageEnlistment;
 import yrescue.message.information.MessageRecruitment;
 import yrescue.message.information.Task;
@@ -292,6 +293,12 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	AmbulanceTeam ambulanceTeam = (AmbulanceTeam) this.me();
             manager.addSendMessage(new MessageAmbulanceTeam(ambulanceTeam, MessageAmbulanceTeam.ACTION_REST, null));
         }
+        
+        // Check for stuckness
+        if (this.tacticsAgent.stuck(currentTime)){
+        	Logger.trace("I'm blocked. Added a MessageBlockedArea");
+        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+    	}
         
         // If we are not in the special condition exploring, update target or get a new one 
         /*if(!this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.EXPLORING) 

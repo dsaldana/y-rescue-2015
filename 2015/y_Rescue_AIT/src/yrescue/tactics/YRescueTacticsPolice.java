@@ -246,7 +246,7 @@ private void updateVisitHistory(){
     }
     
     
-    public boolean CheckBlockadesAround(){
+    public boolean checkBlockadesAround(){
     	if(location instanceof Area){
     		Area temp = (Area)this.location;
     		List<EntityID> listOfBlockades = temp.getBlockades();
@@ -288,7 +288,7 @@ private void updateVisitHistory(){
     		heatMap = initializeHeatMap();
     	}
         
-        heatMap.writeMapToFile();
+        //heatMap.writeMapToFile();
         
         Logger.trace("The received message: " + manager.getReceivedMessage());
         
@@ -296,8 +296,9 @@ private void updateVisitHistory(){
         if(this.me.getBuriedness() > 0) {
             return this.buriednessAction(manager);
         }
+        
         Logger.debug("                          BLOCKADE AROUND TESTING!!!");
-        if(CheckBlockadesAround()){
+        if(checkBlockadesAround()){
         	Blockade closest = BlockadeUtil.getClosestBlockadeInMyRoad(this);
         	Logger.debug("                          BLOCKADE AROUND DETECTED!!!");
         	return new ActionClear(this,closest);
@@ -321,9 +322,9 @@ private void updateVisitHistory(){
         Refuge result = PositionUtil.getNearTarget(this.world, this.me, this.getRefuges());
         EntityID results = result.getID();           
         EntityID local = this.location.getID();        
-        if((local == results) && (this.me.getDamage() > 0)){        
-        		return new ActionRest(this);
-        	}        
+		if ((local == results) && (this.me.getDamage() > 0)) {
+			return new ActionRest(this);
+		}
         
         if(this.stuckClearLoop(currentTime)) {
         	Logger.warn("Warning: clearing the same position for more than 3 timesteps");

@@ -4,6 +4,7 @@ import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.PriorityQueue;
 
 import adk.team.tactics.Tactics;
@@ -12,6 +13,7 @@ import rescuecore2.log.Logger;
 import rescuecore2.misc.geometry.Line2D;
 import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.misc.geometry.Vector2D;
+import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Blockade;
 import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.Road;
@@ -108,6 +110,31 @@ public class BlockadeUtil {
 		}
 		return new java.awt.geom.Area(new Polygon(xPoints, yPoints, points.length));
 	}
+	
+	public boolean checkBlockadesAround(WorldProvider<?> provider, Area location, int xPos, int yPos){
+		if(!location.isBlockadesDefined()){
+			return false;
+		}
+		List<EntityID> listOfBlockades = location.getBlockades();
+		if(listOfBlockades != null){
+	    	for(EntityID e : listOfBlockades ){
+	    		Blockade b = (Blockade)provider.getWorld().getEntity(e);
+	    		//TODO: usar o metodo do dudu
+	    		java.awt.Polygon pol = new java.awt.Polygon();
+	    		int [] apexes = b.getApexes();
+	    		for(int i = 0; i < apexes.length; i++){
+	    			int x = apexes[i];
+	    			int y = apexes[i+1];
+	    			i++;
+	    			pol.addPoint(x, y);
+	    		}
+	    		if(pol.contains(xPos, yPos)) return true;
+	    	}
+		}
+    	return false;
+        
+    }
+	
 	
 	/**
 	 * Returns all blockades contained in the square 
