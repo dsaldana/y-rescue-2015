@@ -7,6 +7,7 @@ import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.EntityID;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 public class YRescueImpassableSelector implements ImpassableSelector {
 
@@ -84,6 +85,11 @@ public class YRescueImpassableSelector implements ImpassableSelector {
     	    	
         StandardEntity result = PositionUtil.getNearTarget(this.provider.getWorld(), this.provider.getOwner(), impassableRoadList2);
         return result != null ? result.getID() : null;
+    }
+    
+    @Override
+    public EntityID getNewTarget(int time, List<EntityID> cluster, List<EntityID> notCluster) {
+    	return getNewTarget(time);
     }
 
     @Override
