@@ -443,6 +443,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		Logger.info("The human im carrying on is dead, selecting new target..");
         		this.target = null;
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
+        		return new ActionUnload(this);
         	}
         	else{
 	        	if(this.location instanceof Refuge) {
