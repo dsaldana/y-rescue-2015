@@ -79,7 +79,7 @@ public abstract class MessageProvider<M extends CommunicationMessage, E extends 
 			msg = this.createMessage(config, manager.getTime() -1, bsr);
 		} catch (Exception e){
 			//System.out.println("[ERROR] ");
-			Logger.error("Error in create msg", e);
+			//Logger.error("Error in create msg", e);
 			return null;
 		}
 
