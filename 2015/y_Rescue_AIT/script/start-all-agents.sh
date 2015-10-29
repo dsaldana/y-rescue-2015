@@ -9,6 +9,6 @@ echo "Will connect to: $1"
 
 #command: ./start-all-agents.sh [SERVER IP]
  
-java -Xms1G -Xmx2G -classpath $classpath adk.Main -h:$1
+java -Xms3G -Xmx7G -classpath $classpath adk.Main -h:$1
 
 echo "Agents launched. To terminate them, hit Ctrl+C in this terminal."

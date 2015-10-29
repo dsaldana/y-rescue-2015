@@ -285,7 +285,7 @@ private void updateVisitHistory(){
     		heatMap = initializeHeatMap();
     	}
         
-        heatMap.writeMapToFile();
+        //heatMap.writeMapToFile();
         
         Logger.trace("The received message: " + manager.getReceivedMessage());
         
