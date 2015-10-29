@@ -181,7 +181,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     	if(clusterToVisitP.size() > 0){
     		this.target = clusterCenter;
     		//this.actionStateMachine = new StateMachine(ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION);
-    		this.actionStateMachine.setState(ActionStates.IDLE);
+    		this.actionStateMachine = new StateMachine(ActionStates.IDLE);
     		this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
     	}   
         
