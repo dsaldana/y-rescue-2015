@@ -281,13 +281,11 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         
         //heatMap.writeMapToFile();
         
-        /*
         ((YRescueVictimSelector) this.victimSelector).humanTargetM.updateUtilities(time);
         List<HumanTarget> humanTargets = ((YRescueVictimSelector) this.victimSelector).humanTargetM.getAllHumanTargets();
         for (HumanTarget hum : humanTargets) {
         	Logger.debug("Human Target: "+ hum.getHuman() + " Utility: "+ hum.getUtility() + " Human ID:" + hum.getHuman().getID() + " pos:" + hum.getHuman().getPosition() + " burriedness:" + hum.getHuman().getBuriedness() + " damage:" + hum.getHuman().getDamage());
         }
-        */
 
         /* === -------- === *
          *   Basic actions  *
@@ -480,7 +478,11 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                     return this.moveTarget(currentTime);
                 }
                 
-                if (victim.getHP() <= 0) continue;
+                // Threshold to rescue
+                if (victim.getHP() <= 100){ 
+                	this.victimSelector.remove(victim.getID());
+                	continue;
+                }
                 
                 if (victim.getBuriedness() > 0) {
                 	this.stateMachine.setState(ActionStates.Ambulance.RESCUING);
