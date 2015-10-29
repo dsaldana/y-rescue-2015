@@ -193,6 +193,12 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     
     public void ignoreTimeThink(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
     	Logger.debug("\nRadio channel: " + manager.getRadioConfig().getChannel());
+    	
+    	// Check for buriedness and tries to extinguish fire in a close building
+        if(this.me.getBuriedness() > 0) {
+        	Logger.info("I'm buried at " + me.getPosition());
+            this.buriednessAction(manager);
+        }
     }
 
     @Override
@@ -237,20 +243,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         // Check for buriedness and tries to extinguish fire in a close building
         if(this.me.getBuriedness() > 0) {
         	Logger.info("I'm buried at " + me.getPosition());
-            manager.addSendMessage(new MessageFireBrigade(this.me, MessageFireBrigade.ACTION_REST, this.agentID));
-            for(StandardEntity entity : this.world.getObjectsInRange(this.me, this.maxDistance)) {
-                if(entity instanceof Building) {
-                    Building building = (Building)entity;
-                    this.target = building.getID();
-                    //if (building.isOnFire() && (this.world.getDistance(this.agentID, this.target) <= this.maxDistance)) {
-                    if(building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4 && building.isBrokennessDefined() && building.getBrokenness() > 10) {
-                		actionStateMachine.setState(ActionStates.FireFighter.EXTINGUISHING);
-                		statusStateMachine.setState(StatusStates.ACTING);
-                    	return new ActionExtinguish(this, this.target, this.maxPower);
-                    }
-                }
-            }
-            return new ActionRest(this);
+            return this.buriednessAction(manager);
         }
         
         YRescueBuildingSelector bs = (YRescueBuildingSelector) buildingSelector;
@@ -460,6 +453,23 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     	
         return new ActionMove(this, path);
     }
+
+	private Action buriednessAction(MessageManager manager) {
+		manager.addSendMessage(new MessageFireBrigade(this.me, MessageFireBrigade.ACTION_REST, this.agentID));
+		for(StandardEntity entity : this.world.getObjectsInRange(this.me, this.maxDistance)) {
+		    if(entity instanceof Building) {
+		        Building building = (Building)entity;
+		        this.target = building.getID();
+		        //if (building.isOnFire() && (this.world.getDistance(this.agentID, this.target) <= this.maxDistance)) {
+		        if(building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4 && building.isBrokennessDefined() && building.getBrokenness() > 10) {
+		    		actionStateMachine.setState(ActionStates.FireFighter.EXTINGUISHING);
+		    		statusStateMachine.setState(StatusStates.ACTING);
+		        	return new ActionExtinguish(this, this.target, this.maxPower);
+		        }
+		    }
+		}
+		return new ActionRest(this);
+	}
     
     // Move to a target if it exists otherwise walk randomly
     public Action moveTarget(int currentTime) {
