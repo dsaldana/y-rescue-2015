@@ -255,7 +255,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         
         this.recruitmentManager.setMessageManager(manager);
         
-        if(me.getID().getValue() != 941331988){
+        /*if(me.getID().getValue() != 941331988){
         	if(this.recruitmentManager.getRecruitmentState() == RecruitmentManager.RecruitmentStates.NOTHING){
         		if(this.recruitmentManager.isRecruitmentAvailable()){
         			this.recruitmentManager.setRecruitmentState(RecruitmentManager.RecruitmentStates.ENLISTING);
@@ -269,10 +269,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         			Logger.info("Enlistment agent enlisted - " + this.recruitmentManager.isMyEnlistmentSelected());
         		}
         	}
-        }
-        
-        //manager.addSendMessage(new MessageRecruitment(me.getID(), 4, me.getPosition(), Task.RESCUE));
-        //manager.addSendMessage(new MessageEnlistment(me.getID().getValue(), me.getID().getValue(), me.getID().getValue(), 0.1f));
+        }*/
         
         //heatMap.writeMapToFile();
         
@@ -364,7 +361,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	Human victim = (Human) this.world.getEntity(this.target);
         	Logger.info("Target b'ness: " + victim.getBuriedness() + ", dmg: " + victim.getDamage() + ", HP: " + victim.getHP());
         	
-        	if(me.getID().getValue() == 941331988){
+        	/*if(me.getID().getValue() == 941331988){
 	        	if(this.recruitmentManager.getRecruitmentState() == RecruitmentManager.RecruitmentStates.NOTHING){
 	        		this.recruitmentManager.setRecruitmentState(RecruitmentManager.RecruitmentStates.RECRUITING);
 	        		this.recruitmentManager.createNewRecruitmentMsg(Task.RESCUE, 1, time);
@@ -372,7 +369,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	        	else if(this.recruitmentManager.getRecruitmentState() == RecruitmentManager.RecruitmentStates.RECRUITING && this.recruitmentManager.isEnlistmentAvailable()){
 	        		Logger.info("Recruitment agent enlisted - " + this.recruitmentManager.isEnlistmentAvailable() + this.recruitmentManager.getAgentsEnlisted());
 	        	}
-        	}
+        	}*/
         	
         	if(victim.getPosition().getValue() != this.location.getID().getValue()){
         		Logger.info("Target not in place!, going to target again ...");
