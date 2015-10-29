@@ -185,6 +185,7 @@ public class MessageManager {
 		}
 		
 		BitStreamReader bsr = new BitStreamReader(akSpeak.getContent());
+		Logger.trace("SizeOfMsgID: " + this.radioConfig.getSizeOfMessageID());
 		int msgID = bsr.getBits(this.radioConfig.getSizeOfMessageID());
 		//MessageProvider provider = this.providerList[bsr.getBits(this.radioConfig.getSizeOfMessageID())];
 		Logger.trace("Received MessageID: " + msgID);

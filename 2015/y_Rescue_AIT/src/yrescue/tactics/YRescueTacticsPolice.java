@@ -242,6 +242,31 @@ private void updateVisitHistory(){
         }
     }
     
+    
+    public boolean CheckBlockadesAround(){
+    	if(location instanceof Area){
+    		Area temp = (Area)this.location;
+    		List<EntityID> listOfBlockades = temp.getBlockades();
+    		if(listOfBlockades != null){
+		    	for(EntityID e : listOfBlockades ){
+		    		Blockade b = (Blockade)world.getEntity(e);
+		    		java.awt.Polygon pol = new java.awt.Polygon();
+		    		int [] apexes = b.getApexes();
+		    		for(int i = 0; i < apexes.length; i++){
+		    			int x = apexes[i];
+		    			int y = apexes[i+1];
+		    			i++;
+		    			pol.addPoint(x, y);
+		    		}
+		    		if(pol.contains(me.getX(), me.getY())) return true;
+		    	}
+    		}
+    	}
+    	return false;
+        
+    }
+    
+    
     @Override
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
     	Logger.debug("Radio channel: " + manager.getRadioConfig().getChannel());
@@ -267,6 +292,12 @@ private void updateVisitHistory(){
         //if I am buried, send a message and attempt to clear the entrance to my building
         if(this.me.getBuriedness() > 0) {
             return this.buriednessAction(manager);
+        }
+        Logger.debug("                          BLOCKADE AROUND TESTING!!!");
+        if(CheckBlockadesAround()){
+        	Blockade closest = BlockadeUtil.getClosestBlockadeInMyRoad(this);
+        	Logger.debug("                          BLOCKADE AROUND DETECTED!!!");
+        	return new ActionClear(this,closest);
         }
         
         if (this.tacticsAgent.stuck(currentTime)){

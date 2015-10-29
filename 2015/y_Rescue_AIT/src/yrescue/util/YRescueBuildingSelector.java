@@ -9,6 +9,7 @@ import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.worldmodel.EntityID;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class YRescueBuildingSelector implements BuildingSelector {
@@ -59,6 +60,25 @@ public class YRescueBuildingSelector implements BuildingSelector {
     @Override
     public EntityID getNewTarget(int time) {
         StandardEntity result = PositionUtil.getNearTarget(this.provider.getWorld(), this.provider.getOwner(), this.buildingList);
+        return result != null ? result.getID() : null;
+    }
+    
+    @Override
+    public EntityID getNewTarget(int time, List<EntityID> cluster, List<EntityID> notCluster) {
+    	
+    	Set<Building> buildingsListCluster = new HashSet<>();
+    	for(Building b : this.buildingList){
+    		if(cluster.contains(b.getID())){
+    			buildingsListCluster.add(b);
+    		}
+    	}
+    	
+    	StandardEntity result;
+    	if(buildingsListCluster.isEmpty()){
+    		result = PositionUtil.getNearTarget(this.provider.getWorld(), this.provider.getOwner(), this.buildingList);
+    	}else{
+    		result = PositionUtil.getNearTarget(this.provider.getWorld(), this.provider.getOwner(), buildingsListCluster);
+    	}
         return result != null ? result.getID() : null;
     }
 
