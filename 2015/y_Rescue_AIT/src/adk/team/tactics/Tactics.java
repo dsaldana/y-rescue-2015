@@ -22,6 +22,7 @@ import yrescue.message.information.MessageBlockedArea;
 import yrescue.message.recruitment.RecruitmentManager;
 import yrescue.problem.blockade.BlockedArea;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,9 +42,9 @@ public abstract class Tactics<E extends Human> implements WorldProvider<E> {
     public static final int BUILDING_REPORT_INTERVAL = 7;
     public static final int BLOCKED_AREA_REPORT_INTERVAL = 3;
     
-    public Map<Human, Integer> lastVictimReport;
-    public Map<Building, Integer> lastBuildingReport;
-    public Map<BlockedArea, Integer> lastBlockedAreaReport;
+    public Map<Human, Integer> lastVictimReport = new HashMap<Human, Integer>();
+    public Map<Building, Integer> lastBuildingReport = new HashMap<Building, Integer>();
+    public Map<BlockedArea, Integer> lastBlockedAreaReport = new HashMap<BlockedArea, Integer>();
     
     public int sightDistance;
     public HeatMap heatMap;
