@@ -289,15 +289,20 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         heatMap.writeMapToFile();
         
+       
+       
+        
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
         	//isStuck = true;
-        	//Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)this.world.getEntity(me.getID()), (Area)this.world.getEntity(lastpath.get(0)), this);
-        	//List<EntityID> newPath = new ArrayList<>();
+        	Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)this.world.getEntity(me.getID()), (Area)this.world.getEntity(lastpath.get(0)), this);
+        	List<EntityID> newPath = new ArrayList<>();
+        	newPath.add(me.getID());
+        	return new ActionMove(this,newPath,(int)destinationStuck.getX(),(int)destinationStuck.getY());
         	
-        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+        	/*manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
         	Logger.trace("I'm blocked. Added a MessageBlockedArea");
-    		return new ActionRest(this);	//does nothing...
+    		return new ActionRest(this);*/	//does nothing...
     	}
         
         if(this.me.getDamage() >= 100) { //|| this.someoneOnBoard()
