@@ -2,9 +2,11 @@ package yrescue.tactics;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -48,6 +50,7 @@ import rescuecore2.worldmodel.EntityID;
 import rescuecore2.worldmodel.properties.IntArrayProperty;
 import yrescue.heatmap.HeatMap;
 import yrescue.heatmap.HeatNode;
+import yrescue.kMeans.KMeans;
 import yrescue.message.event.MessageBlockedAreaEvent;
 import yrescue.problem.blockade.BlockadeUtil;
 import yrescue.problem.blockade.BlockedArea;
@@ -91,7 +94,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     //Stores when entities were last visited
     //protected Map<EntityID, Integer> lastVisit;
     //protected CircularFifoQueue<EntityID> lastVisitQueue = new CircularFifoQueue<EntityID>(20);
-
+    
+    protected List<EntityID> clusterToVisit;
+	protected EntityID clusterCenter;
 
     @Override
     public String getTacticsName() {
@@ -145,10 +150,63 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         MDC.put("agent", this);
         MDC.put("location", location());
         
+        clusterToVisit = new LinkedList<EntityID>();
+    	List<StandardEntity> policeList = new ArrayList<StandardEntity>(this.getWorld().getEntitiesOfType(StandardEntityURN.POLICE_FORCE));
+    	KMeans kmeans = new KMeans(policeList.size());
+    	Map<EntityID, EntityID> kmeansResult = kmeans.calculatePartitions(this.getWorld());
+    	
+    	List<EntityID> partitions = kmeans.getPartitions();
+    	
+    	policeList.sort(new Comparator<StandardEntity>() {
+			@Override
+			public int compare(StandardEntity o1, StandardEntity o2) {
+				return Integer.compare(o1.getID().getValue(), o2.getID().getValue());
+			}
+		});
+    	
+    	partitions.sort(new Comparator<EntityID>() {
+			@Override
+			public int compare(EntityID o1, EntityID o2) {
+				return Integer.compare(o1.getValue(), o2.getValue());
+			}
+		});
+    	
+    	if(policeList.size() == partitions.size()){
+    		int pos = -1;
+    		for(int i = 0; i < policeList.size(); i++){
+    			if(me.getID().getValue() == policeList.get(i).getID().getValue()){
+    				pos = i;
+    				break;
+    			}
+    		}
+    		
+    		if(pos != -1){
+    			clusterCenter = partitions.get(pos);
+        		final Set<Map.Entry<EntityID, EntityID>> entries = kmeansResult.entrySet();
+
+        		for (Map.Entry<EntityID, EntityID> entry : entries) {
+        		    EntityID key = entry.getKey();
+        		    EntityID partition= entry.getValue();
+
+        		    if(partition.getValue() == clusterCenter.getValue()){
+        		    	clusterToVisit.add(key);
+        		    }
+        		}	
+    		}
+    	}
+
+    	Logger.info("Cluster to visit :" + clusterToVisit);
+    	if(clusterToVisit.size() > 0){
+    		Building b = (Building) world.getEntity(clusterCenter);
+    		BlockedArea ba = new BlockedArea(clusterCenter, clusterCenter, b.getX(), b.getY());
+    		this.blockedAreaTarget = ba;
+    		this.blockedAreaSelector.add(ba);
+    	}
+        
         Logger.info("Preparation complete!");
     }
     
-private void updateVisitHistory(){
+    private void updateVisitHistory(){
     	  	
     	IntArrayProperty positionHist = (IntArrayProperty) me().getProperty("urn:rescuecore2.standard:property:positionhistory");
     	int[] positionList = positionHist.getValue();
