@@ -287,7 +287,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         Logger.info("Busy Hydrants: " + busyHydrantIDs);
         
-        heatMap.writeMapToFile();
+        //heatMap.writeMapToFile();
         
        
        

@@ -148,6 +148,31 @@ public class BlockadeUtil {
 		return new java.awt.geom.Area(new Polygon(xPoints, yPoints, points.length));
 	}
 	
+	public boolean checkBlockadesAround(WorldProvider<?> provider, Area location, int xPos, int yPos){
+		if(!location.isBlockadesDefined()){
+			return false;
+		}
+		List<EntityID> listOfBlockades = location.getBlockades();
+		if(listOfBlockades != null){
+	    	for(EntityID e : listOfBlockades ){
+	    		Blockade b = (Blockade)provider.getWorld().getEntity(e);
+	    		//TODO: usar o metodo do dudu
+	    		java.awt.Polygon pol = new java.awt.Polygon();
+	    		int [] apexes = b.getApexes();
+	    		for(int i = 0; i < apexes.length; i++){
+	    			int x = apexes[i];
+	    			int y = apexes[i+1];
+	    			i++;
+	    			pol.addPoint(x, y);
+	    		}
+	    		if(pol.contains(xPos, yPos)) return true;
+	    	}
+		}
+    	return false;
+        
+    }
+	
+	
 	/**
 	 * Returns all blockades contained in the square 
 	 * with diagonal from (x - range, y - range) to (x + range, y + range) 
