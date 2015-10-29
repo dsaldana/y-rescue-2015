@@ -280,7 +280,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         Logger.info("Busy Hydrants: " + busyHydrantIDs);
         
-        heatMap.writeMapToFile();
+        //heatMap.writeMapToFile();
         
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
