@@ -1,5 +1,7 @@
 package comlib.util;
 
+import rescuecore2.log.Logger;
+
 public class BitStreamReader {
 
 	private byte[] stream;
@@ -18,9 +20,13 @@ public class BitStreamReader {
 	public synchronized int getBits(int len) throws ArrayIndexOutOfBoundsException {
 		//ストリーム長を超える読み取りかどうか
 //		System.out.println(stream.length +"/"+ index +"/"+ len);
-        if (stream.length * 8 < index + len) {
-			throw new ArrayIndexOutOfBoundsException();
-		}
+		Logger.trace(String.format(
+			"BitStreamReader.getBits - stream=%s, stream.length=%d, remainingBuf=%d, index=%d, len=%d", 
+			stream.toString(), stream.length, getRemainBuffer(), index, len
+		));
+        //if (stream.length * 8 < index + len) {
+		//	throw new ArrayIndexOutOfBoundsException();
+		//}
 
 		int val = 0;
 		for (int i = len - 1; i >= 0; i--) {

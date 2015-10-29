@@ -40,11 +40,12 @@ public abstract class MessageProvider<M extends CommunicationMessage, E extends 
 
 	protected abstract M createMessage(VoiceConfig config, int time, int ttl, String[] datas, int next);
 	
-	public void write(MessageManager manager, BitOutputStream bos, M msg)
-	{
+	public void write(MessageManager manager, BitOutputStream bos, M msg) {
 		RadioConfig config = manager.getRadioConfig();
-		if (bos.size() <= 0)
-		{ bos.writeBits(this.messageID, config.getSizeOfMessageID()); }
+		if (bos.size() <= 0) {
+			Logger.warn("BitOutputStream size <= 0...");
+			bos.writeBits(this.messageID, config.getSizeOfMessageID());
+		}
 		this.writeMessage(config, bos, msg);
 	}
 	
