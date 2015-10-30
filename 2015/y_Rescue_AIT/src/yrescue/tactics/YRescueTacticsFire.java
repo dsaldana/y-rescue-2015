@@ -225,22 +225,27 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
-        	Action a = this.tacticsAgent.commandHistory.get(currentTime - 1);
-        	
-        	if(a instanceof ActionMove){
-        		List<EntityID> previousPath = ((ActionMove) a).getPath();
-        		//System.out.println("previous action move: " + ((ActionMove)a));
-        		//System.out.println("previousPath " + previousPath);
-	        	//System.out.println(String.format("Stuck! location=%s, previousPath.get(0)=%s", location, previousPath.get(0)));
-	        	//isStuck = true;
-        		if(location instanceof Area){
-		        	Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)location, (Area)this.world.getEntity(lastPath.get(0)), this);
-		        	List<EntityID> newPath = new ArrayList<>();
-		        	newPath.add(location.getID());
-		        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
-		        	Logger.trace("I'm blocked. Added a MessageBlockedArea");
-		        	return new ActionMove(this,newPath,(int)destinationStuck.getX(),(int)destinationStuck.getY());
-        		}
+        	try{
+	        	Action a = this.tacticsAgent.commandHistory.get(currentTime - 1);
+	        	
+	        	if(a instanceof ActionMove){
+	        		List<EntityID> previousPath = ((ActionMove) a).getPath();
+	        		//System.out.println("previous action move: " + ((ActionMove)a));
+	        		//System.out.println("previousPath " + previousPath);
+		        	//System.out.println(String.format("Stuck! location=%s, previousPath.get(0)=%s", location, previousPath.get(0)));
+		        	//isStuck = true;
+	        		if(location instanceof Area){
+			        	Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)location, (Area)this.world.getEntity(lastPath.get(0)), this);
+			        	List<EntityID> newPath = new ArrayList<>();
+			        	newPath.add(location.getID());
+			        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+			        	Logger.trace("I'm blocked. Added a MessageBlockedArea");
+			        	return new ActionMove(this,newPath,(int)destinationStuck.getX(),(int)destinationStuck.getY());
+	        		}
+	        	}
+        	}
+        	catch(Exception e){
+        		Logger.error("ERROR on attempting stuck move", e);
         	}
         	/*
     		return new ActionRest(this);*/	//does nothing...
