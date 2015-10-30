@@ -106,6 +106,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     
     @Override
     public void preparation(Config config, MessageManager messageManager) {
+    	long prepStart = System.currentTimeMillis();
+    	
         this.routeSearcher = this.initRouteSearcher();
         this.buildingSelector = this.initBuildingSelector();
         lastPath = new ArrayList<>();
@@ -145,7 +147,12 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         PropertyConfigurator.configure(prop);
         */
         
-        Logger.debug(String.format("---- FireFighter ON. maxDistance=%d, sightDistance=%d ----", this.maxDistance, this.sightDistance));
+        long secsToProcess = (System.currentTimeMillis() - prepStart);
+        Logger.debug(String.format(
+    		">>>> FireFighter ON. maxDistance=%d, sightDistance=%d, prepTime=%d ms ----", 
+    		this.maxDistance, this.sightDistance, secsToProcess
+    	));
+        
     }
 
     public boolean onWaterSource() {

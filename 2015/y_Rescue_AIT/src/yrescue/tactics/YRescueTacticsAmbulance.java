@@ -8,16 +8,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import java.util.Random;
 
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
 
+
+
 //import adf.util.map.PositionUtil;
 import adk.team.util.graph.PositionUtil;
-
-
 import adk.sample.basic.event.BasicAmbulanceEvent;
 import adk.sample.basic.event.BasicCivilianEvent;
 import adk.sample.basic.event.BasicFireEvent;
@@ -94,6 +93,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
     @Override
     public void preparation(Config config, MessageManager messageManager) {
+    	long prepStart = System.currentTimeMillis();
+    	
     	this.stateMachine = new StateMachine(ActionStates.Ambulance.EXPLORING);
     	this.victimSelector = new YRescueVictimSelector(this);
     	this.routeSearcher = new BasicRouteSearcher(this);
@@ -151,11 +152,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     		}
     	}
 
-    	Logger.info("Cluster to visit :" + clusterToVisit);
+    	Logger.debug("Cluster to visit :" + clusterToVisit);
     	if(clusterToVisit.size() > 0){
     		this.target = clusterCenter; //clusterToVisit.get(0);
     		this.stateMachine = new StateMachine(ActionStates.Ambulance.GOING_TO_CLUSTER_LOCATION);
     	}
+    	long secsToProcess = (System.currentTimeMillis() - prepStart);
+    	Logger.info(">>> Ambulance ready. Preparation took(ms): " + secsToProcess);
     }
 
     @Override
