@@ -289,6 +289,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	if(flagOnce == 0){
         		actionStateMachine.setState(ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION);
 	    		statusStateMachine.setState(StatusStates.EXPLORING);
+	    		this.target = this.clusterCenter;
         	}
 	        if(this.statusStateMachine.currentState() == StatusStates.EXPLORING && this.actionStateMachine.currentState() == ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION){
 	        	Collection<StandardEntity> objects = world.getObjectsInRange(getOwnerID(), sightDistance);
