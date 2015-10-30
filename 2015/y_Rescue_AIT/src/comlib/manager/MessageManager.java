@@ -203,7 +203,7 @@ public class MessageManager {
 				list.add(msg);
 				//Logger.trace("Added message " + msg + " to list ");
 			} catch(Exception e) {
-				Logger.error("Error receiving message!", e);
+				Logger.error("Error receiving message!");
 				//System.err.println("Received message is corrupt or format is different.");
 				//e.printStackTrace();
 				return;
@@ -211,7 +211,7 @@ public class MessageManager {
 
 			// TODO: Check!!
 			if (bsr.getRemainBuffer() == lastRemainBufferSize) {
-				Logger.info(String.format(
+				Logger.debug(String.format(
 					"bsr.getRemainBuffer(): %d // lastRemainBufferSize: %d, breaking",
 					bsr.getRemainBuffer(), lastRemainBufferSize
 				));
