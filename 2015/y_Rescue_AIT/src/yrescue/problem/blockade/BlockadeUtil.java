@@ -63,10 +63,30 @@ public class BlockadeUtil {
 		List<EntityID> blocks = from.getBlockades();
 		List<Vector2D> distances = new ArrayList<>();
 		List<Polygon> polygons = new ArrayList<>();
+		Blockade closest = null,furthest = null;
+		double close,far;
+		close = Double.MAX_VALUE;
+		far = Double.MIN_VALUE;
 		for(EntityID next : blocks){
 			Blockade next1 = (Blockade)agent.world.getEntity(next);
 			Vector2D d = new Vector2D(next1.getX() - agent.me().getX(),next1.getY() - agent.me().getY());
-			distances.add(d);
+			distances.add(d); 
+		}
+		while(distances.size() > 1){
+			//Get closest and furthest blockades on the list.
+			for(int i =0; i < distances.size(); i++){
+				if(distances.get(i).getLength() < close){
+					close = distances.get(i).getLength();
+					closest = (Blockade)agent.world.getEntity(blocks.get(i));
+					
+				}
+				else if(distances.get(i).getLength() > far){
+					far = distances.get(i).getLength();
+					furthest = (Blockade)agent.world.getEntity(blocks.get(i));
+				}
+			}
+			Polygon p = yrescue.util.GeometricUtil.getPolygon(closest.getApexes());
+			
 		}
 		
 		
