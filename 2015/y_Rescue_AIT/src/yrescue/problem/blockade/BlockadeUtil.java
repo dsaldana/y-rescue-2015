@@ -44,8 +44,8 @@ public class BlockadeUtil {
 		
 		Blockade closest = null;
 		int closestDistance = Integer.MAX_VALUE;
-		
-		if (myRoad.isBlockadesDefined()){					
+		Logger.debug("myRoad.getBlockades: " + myRoad.getBlockades());
+		if (myRoad.isBlockadesDefined()){
 			for (EntityID blockID : myRoad.getBlockades()){
 				int distance = t.getWorld().getDistance(t.agentID, blockID);
 				if(distance < closestDistance){
