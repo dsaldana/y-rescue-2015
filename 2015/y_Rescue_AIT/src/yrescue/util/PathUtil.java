@@ -1,6 +1,15 @@
 package yrescue.util;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import adk.team.tactics.Tactics;
 import adk.team.util.RouteSearcher;
@@ -15,6 +24,7 @@ public class PathUtil {
 	private PathUtil() {	//cannot instantiate
 	}
 	
+	public static final String NODE_CACHE_FILE_NAME = "/tmp/breadth_first_all_to_all.txt";
 	
 	/**
 	 * Removes a building from the destination of a path if it is on fire
@@ -32,6 +42,40 @@ public class PathUtil {
     	else {
     		Logger.info("Path is too short... won't change it");
     	}
+	}
+	
+	public static Map<EntityID, Map<EntityID, List<EntityID>>> getRouteCache(){
+		Map<EntityID, Map<EntityID, List<EntityID>>> routeCache = new HashMap<EntityID, Map<EntityID, List<EntityID>>>();
+		
+		try (BufferedReader br = new BufferedReader(new FileReader(PathUtil.NODE_CACHE_FILE_NAME))) {
+		    String line;
+		    while ((line = br.readLine()) != null) {
+		    	String[] parts = line.split(" ");
+		    	if(parts.length > 2){
+		    		try{
+		    			int from = Integer.parseInt(parts[0]);
+		    			int to = Integer.parseInt(parts[1]);
+		    			
+		    			List<EntityID> nodeList = new LinkedList<EntityID>();
+		    			for(int i = 2; i < parts.length; i++){
+		    				int node = Integer.parseInt(parts[i]);
+		    				nodeList.add(new EntityID(node));
+		    			}
+		    			
+		    			Map<EntityID, List<EntityID>> lMap = new HashMap<EntityID, List<EntityID>>();
+		    			lMap.put(new EntityID(to), nodeList);
+		    			routeCache.put(new EntityID(to), lMap);
+		    		}
+		    		catch(Exception e){}
+		    	}
+		    }
+		} catch (FileNotFoundException e) {
+			//e.printStackTrace();
+		} catch (IOException e) {
+			//e.printStackTrace();
+		}
+		
+		return routeCache;
 	}
 	
 }

@@ -18,6 +18,7 @@ import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
 
 
+
 //import adf.util.map.PositionUtil;
 import adk.team.util.graph.PositionUtil;
 import adk.sample.basic.event.BasicAmbulanceEvent;
@@ -72,6 +73,7 @@ import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.util.DistanceSorter;
 import yrescue.util.GeometricUtil;
+import yrescue.util.PathUtil;
 import yrescue.util.YRescueVictimSelector;
 import yrescue.util.target.HumanTarget;
 
@@ -86,6 +88,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected List<EntityID> clusterToVisit;
 	protected List<EntityID> clusterCentroids;
 	protected EntityID clusterCenter;
+	protected Map<EntityID, Map<EntityID, List<EntityID>>> routeBreadthFirstCache;
 	
 	private final boolean DEBUG = false;
 	
@@ -99,7 +102,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     @Override
     public void preparation(Config config, MessageManager messageManager) {
     	this.stateMachine = new StateMachine(ActionStates.Ambulance.EXPLORING);
-    	this.routeSearcher = new BasicRouteSearcher(this);
+    	routeBreadthFirstCache = PathUtil.getRouteCache();
+    	this.routeSearcher = new BasicRouteSearcher(this, routeBreadthFirstCache);
     	this.victimSelector = new YRescueVictimSelector(this, this.routeSearcher);
     	
     	this.recruitmentManager = new RecruitmentManager();
