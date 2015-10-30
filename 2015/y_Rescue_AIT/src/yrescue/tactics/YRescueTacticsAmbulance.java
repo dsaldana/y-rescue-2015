@@ -313,6 +313,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	BlockedArea mine = new BlockedArea(location.getID(), this.target, me.getX(), me.getY());
         	try{
         		this.reportBlockedArea(mine, manager, currentTime);
+        		
         	}
         	catch(Exception e){
         		// Do nothing
@@ -466,6 +467,17 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		this.target = null;
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         		return new ActionUnload(this);
+        	}
+        	else if(this.tacticsAgent.stuck(currentTime)&&this.someoneOnBoard()){
+        		Logger.info("I'm carrying someone but I'm stuck, selecting new target");
+        		this.target = null;
+        		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
+        		return new ActionUnload(this);
+        	}
+        	else if(this.tacticsAgent.stuck(currentTime)){
+        		Logger.info("I'm stuck, selecting new target");
+        		this.target = null;
+        		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         	}
         	else{
 	        	if(this.location instanceof Refuge) {
