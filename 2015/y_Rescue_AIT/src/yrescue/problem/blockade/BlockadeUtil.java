@@ -1,16 +1,10 @@
 package yrescue.problem.blockade;
 
 import java.awt.Polygon;
-import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.PriorityQueue;
-
-import com.sun.corba.se.impl.ior.GenericTaggedProfile;
-
-import adk.team.tactics.Tactics;
-import adk.team.util.provider.WorldProvider;
 
 import rescuecore2.log.Logger;
 import rescuecore2.misc.geometry.GeometryTools2D;
@@ -20,14 +14,14 @@ import rescuecore2.misc.geometry.Vector2D;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Blockade;
 import rescuecore2.standard.entities.Edge;
-import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.tactics.YRescueTacticsPolice;
-import yrescue.util.GeometricUtil;
 import yrescue.util.YRescueDistanceSorter;
+import adk.team.tactics.Tactics;
+import adk.team.util.provider.WorldProvider;
 
 /**
  * A collection of useful methods to deal with blockades

@@ -218,7 +218,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 
     	Logger.debug(("Position hist: " + positionHist));
     	if (!positionHist.isDefined()) {
-    		Logger.info("Empty position list. I'm (possibly stopped) at " + location());
+    		Logger.debug("Empty position list. I'm (possibly stopped) at " + location());
     		return;
     	}
     	
@@ -414,7 +414,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         Logger.debug("They are: " + yis.impassableRoadList);
         */
         
-        Logger.debug("#blocked roads: " + blockedAreaSelector.blockedAreas.size());
+        Logger.info("#blocked roads: " + blockedAreaSelector.blockedAreas.size());
         Logger.debug("They are: " + blockedAreaSelector.blockedAreas.values());
         
         /*
@@ -495,9 +495,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         	}
         	
         	
-        	System.out.println("The heatmap " +heatMap);
+        	//System.out.println("The heatmap " +heatMap);
         	if(heatMap == null){
-        		Logger.info("WARNING: null heatmap. Will build a new one");
+        		Logger.warn("WARNING: null heatmap. Will build a new one");
         		heatMap = initializeHeatMap();
         	}
         	path = this.routeSearcher.getPath(currentTime, me, heatMap.getNodeToVisit());// noTargetMove(currentTime, this.me);
@@ -706,7 +706,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     
     private boolean stuckClearLoop(int currentTime){
     	if (tacticsAgent.commandHistory.size() < 4){
-    		Logger.info("Insufficient commands in history");
+    		Logger.debug("Insufficient commands in history");
     		return false;
     	}
     	Action lastCmd = null;
@@ -803,7 +803,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 		// Am I near a blockade?
         Blockade target = failSafeGetTargetBlockade();
         if (target != null) {
-            Logger.info("Clearing blockade " + target);
+            Logger.info("FAILSAFE: Clearing blockade " + target);
             List<Line2D> lines = GeometryTools2D.pointsToLines(GeometryTools2D.vertexArrayToPoints(target.getApexes()), true);
             double best = Double.MAX_VALUE;
             Point2D bestPoint = null;
@@ -825,16 +825,16 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         if (tgt != null) {
 	        List<EntityID> path = routeSearcher.getPath(currentTime, me().getPosition(), tgt);
 	        if (path != null) {
-	            Logger.info("Moving to target");
+	            Logger.info("FAILSAFE: Moving to target");
 	            Road r = (Road)model.getEntity(path.get(path.size() - 1));
 	            Blockade b = failSafeGetTargetBlockade(r, -1);
-	            Logger.debug("Path: " + path);
-	            Logger.debug("Target coordinates: " + b.getX() + ", " + b.getY());
+	            Logger.debug("FAILSAFE: Path: " + path);
+	            Logger.debug("FAILSAFE: Target coordinates: " + b.getX() + ", " + b.getY());
 	            return new ActionMove(this, path, b.getX(), b.getY());
 	        }
         }
-        Logger.debug("Couldn't plan a path to a blocked road.");
-	    Logger.info("Moving randomly.");
+        Logger.debug("FAILSAFE: Couldn't plan a path to a blocked road.");
+	    Logger.info("FAILSAFE: Moving randomly.");
 	    return new ActionMove(this, routeSearcher.noTargetMove(currentTime, this.location.getID()));
         
         
@@ -864,14 +864,14 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     }
 
     private Blockade failSafeGetTargetBlockade() {
-        Logger.debug("Looking for target blockade");
+        Logger.debug("FAILSAFE: Looking for target blockade");
         Area location = (Area)location();
-        Logger.debug("Looking in current location");
+        Logger.debug("FAILSAFE: Looking in current location");
         Blockade result = failSafeGetTargetBlockade(location, clearRange - 1000);
         if (result != null) {
             return result;
         }
-        Logger.debug("Looking in neighbouring locations");
+        Logger.debug("FAILSAFE: Looking in neighbouring locations");
         for (EntityID next : location.getNeighbours()) {
             location = (Area)model.getEntity(next);
             result = failSafeGetTargetBlockade(location, clearRange - 1000);
