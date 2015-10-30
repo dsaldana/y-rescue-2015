@@ -5,21 +5,25 @@
   
 
   <rcr:civilian rcr:location="250"/>
+  <rcr:civilian rcr:location="948"/>
   <rcr:civilian rcr:location="253"/>
   <rcr:civilian rcr:location="960"/>
   <rcr:civilian rcr:location="956"/>
   <rcr:civilian rcr:location="934"/>
   <rcr:civilian rcr:location="946"/>
   <rcr:civilian rcr:location="251"/>
+  <rcr:civilian rcr:location="952"/>
 <!--
   <rcr:policeforce rcr:location="268"/>
   <rcr:firebrigade rcr:location="278"/>
   <rcr:firebrigade rcr:location="257"/>
 -->
-  <rcr:policeforce rcr:location="268"/>
+  <!--<rcr:policeforce rcr:location="268"/>
   <rcr:policeforce rcr:location="270"/>
+
+
   <rcr:ambulanceteam rcr:location="297"/>
-  <rcr:ambulanceteam rcr:location="969"/>
+  <rcr:ambulanceteam rcr:location="969"/>-->
   <rcr:ambulanceteam rcr:location="976"/>
   
   <!-- <rcr:fire rcr:location="248"/> -->
