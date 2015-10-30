@@ -57,6 +57,7 @@ public class ActionRefill extends Action {
     
     @Override
     public Message getCommand(EntityID agentID, int time) {
+    	tactics.targetHydrant = this.destination.getID();
         return new AKMove(agentID, time, this.path);
     }
 }
