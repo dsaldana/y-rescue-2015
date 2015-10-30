@@ -26,10 +26,11 @@ public class BasicBuildingEvent implements MessageBuildingEvent{
     	}
     	else {
     		Logger.trace("" + b + " not in changeset, updating info and adding to targets");
+    		
     		b = MessageReflectHelper.reflectedMessage(this.provider.getWorld(), message);
     	}
-    	
-        this.bsp.getBuildingSelector().add(b);
+    	if(!b.isOnFire()) this.bsp.getBuildingSelector().remove(b);
+    	else this.bsp.getBuildingSelector().add(b);
     }
 
     @Override

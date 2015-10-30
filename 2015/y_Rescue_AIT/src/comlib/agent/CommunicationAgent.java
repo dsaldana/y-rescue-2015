@@ -88,8 +88,8 @@ public abstract class CommunicationAgent<E extends StandardEntity> extends Stand
     	
     	long secsToProcess = (System.currentTimeMillis() - this.startProcessTime);
     	
-        System.out.println(String.format("----------- End of Timestep %d, Time to process [%d] msecs --------------\n", time, secsToProcess));
-        Logger.info(String.format("----------- End of Timestep %d, Time to process [%d] msecs --------------\n", time, secsToProcess));
+        System.out.println(String.format("----------- End of Timestep %d, %s Time to process [%d] msecs --------------\n", time, this.getName(), secsToProcess));
+        Logger.info(String.format("----------- End of Timestep %d, %s Time to process [%d] msecs --------------\n", time, this.getName(), secsToProcess));
     }
 
     public void receiveBeforeEvent(int time, ChangeSet changed) {
@@ -105,7 +105,11 @@ public abstract class CommunicationAgent<E extends StandardEntity> extends Stand
 
     public void send(List<Message> msgs)
     {
-        for(Message msg : msgs) super.send(msg);
+    	Logger.trace("___ Will send messages: " + msgs);
+        for(Message msg : msgs) {
+        	
+        	super.send(msg);
+        }
     }
 
     // temp Leave ---

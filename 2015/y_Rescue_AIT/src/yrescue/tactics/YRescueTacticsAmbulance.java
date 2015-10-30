@@ -1,9 +1,13 @@
 package yrescue.tactics;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +17,7 @@ import java.util.Random;
 
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
+
 
 //import adf.util.map.PositionUtil;
 import adk.team.util.graph.PositionUtil;
@@ -44,6 +49,7 @@ import rescuecore2.standard.entities.AmbulanceTeam;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Civilian;
+import rescuecore2.standard.entities.Edge;
 import rescuecore2.standard.entities.FireBrigade;
 import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.PoliceForce;
@@ -74,16 +80,17 @@ import yrescue.util.target.HumanTarget;
 
 public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
-	protected final int EXPLORE_TIME_STEP_TRESH = 20;
+	protected final int EXPLORE_TIME_STEP_TRESH = 8;
 	protected int EXPLORE_TIME_LIMIT = EXPLORE_TIME_STEP_TRESH;
 	protected StateMachine stateMachine = null;
 	protected int timeoutAction = 0;
 	protected Set<Road> impassableRoadList = new HashSet<>();
 	protected int EXPLORE_AREA_SIZE_TRESH = 10000010;
 	protected List<EntityID> clusterToVisit;
+	protected List<EntityID> clusterCentroids;
 	protected EntityID clusterCenter;
 	
-	private boolean DEBUG = true;
+	private final boolean DEBUG = false;
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
@@ -94,9 +101,12 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
     @Override
     public void preparation(Config config, MessageManager messageManager) {
+    	long prepStart = System.currentTimeMillis();
+    	
     	this.stateMachine = new StateMachine(ActionStates.Ambulance.EXPLORING);
     	this.victimSelector = new YRescueVictimSelector(this);
     	this.routeSearcher = new BasicRouteSearcher(this);
+    	this.victimSelector = new YRescueVictimSelector(this, this.routeSearcher);
     	
     	this.recruitmentManager = new RecruitmentManager();
     	
@@ -111,7 +121,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     	KMeans kmeans = new KMeans(ambulanceList.size());
     	Map<EntityID, EntityID> kmeansResult = kmeans.calculatePartitions(this.getWorld());
     	
-    	List<EntityID> partitions = kmeans.getPartitions();
+    	clusterCentroids = kmeans.getPartitions();
     	
     	ambulanceList.sort(new Comparator<StandardEntity>() {
 			@Override
@@ -120,14 +130,14 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 			}
 		});
     	
-    	partitions.sort(new Comparator<EntityID>() {
+    	clusterCentroids.sort(new Comparator<EntityID>() {
 			@Override
 			public int compare(EntityID o1, EntityID o2) {
 				return Integer.compare(o1.getValue(), o2.getValue());
 			}
 		});
     	
-    	if(ambulanceList.size() == partitions.size()){
+    	if(ambulanceList.size() == clusterCentroids.size()){
     		int pos = -1;
     		for(int i = 0; i < ambulanceList.size(); i++){
     			if(me.getID().getValue() == ambulanceList.get(i).getID().getValue()){
@@ -137,7 +147,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     		}
     		
     		if(pos != -1){
-    			clusterCenter = partitions.get(pos);
+    			clusterCenter = clusterCentroids.get(pos);
         		final Set<Map.Entry<EntityID, EntityID>> entries = kmeansResult.entrySet();
 
         		for (Map.Entry<EntityID, EntityID> entry : entries) {
@@ -151,11 +161,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     		}
     	}
 
-    	Logger.info("Cluster to visit :" + clusterToVisit);
+    	Logger.debug("Cluster to visit :" + clusterToVisit);
     	if(clusterToVisit.size() > 0){
     		this.target = clusterCenter; //clusterToVisit.get(0);
     		this.stateMachine = new StateMachine(ActionStates.Ambulance.GOING_TO_CLUSTER_LOCATION);
     	}
+    	long secsToProcess = (System.currentTimeMillis() - prepStart);
+    	Logger.info(">>> Ambulance ready. Preparation took(ms): " + secsToProcess);
     }
 
     @Override
@@ -187,7 +199,14 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             if(entity instanceof Civilian) {
             	Civilian c = (Civilian) entity;
             	Logger.trace(String.format("It's a Civilian. HP: %d, B'ness: %d", c.getHP(), c.getBuriedness()));
-            	if(c.getBuriedness() > 0 && c.getHP() > 0) {
+            	
+            	boolean isOnFire = false;
+            	if(world.getEntity(c.getPosition()) instanceof Building){
+            		Building b = (Building) world.getEntity(c.getPosition());
+            		if(b.isOnFire()) isOnFire = true;
+            	}
+            	
+            	if(c.getBuriedness() > 0 && c.getHP() > 0 && !isOnFire) {
 	                this.victimSelector.add(c);
 	                manager.addSendMessage(new MessageCivilian(c));
 	                Logger.trace("  added to victimSelector and sent a message reporting it");
@@ -196,7 +215,14 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             else if(entity instanceof Human) {
             	Human h = (Human) entity;
             	Logger.trace(String.format("It's a Human. HP: %d, B'ness: %d", h.getHP(), h.getBuriedness()));
-            	if(h.getBuriedness() > 0){
+            	
+            	boolean isOnFire = false;
+            	if(world.getEntity(h.getPosition()) instanceof Building){
+            		Building b = (Building) world.getEntity(h.getPosition());
+            		if(b.isOnFire()) isOnFire = true;
+            	}
+            	
+            	if(h.getBuriedness() > 0 && h.getHP() > 0 && !isOnFire){
             		this.victimSelector.add(h);
             		Logger.trace("  added to victimSelector.");
             	}
@@ -278,6 +304,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         if(DEBUG){
         	heatMap.writeMapToFile();
         	printHumanTargets();
+        	writeClusters();
         }
 
         /* === -------- === *
@@ -299,6 +326,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	BlockedArea mine = new BlockedArea(location.getID(), this.target, me.getX(), me.getY());
         	try{
         		this.reportBlockedArea(mine, manager, currentTime);
+        		
         	}
         	catch(Exception e){
         		// Do nothing
@@ -316,11 +344,21 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	        }
         }
         
+        // Check for damage and remove target if necessary
         if(this.me.getDamage() >= 30) {
+        	if(this.target != null && this.world.getEntity(this.target) instanceof Human){
+        		if(this.location.getID().getValue() == ((Human) this.world.getEntity(this.target)).getPosition().getValue()){
+	        		if(this.world.getEntity(this.location.getID()) instanceof Building){
+	        			Building b = (Building) this.world.getEntity(this.location.getID());
+	        			if(b.isOnFire()){
+	        				((YRescueVictimSelector) this.victimSelector).remove(this.target);
+	        				this.target = null;
+	        			}
+	        		}
+        		}
+        	}
         	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
         }       
-        
-        
           
         Refuge result = PositionUtil.getNearTarget(this.world, this.me, this.getRefuges());
         EntityID results = result.getID();           
@@ -332,8 +370,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         /* === ---------------------------------- === *
          *  Possible states and their implementation  *
          * === ---------------------------------- === */
-        
-      
         
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.GOING_TO_CLUSTER_LOCATION)){
         	Logger.info("Going to cluster location..");
@@ -439,11 +475,22 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		this.target = null;
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         	}
-        	else if(this.target == null || (this.world.getEntity(this.target) instanceof Human && ((Human) this.world.getEntity(this.target)).getHP() <= 0)){
+        	else if(this.target != null && (this.world.getEntity(this.target) instanceof Human && ((Human) this.world.getEntity(this.target)).getHP() <= 0)){
         		Logger.info("The human im carrying on is dead, selecting new target..");
         		this.target = null;
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         		return new ActionUnload(this);
+        	}
+        	else if(this.tacticsAgent.stuck(currentTime)&&this.someoneOnBoard()){
+        		Logger.info("I'm carrying someone but I'm stuck, selecting new target");
+        		this.target = null;
+        		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
+        		return new ActionUnload(this);
+        	}
+        	else if(this.tacticsAgent.stuck(currentTime)){
+        		Logger.info("I'm stuck, selecting new target");
+        		this.target = null;
+        		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         	}
         	else{
 	        	if(this.location instanceof Refuge) {
@@ -488,6 +535,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                 // Threshold to rescue
                 if (victim.getHP() <= 100){ 
                 	this.victimSelector.remove(victim.getID());
+                	this.target = this.victimSelector.getNewTarget(currentTime);
                 	continue;
                 }
                 
@@ -537,7 +585,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 		
 		if (failSafeSomeoneOnBoard()) {
 			if (location() instanceof Refuge) {
-				Logger.info("Unloading");
+				Logger.info("FAILSAFE: Unloading");
 				return new ActionUnload(this);
 			} else {
 				return this.moveRefuge(currentTime);
@@ -547,19 +595,19 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 		for (Human next : failSafeGetTargets()) {
 			if (next.getPosition().equals(location().getID())) {
 				if ((next instanceof Civilian) && next.getBuriedness() == 0 && !(location() instanceof Refuge)) {
-					Logger.info("Loading " + next);
+					Logger.info("FAILSAFE: Loading " + next);
 					return new ActionLoad(this, (Civilian) next);
 				}
 				if (next.getBuriedness() > 0) {
 					Logger.info(String.format(
-						"Rescueing %s. HP: %d, B'ness: %d", next, next.getHP(), next.getBuriedness()
+						"FAILSAFE: Rescueing %s. HP: %d, B'ness: %d", next, next.getHP(), next.getBuriedness()
 					));
 					return new ActionRescue(this, next.getID());
 				}
 			} else {
 				List<EntityID> path = routeSearcher.getPath(currentTime, me().getPosition(), next.getPosition());
 				if (path != null) {
-					Logger.info("Moving to target with " + path);
+					Logger.info("FAILSAFE: Moving to target with " + path);
 					return new ActionMove(this, path);
 				}
 			}
@@ -570,7 +618,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 			sendMove(time, path);
 			return;
 		}*/
-		Logger.info("Moving randomly");
+		Logger.info("FAILSAFE: Moving randomly");
 		return new ActionMove(this, routeSearcher.noTargetMove(currentTime, me.getPosition()));
 	}
 
@@ -606,11 +654,11 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	if(ent instanceof Building){
         		Building b = (Building) ent;
         		if(b.isOnFire() || (b.isFierynessDefined() && b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT))){
-        			Logger.info("The next building is on FIRE or burnOut, select a new exploration target");
+        			Logger.debug("The next building is on FIRE or burnOut, select a new exploration target");
         			//this.heatMap.updateNode(ent.getID(), time);
         			this.heatMap.removeEntityID(ent.getID());
-        			getNewExplorationTarget(currentTime);
-        			path = getPathToTarget(currentTime);
+        			//getNewExplorationTarget(currentTime);
+        			//path = getPathToTarget(currentTime);
         		}
         	}
         }
@@ -638,7 +686,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 					&& h.getHP() > 0
 					&& (h.getBuriedness() > 0 || h.getDamage() > 0)) {
 				Logger.trace(String.format(
-					"Adding %s to targets. HP: %d, B'ness: %d", h, h.getHP(), h.getBuriedness()
+					"FAILSAFE: Adding %s to targets. HP: %d, B'ness: %d", h, h.getHP(), h.getBuriedness()
 				));
 				targets.add(h);
 			}
@@ -656,7 +704,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 		for (StandardEntity next : model
 				.getEntitiesOfType(StandardEntityURN.CIVILIAN)) {
 			if (((Human) next).getPosition().equals(getID())) {
-				Logger.debug(next + " is on board");
+				Logger.debug("FAILSAFE: " + next + " is on board");
 				return true;
 			}
 		}
@@ -710,6 +758,58 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         for (HumanTarget hum : humanTargets) {
         	Logger.debug("Human Target: "+ hum.getHuman() + " Utility: "+ hum.getUtility() + " Human ID:" + hum.getHuman().getID() + " pos:" + hum.getHuman().getPosition() + " burriedness:" + hum.getHuman().getBuriedness() + " damage:" + hum.getHuman().getDamage() + " HP:" + hum.getHuman().getHP());
         }
+	}
+	
+	public void writeClusters(){
+		String clustersfileName = "/tmp/cluster_list_" + me.getID().getValue() + ".txt";
+		String centroidsfileName = "/tmp/cluster_centroids.txt";
+		
+		PrintWriter writer;
+		try {
+			writer = new PrintWriter(clustersfileName, "UTF-8");
+			StringBuilder strBuilder = new StringBuilder();
+			
+			for (Iterator<EntityID> it = clusterToVisit.iterator(); it.hasNext();) {
+				EntityID ent = it.next();
+				
+				Area area0 = (Area) this.world.getEntity(ent);
+				
+				strBuilder.append(area0.getX());
+				strBuilder.append(" ");
+				strBuilder.append(area0.getY());
+				strBuilder.append("\n");
+			}
+			
+			writer.println(strBuilder.toString());
+			writer.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		
+		try {
+			writer = new PrintWriter(centroidsfileName, "UTF-8");
+			StringBuilder strBuilder = new StringBuilder();
+			
+			for (Iterator<EntityID> it = clusterCentroids.iterator(); it.hasNext();) {
+				EntityID ent = it.next();
+				
+				Area area0 = (Area) this.world.getEntity(ent);
+				
+				strBuilder.append(area0.getX());
+				strBuilder.append(" ");
+				strBuilder.append(area0.getY());
+				strBuilder.append("\n");
+			}
+			
+			writer.println(strBuilder.toString());
+			writer.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

@@ -21,9 +21,10 @@ public class BitStreamReader {
 		//ストリーム長を超える読み取りかどうか
 //		System.out.println(stream.length +"/"+ index +"/"+ len);
 		Logger.trace(String.format(
-			"BitStreamReader.getBits - stream=%s, stream.length=%d, remainingBuf=%d, index=%d, len=%d", 
-			stream.toString(), stream.length, getRemainBuffer(), index, len
+			"BitStreamReader.getBits - stream.length=%d bytes (%d bits), remainingBuf=%d, index=%d, len=%d", 
+			stream.length, stream.length * 8, getRemainBuffer(), index, len
 		));
+		
         //if (stream.length * 8 < index + len) {
 		//	throw new ArrayIndexOutOfBoundsException();
 		//}

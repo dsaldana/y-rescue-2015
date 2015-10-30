@@ -8,6 +8,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import adk.sample.basic.util.BasicRouteSearcher;
+import adk.team.util.RouteSearcher;
 import adk.team.util.provider.WorldProvider;
 import rescuecore2.standard.entities.AmbulanceTeam;
 import rescuecore2.standard.entities.Civilian;
@@ -20,16 +22,25 @@ public class HumanTargetMapper {
 	private WorldProvider provider;
 	private Map<EntityID, HumanTarget> humanMap;
 	private Human owner;
+	private RouteSearcher routeSearcher;
 	
 	public HumanTargetMapper(WorldProvider provider) {
 		this.humanMap = new HashMap<>();
 		this.provider = provider;
 		this.owner = (Human) provider.getOwner();
+		this.routeSearcher = new BasicRouteSearcher(this.provider);
+	}
+	
+	public HumanTargetMapper(WorldProvider provider, RouteSearcher routesearcher) {
+		this.humanMap = new HashMap<>();
+		this.provider = provider;
+		this.owner = (Human) provider.getOwner();
+		this.routeSearcher = routesearcher;
 	}
 	
 	public void addTarget(Civilian civilian){
 		if(civilian.getBuriedness() > 0) {
-            this.humanMap.put(civilian.getID(), new HumanTarget((Human) civilian, HumanTarget.HumanTypes.CIVILIAN, provider));
+            this.humanMap.put(civilian.getID(), new HumanTarget((Human) civilian, HumanTarget.HumanTypes.CIVILIAN, provider, this.routeSearcher));
         }
         else {
             this.humanMap.remove(civilian.getID());
@@ -40,13 +51,13 @@ public class HumanTargetMapper {
 		StandardEntity entity = this.provider.getWorld().getEntity(agent.getID());
         if(agent.getBuriedness() > 0) {
             if(entity instanceof PoliceForce){
-            	this.humanMap.put(agent.getID(), new HumanTarget((Human) agent, HumanTarget.HumanTypes.POLICE, provider));
+            	this.humanMap.put(agent.getID(), new HumanTarget((Human) agent, HumanTarget.HumanTypes.POLICE, provider, this.routeSearcher));
             }
             else if(entity instanceof AmbulanceTeam){
-            	this.humanMap.put(agent.getID(), new HumanTarget((Human) agent, HumanTarget.HumanTypes.AMBULANCE, provider));
+            	this.humanMap.put(agent.getID(), new HumanTarget((Human) agent, HumanTarget.HumanTypes.AMBULANCE, provider, this.routeSearcher));
             }
             else {
-            	this.humanMap.put(agent.getID(), new HumanTarget((Human) agent, HumanTarget.HumanTypes.FIREMAN, provider));
+            	this.humanMap.put(agent.getID(), new HumanTarget((Human) agent, HumanTarget.HumanTypes.FIREMAN, provider, this.routeSearcher));
             }
         }
         else {
@@ -57,17 +68,17 @@ public class HumanTargetMapper {
 	public void addTarget(EntityID id) {
 		StandardEntity entity = this.provider.getWorld().getEntity(id);
         if(entity instanceof Civilian) {
-            this.humanMap.put(entity.getID(), new HumanTarget((Human) entity, HumanTarget.HumanTypes.CIVILIAN, provider));
+            this.humanMap.put(entity.getID(), new HumanTarget((Human) entity, HumanTarget.HumanTypes.CIVILIAN, provider, this.routeSearcher));
         }
         else if(entity instanceof Human) {
             if(entity instanceof PoliceForce){
-            	this.humanMap.put(entity.getID(), new HumanTarget((Human) entity, HumanTarget.HumanTypes.POLICE, provider));
+            	this.humanMap.put(entity.getID(), new HumanTarget((Human) entity, HumanTarget.HumanTypes.POLICE, provider, this.routeSearcher));
             }
             else if(entity instanceof AmbulanceTeam){
-            	this.humanMap.put(entity.getID(), new HumanTarget((Human) entity, HumanTarget.HumanTypes.AMBULANCE, provider));
+            	this.humanMap.put(entity.getID(), new HumanTarget((Human) entity, HumanTarget.HumanTypes.AMBULANCE, provider, this.routeSearcher));
             }
             else {
-            	this.humanMap.put(entity.getID(), new HumanTarget((Human) entity, HumanTarget.HumanTypes.FIREMAN, provider));
+            	this.humanMap.put(entity.getID(), new HumanTarget((Human) entity, HumanTarget.HumanTypes.FIREMAN, provider, this.routeSearcher));
             }
         }
 	}
