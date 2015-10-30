@@ -7,20 +7,26 @@ import java.util.Collection;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import com.sun.corba.se.impl.ior.GenericTaggedProfile;
+
 import adk.team.tactics.Tactics;
 import adk.team.util.provider.WorldProvider;
+
 import rescuecore2.log.Logger;
+import rescuecore2.misc.geometry.GeometryTools2D;
 import rescuecore2.misc.geometry.Line2D;
 import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.misc.geometry.Vector2D;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Blockade;
+import rescuecore2.standard.entities.Edge;
 import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.tactics.YRescueTacticsPolice;
+import yrescue.util.GeometricUtil;
 import yrescue.util.YRescueDistanceSorter;
 
 /**
@@ -56,6 +62,38 @@ public class BlockadeUtil {
 		}
 		
 		return closest;
+	}
+	
+	public static Point2D calculateStuckMove(Area from, Area to, Tactics<?> agent){
+		System.out.println(String.format("Area1=%s, Area2=%s", from, to));
+		Edge frontier = from.getEdgeTo(to.getID());
+		Point2D origin = new Point2D(agent.me().getX(),agent.me().getY());
+		Point2D midPoint = new Point2D(frontier.getStartX() + (frontier.getEndX() - frontier.getStartX())/2, 
+				frontier.getStartY() + (frontier.getEndY() - frontier.getStartY())/2);
+		Vector2D agentToTarget = new Vector2D(midPoint.getX() - agent.me().getX(), midPoint.getY() - agent.me().getY());
+		Vector2D normal0 = agentToTarget.getNormal();
+		Vector2D normal1 = normal0.scale(-1);
+		normal0 = normal0.scale(10000);
+		normal1 = normal1.scale(10000);
+		List<Edge> edges = from.getEdges();
+		
+		Point2D destination = null;
+		double furthestDistance = -1;
+		
+		for(Edge next : edges){
+			if(next.getEnd().equals(frontier.getEnd())||next.getEnd().equals(frontier.getStart())||next.getStart().equals(frontier.getEnd())||next.getStart().equals(frontier.getStart())){
+				Line2D parallelEdge = next.getLine();
+				Line2D agentNormal0 = new Line2D(origin,normal0);
+				Point2D intersection = GeometryTools2D.getIntersectionPoint(parallelEdge, agentNormal0);
+				double distance = GeometryTools2D.getDistance(origin, intersection);
+				if(distance > furthestDistance ) {
+					furthestDistance = distance;
+					destination = intersection;
+				}
+			}
+		}
+		return destination;
+		
 	}
 	
 	/**

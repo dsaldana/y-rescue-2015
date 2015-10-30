@@ -23,6 +23,7 @@ import org.hamcrest.core.IsInstanceOf;
 
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
+import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Civilian;
@@ -46,6 +47,7 @@ import yrescue.kMeans.KMeans;
 import yrescue.message.event.MessageHydrantEvent;
 import yrescue.message.information.MessageBlockedArea;
 import yrescue.message.information.MessageHydrant;
+import yrescue.problem.blockade.BlockedArea;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
@@ -71,7 +73,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	private List<StandardEntity> hydrants;
 	public Map<EntityID, Integer> busyHydrantIDs;
 	private int lastWater;
-
+	private List<EntityID> lastPath;
 	private StateMachine actionStateMachine;
 	private StateMachine statusStateMachine;
 	
@@ -106,7 +108,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     public void preparation(Config config, MessageManager messageManager) {
         this.routeSearcher = this.initRouteSearcher();
         this.buildingSelector = this.initBuildingSelector();
-        
+        lastPath = new ArrayList<>();
         busyHydrantIDs = new HashMap<>();
         lastWater = me.getWater();
         
@@ -164,7 +166,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             	Building b = (Building) entity;
             	
             	Logger.trace(String.format(
-        			"I'm seeing a building. onFire=%s, fieryness=%s, fierynessEnum=%s", b.isOnFire(), b.getFieryness(), b.getFierynessEnum()
+        			"I'm seeing a %s. onFire=%s, fieryness=%s, fierynessEnum=%s", b, b.isOnFire(), b.getFieryness(), b.getFierynessEnum()
         		));
             	
                 
@@ -184,10 +186,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                 
             }
             else if(entity instanceof Civilian) {
-                Civilian civilian = (Civilian)entity;
-                if(civilian.getBuriedness() > 0) {
-                    manager.addSendMessage(new MessageCivilian(civilian));
-                }
+                this.reportCivilian((Civilian) entity, manager, currentTime);
             }
         }
     }
@@ -215,13 +214,36 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         Logger.info("Busy Hydrants: " + busyHydrantIDs);
         
-        heatMap.writeMapToFile();
+        //heatMap.writeMapToFile();
+        
+       
+     // Check for buriedness and tries to extinguish fire in a close building
+        if(this.me.getBuriedness() > 0) {
+        	Logger.info("I'm buried at " + me.getPosition());
+            return this.buriednessAction(manager);
+        }
         
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
-        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
-        	Logger.trace("I'm blocked. Added a MessageBlockedArea");
-    		return new ActionRest(this);	//does nothing...
+        	Action a = this.tacticsAgent.commandHistory.get(currentTime - 1);
+        	
+        	if(a instanceof ActionMove){
+        		List<EntityID> previousPath = ((ActionMove) a).getPath();
+        		//System.out.println("previous action move: " + ((ActionMove)a));
+        		//System.out.println("previousPath " + previousPath);
+	        	//System.out.println(String.format("Stuck! location=%s, previousPath.get(0)=%s", location, previousPath.get(0)));
+	        	//isStuck = true;
+        		if(location instanceof Area){
+		        	Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)location, (Area)this.world.getEntity(lastPath.get(0)), this);
+		        	List<EntityID> newPath = new ArrayList<>();
+		        	newPath.add(location.getID());
+		        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+		        	Logger.trace("I'm blocked. Added a MessageBlockedArea");
+		        	return new ActionMove(this,newPath,(int)destinationStuck.getX(),(int)destinationStuck.getY());
+        		}
+        	}
+        	/*
+    		return new ActionRest(this);*/	//does nothing...
     	}
         
         if(this.me.getDamage() >= 100) { //|| this.someoneOnBoard()
@@ -394,7 +416,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	else {
         		Logger.info("Path is too short... but I'll follow it anyway");
         	}       	
-        	
+        	lastPath = path;
             return new ActionMove(this, path);
         }
         
@@ -445,7 +467,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     	else {
     		Logger.info("Path is too short... but I'll follow it anyway");
     	}
-    	
+    	lastPath = path;
         return new ActionMove(this, path);
     }
 
@@ -569,6 +591,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	        List<EntityID> path = failSafePlanPathToFire(next);
 	        if (path != null) {
 	            Logger.info("Moving to target");
+	            lastPath = path;
 	            return new ActionMove(this, path);
 	        }
 	    }
@@ -576,6 +599,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	    Logger.debug("Couldn't plan a path to a fire.");
 	    path = this.routeSearcher.noTargetMove(currentTime, this.location.getID());
 	    Logger.info("Moving randomly with: " + path);
+	    lastPath = path;
 	    return new ActionMove(this, path);
 		
 	}
