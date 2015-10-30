@@ -781,12 +781,12 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
             	// Ignore non Road areas
             	//if(!(next instanceof Road)) continue;
             	
-            	if (next instanceof Refuge){
-            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.MEDIUM, 0);
+            	if (next instanceof Refuge && this.clusterToVisit.contains(next.getID())){
+            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.LOW, 0);
             	}
             	
-            	else if (next instanceof GasStation){
-            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.MEDIUM, 0);
+            	else if (next instanceof GasStation && this.clusterToVisit.contains(next.getID())){
+            		heatMap.addEntityID(next.getID(), HeatNode.PriorityLevel.LOW, 0);
             	}
             	
             	else {
