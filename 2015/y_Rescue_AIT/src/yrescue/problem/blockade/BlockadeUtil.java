@@ -64,35 +64,64 @@ public class BlockadeUtil {
 		return closest;
 	}
 	
-	public static Point2D calculateStuckMove(Area from, Area to, Tactics<?> agent){
+	public static boolean isPassable(Area from, Area to,Tactics<?> agent){
+		boolean passable = false;
+		List<EntityID> blocks = from.getBlockades();
+		List<Vector2D> distances = new ArrayList<>();
+		List<Polygon> polygons = new ArrayList<>();
+		for(EntityID next : blocks){
+			Blockade next1 = (Blockade)agent.world.getEntity(next);
+			Vector2D d = new Vector2D(next1.getX() - agent.me().getX(),next1.getY() - agent.me().getY());
+			distances.add(d);
+		}
+		
+		
+		return passable;
+	}
+	
+	
+	public static Point2D calculateStuckMove(Area from, Area to, Tactics<?> agent,int currentTime){
 		System.out.println(String.format("Area1=%s, Area2=%s", from, to));
-		Edge frontier = from.getEdgeTo(to.getID());
-		Point2D origin = new Point2D(agent.me().getX(),agent.me().getY());
-		Point2D midPoint = new Point2D(frontier.getStartX() + (frontier.getEndX() - frontier.getStartX())/2, 
-				frontier.getStartY() + (frontier.getEndY() - frontier.getStartY())/2);
-		Vector2D agentToTarget = new Vector2D(midPoint.getX() - agent.me().getX(), midPoint.getY() - agent.me().getY());
-		Vector2D normal0 = agentToTarget.getNormal();
-		Vector2D normal1 = normal0.scale(-1);
-		normal0 = normal0.scale(10000);
-		normal1 = normal1.scale(10000);
 		List<Edge> edges = from.getEdges();
-		
-		Point2D destination = null;
-		double furthestDistance = -1;
-		
-		for(Edge next : edges){
-			if(next.getEnd().equals(frontier.getEnd())||next.getEnd().equals(frontier.getStart())||next.getStart().equals(frontier.getEnd())||next.getStart().equals(frontier.getStart())){
-				Line2D parallelEdge = next.getLine();
-				Line2D agentNormal0 = new Line2D(origin,normal0);
-				Point2D intersection = GeometryTools2D.getIntersectionPoint(parallelEdge, agentNormal0);
-				double distance = GeometryTools2D.getDistance(origin, intersection);
-				if(distance > furthestDistance ) {
-					furthestDistance = distance;
-					destination = intersection;
+		Edge frontier = from.getEdgeTo(to.getID());
+		List<Point2D> midpoints = new ArrayList<>();
+		if(frontier == null){
+			for(Edge next : edges){
+				Point2D midPoint = new Point2D(next.getStartX() + (next.getEndX() - next.getStartX())/2, 
+						next.getStartY() + (next.getEndY() - next.getStartY())/2);
+				midpoints.add(midPoint);
+			}
+			return midpoints.get(currentTime%midpoints.size());
+		}
+		else{
+			
+			Point2D origin = new Point2D(agent.me().getX(),agent.me().getY());
+			Point2D midPoint = new Point2D(frontier.getStartX() + (frontier.getEndX() - frontier.getStartX())/2, 
+					frontier.getStartY() + (frontier.getEndY() - frontier.getStartY())/2);
+			Vector2D agentToTarget = new Vector2D(midPoint.getX() - agent.me().getX(), midPoint.getY() - agent.me().getY());
+			Vector2D normal0 = agentToTarget.getNormal();
+			Vector2D normal1 = normal0.scale(-1);
+			normal0 = normal0.scale(10000);
+			normal1 = normal1.scale(10000);
+			
+			
+			Point2D destination = null;
+			double furthestDistance = -1;
+			
+			for(Edge next : edges){
+				if(next.getEnd().equals(frontier.getEnd())||next.getEnd().equals(frontier.getStart())||next.getStart().equals(frontier.getEnd())||next.getStart().equals(frontier.getStart())){
+					Line2D parallelEdge = next.getLine();
+					Line2D agentNormal0 = new Line2D(origin,normal0);
+					Point2D intersection = GeometryTools2D.getIntersectionPoint(parallelEdge, agentNormal0);
+					double distance = GeometryTools2D.getDistance(origin, intersection);
+					if(distance > furthestDistance ) {
+						furthestDistance = distance;
+						destination = intersection;
+					}
 				}
 			}
+			return destination;
 		}
-		return destination;
 		
 	}
 	

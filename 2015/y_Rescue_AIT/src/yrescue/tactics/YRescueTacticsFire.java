@@ -235,7 +235,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 		        	//System.out.println(String.format("Stuck! location=%s, previousPath.get(0)=%s", location, previousPath.get(0)));
 		        	//isStuck = true;
 	        		if(location instanceof Area){
-			        	Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)location, (Area)this.world.getEntity(lastPath.get(0)), this);
+			        	Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)location, (Area)this.world.getEntity(lastPath.get(0)), this,currentTime);
 			        	List<EntityID> newPath = new ArrayList<>();
 			        	newPath.add(location.getID());
 			        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
