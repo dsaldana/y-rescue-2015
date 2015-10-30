@@ -68,8 +68,8 @@ public class MessageManager {
 	}
 
 	private void init(Config config) {
-		this.developerMode =
-			config.getBooleanValue("comlib.develop.developerMode", false);
+		this.developerMode = false;
+			//config.getBooleanValue("comlib.develop.developerMode", false);
 		this.radioConfig = new RadioConfig(config);
 		this.voiceConfig = new VoiceConfig(config);
 		this.kernelTime = -1;
@@ -80,13 +80,13 @@ public class MessageManager {
 		this.useRadio = ( this.numRadio >= 1 );
 
 		this.providerList =
-			new MessageProvider[config.getIntValue("comlib.default.messageID", 32)];
+			new MessageProvider[32];//[config.getIntValue("comlib.default.messageID", 32)];
 		
 		
 		//BUGFIX? priority and kind were inverted...
 		this.bitOutputStreamList = new BitOutputStream[this.getBitOutputStreamNumber(
 			PRIORITY_DEPTH,
-			config.getIntValue("comlib.default.messageID", 32) -1
+			31//config.getIntValue("comlib.default.messageID", 32) -1
 		)];
 		
 		Logger.trace("bitOutputStreamList.length=" + bitOutputStreamList.length);
@@ -137,7 +137,8 @@ public class MessageManager {
 		this.receivedMessages.clear();
 		this.heardAgentHelp = false;
 
-		Logger.trace("---RECEIVING MESSAGES: " + heard);
+		Logger.trace("\n--- BEGIN: receiving messages ---- ");
+		Logger.trace("heard: " + heard);
 		for (BitOutputStream bos : bitOutputStreamList) {
 			bos.reset();
 		}
@@ -173,11 +174,12 @@ public class MessageManager {
 					// TODO: refactoring
 				}
 				else {
-					Logger.trace("Will process radio message!");
+					Logger.trace("Will process radio messages!");
 					this.receiveRadioMessage((AKSpeak)command, this.receivedMessages);
 				}
 			}
 		}
+		Logger.trace("--- END: receiving messages ---- \n");
 	}
 
 	private void receiveRadioMessage(AKSpeak akSpeak, List<CommunicationMessage> list)	{
@@ -197,12 +199,11 @@ public class MessageManager {
 		int lastRemainBufferSize = bsr.getRemainBuffer();
 		while(bsr.getRemainBuffer() > 0) {
 			try {
-				CommunicationMessage msg =
-					provider.create(this, bsr, akSpeak.getAgentID());
+				CommunicationMessage msg = provider.create(this, bsr, akSpeak.getAgentID());
 				list.add(msg);
 				//Logger.trace("Added message " + msg + " to list ");
 			} catch(Exception e) {
-				Logger.error("Error receiving message!", e);
+				Logger.error("Error receiving message!");
 				//System.err.println("Received message is corrupt or format is different.");
 				//e.printStackTrace();
 				return;
@@ -210,6 +211,10 @@ public class MessageManager {
 
 			// TODO: Check!!
 			if (bsr.getRemainBuffer() == lastRemainBufferSize) {
+				Logger.debug(String.format(
+					"bsr.getRemainBuffer(): %d // lastRemainBufferSize: %d, breaking",
+					bsr.getRemainBuffer(), lastRemainBufferSize
+				));
 				break;
 			} else {
 				lastRemainBufferSize = bsr.getRemainBuffer();

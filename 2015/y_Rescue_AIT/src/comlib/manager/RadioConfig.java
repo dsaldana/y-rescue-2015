@@ -2,6 +2,7 @@ package comlib.manager;
 
 import comlib.util.IntegerDataHelper;
 import rescuecore2.config.Config;
+import rescuecore2.log.Logger;
 
 public class RadioConfig {
     private int channel;
@@ -12,14 +13,22 @@ public class RadioConfig {
 
 	public RadioConfig(Config config) {
 		this.channel = config.getIntValue("comlib.message.channel", 1);
-		this.sizeOfTime = config.getIntValue("comlib.size.time", 9);
-		this.updateMessageIDSize(config.getIntValue("comlib.message.messageID", 32) - 1);
+		this.sizeOfTime = 10; //up to 1024 timesteps... //config.getIntValue("comlib.size.time", 9);
+		this.updateMessageIDSize(31);//(config.getIntValue("comlib.message.messageID", 32) - 1);
+		
+		Logger.debug("-------- BEGIN: COMM PARAMETERS ---------");
+		Logger.debug(String.format(
+			"channel: %d, sizeOfTime: %d, sizeOfMessageID: %d",
+			channel, sizeOfTime, sizeOfMessageID
+		));
+		Logger.debug("-------- END: COMM PARAMETERS ---------");
 	}
 
     public void updateMessageIDSize(int id) {
         int size = IntegerDataHelper.getBitSize(id);
-        if (size > this.sizeOfMessageID)
+        if (size > this.sizeOfMessageID){
             this.sizeOfMessageID = size;
+        }
     }
 
     public int getChannel() { return this.channel; }

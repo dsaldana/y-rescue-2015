@@ -76,6 +76,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	private int lastWater;
 	
 	private int flagOnce;
+	private int flagStuck;
 	
 	private List<EntityID> lastPath;
 	
@@ -84,6 +85,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	
 	protected List<EntityID> clusterToVisit;
 	protected EntityID clusterCenter;
+	
+	public EntityID targetHydrant;
 	
 	@Override
     public String getTacticsName() {
@@ -114,6 +117,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     
     @Override
     public void preparation(Config config, MessageManager messageManager) {
+    	long prepStart = System.currentTimeMillis();
+    	
         this.routeSearcher = this.initRouteSearcher();
         this.buildingSelector = this.initBuildingSelector();
         lastPath = new ArrayList<>();
@@ -184,7 +189,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
     	}
     	
-    	flagOnce = 0;
+    	this.flagOnce = 0;
+    	this.flagStuck = 0;
+    	this.targetHydrant = null;
 		
         MDC.put("agent", this);
         MDC.put("location", location());
@@ -205,7 +212,12 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         PropertyConfigurator.configure(prop);
         */
         
-        Logger.debug(String.format("---- FireFighter ON. maxDistance=%d, sightDistance=%d ----", this.maxDistance, this.sightDistance));
+        long secsToProcess = (System.currentTimeMillis() - prepStart);
+        Logger.debug(String.format(
+    		">>>> FireFighter ON. maxDistance=%d, sightDistance=%d, prepTime=%d ms ----", 
+    		this.maxDistance, this.sightDistance, secsToProcess
+    	));
+        
     }
 
     public boolean onWaterSource() {
@@ -275,29 +287,31 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         Logger.info("Busy Hydrants: " + busyHydrantIDs);
         
         //heatMap.writeMapToFile();
-        
        
         // Check for buriedness and tries to extinguish fire in a close building
         if(this.me.getBuriedness() > 0) {
-        	Logger.info("I'm buried at " + me.getPosition());
+        	System.out.println("I'm buried at " + me.getPosition());
             return this.buriednessAction(manager);
         }
         
         // Going to cluster
         YRescueBuildingSelector bs = (YRescueBuildingSelector) buildingSelector;
         if(bs.buildingList.size() == 0){
+        	System.out.println("FLAG ONCE = " + flagOnce	);
         	if(flagOnce == 0){
         		actionStateMachine.setState(ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION);
 	    		statusStateMachine.setState(StatusStates.EXPLORING);
 	    		this.target = this.clusterCenter;
         	}
 	        if(this.statusStateMachine.currentState() == StatusStates.EXPLORING && this.actionStateMachine.currentState() == ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION){
+	        	Logger.trace("GOING TO TARGET");
 	        	Collection<StandardEntity> objects = world.getObjectsInRange(getOwnerID(), sightDistance);
 	        	int flagDestination = 0;
 	        	for(StandardEntity objB : objects){
 	        		if(objB instanceof Building){
 	        			Building b = (Building)objB;
 	        			if(b.getID().getValue() == target.getValue()){
+	        				System.out.println("GOT THERE!!!");
 	        				actionStateMachine.setState(ActionStates.IDLE);
 	        	    		statusStateMachine.setState(StatusStates.EXPLORING);
 	        	    		flagDestination = 1;
@@ -306,6 +320,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	        		}
 	        	}
 	        	if(flagDestination == 0){
+	        		Logger.trace("MOVING!!");
 	        		return this.moveTarget(currentTime);
 	        	}
 	        }
@@ -313,9 +328,11 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
-        	try{
+        	this.flagOnce = 1;
+        	this.target = this.buildingSelector.getNewTarget(currentTime);
+        	this.flagStuck = 1;
+        	/*try{
 	        	Action a = this.tacticsAgent.commandHistory.get(currentTime - 1);
-	        	
 	        	if(a instanceof ActionMove){
 	        		List<EntityID> previousPath = ((ActionMove) a).getPath();
 	        		//System.out.println("previous action move: " + ((ActionMove)a));
@@ -323,7 +340,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 		        	//System.out.println(String.format("Stuck! location=%s, previousPath.get(0)=%s", location, previousPath.get(0)));
 		        	//isStuck = true;
 	        		if(location instanceof Area){
-			        	Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)location, (Area)this.world.getEntity(lastPath.get(0)), this);
+			        	Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)location, (Area)this.world.getEntity(lastPath.get(0)), this,currentTime);
 			        	List<EntityID> newPath = new ArrayList<>();
 			        	newPath.add(location.getID());
 			        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
@@ -335,7 +352,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	catch(Exception e){
         		Logger.error("ERROR on attempting stuck move.");
         		target = buildingSelector.getNewTarget(currentTime);
-        	}
+        	}*/
         	/*
     		*/	//does nothing...
     	}
@@ -418,6 +435,11 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         		busyHydrantIDs.remove(e.getKey());
         	}
         }
+        if(flagStuck == 1){
+    		busyHydrantIDs.putIfAbsent(this.targetHydrant, 20);
+        	flagStuck = 0;
+        }
+        
         Logger.debug("New Busy Hydrants:" + busyHydrantIDs);
                 
         // Check if the agent should look for water even though the tank is not empty
@@ -506,6 +528,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                 		actionStateMachine.setState(ActionStates.FireFighter.REFILLING_WATER_ANYWAY);
                 		statusStateMachine.setState(StatusStates.ACTING);
                     	// Only Refuge 
+                		
                     	return new ActionRefill(this, refugeIDs, null);
             		}
             	}	

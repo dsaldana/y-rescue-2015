@@ -142,7 +142,7 @@ public class KMeans {
    		 }      
          Logger.info(":: Numero de Predios =  " + allBuildings.size());
          Logger.info(":: Particoes =  " + partition);
-         Logger.info(":: Classificacao =  " + classification);
+         Logger.debug(":: Classificacao =  " + classification);
          return classification;
     } 
 }
