@@ -49,12 +49,12 @@ public class HumanTarget {
 	
 	public final int AVERAGE_MOVE_TO_TARGET = 4;
 	
-	public HumanTarget(Human h, HumanTypes hType, WorldProvider<? extends Human> provider){
+	public HumanTarget(Human h, HumanTypes hType, WorldProvider<? extends Human> provider, RouteSearcher routeSearcher){
 		if(h == null || hType == null) throw new InvalidParameterException("Some parameter is null");
 		this.human = h;
 		this.hType = hType;
 		this.provider = provider;
-		this.routeSearcher = new BasicRouteSearcher(this.provider);
+		this.routeSearcher = routeSearcher;
 		
 		if(hType.equals(HumanTypes.CIVILIAN)){
 			this.priorityWeight = 0.55f;
@@ -87,7 +87,7 @@ public class HumanTarget {
 	}
 	
 	public void updateUtility(int time, Human ambulance, List<HumanTarget> ambulanceList){
-		if(time == this.lastTimeUpdated) return;
+		if(time == this.lastTimeUpdated && Math.abs(time - this.lastTimeUpdated) > 4) return;
 		if(time > 120) this.priorityWeight = 1.0f;
 		
 		float actualUtility = 0;

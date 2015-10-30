@@ -1,23 +1,25 @@
 package yrescue.tactics;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import java.util.Random;
 
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
 
+
 //import adf.util.map.PositionUtil;
 import adk.team.util.graph.PositionUtil;
-
-
 import adk.sample.basic.event.BasicAmbulanceEvent;
 import adk.sample.basic.event.BasicCivilianEvent;
 import adk.sample.basic.event.BasicFireEvent;
@@ -44,6 +46,7 @@ import rescuecore2.standard.entities.AmbulanceTeam;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Civilian;
+import rescuecore2.standard.entities.Edge;
 import rescuecore2.standard.entities.FireBrigade;
 import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.PoliceForce;
@@ -74,16 +77,17 @@ import yrescue.util.target.HumanTarget;
 
 public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
-	protected final int EXPLORE_TIME_STEP_TRESH = 20;
+	protected final int EXPLORE_TIME_STEP_TRESH = 8;
 	protected int EXPLORE_TIME_LIMIT = EXPLORE_TIME_STEP_TRESH;
 	protected StateMachine stateMachine = null;
 	protected int timeoutAction = 0;
 	protected Set<Road> impassableRoadList = new HashSet<>();
 	protected int EXPLORE_AREA_SIZE_TRESH = 10000010;
 	protected List<EntityID> clusterToVisit;
+	protected List<EntityID> clusterCentroids;
 	protected EntityID clusterCenter;
 	
-	private boolean DEBUG = true;
+	private final boolean DEBUG = false;
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
@@ -95,8 +99,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     @Override
     public void preparation(Config config, MessageManager messageManager) {
     	this.stateMachine = new StateMachine(ActionStates.Ambulance.EXPLORING);
-    	this.victimSelector = new YRescueVictimSelector(this);
     	this.routeSearcher = new BasicRouteSearcher(this);
+    	this.victimSelector = new YRescueVictimSelector(this, this.routeSearcher);
     	
     	this.recruitmentManager = new RecruitmentManager();
     	
@@ -111,7 +115,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     	KMeans kmeans = new KMeans(ambulanceList.size());
     	Map<EntityID, EntityID> kmeansResult = kmeans.calculatePartitions(this.getWorld());
     	
-    	List<EntityID> partitions = kmeans.getPartitions();
+    	clusterCentroids = kmeans.getPartitions();
     	
     	ambulanceList.sort(new Comparator<StandardEntity>() {
 			@Override
@@ -120,14 +124,14 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 			}
 		});
     	
-    	partitions.sort(new Comparator<EntityID>() {
+    	clusterCentroids.sort(new Comparator<EntityID>() {
 			@Override
 			public int compare(EntityID o1, EntityID o2) {
 				return Integer.compare(o1.getValue(), o2.getValue());
 			}
 		});
     	
-    	if(ambulanceList.size() == partitions.size()){
+    	if(ambulanceList.size() == clusterCentroids.size()){
     		int pos = -1;
     		for(int i = 0; i < ambulanceList.size(); i++){
     			if(me.getID().getValue() == ambulanceList.get(i).getID().getValue()){
@@ -137,7 +141,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     		}
     		
     		if(pos != -1){
-    			clusterCenter = partitions.get(pos);
+    			clusterCenter = clusterCentroids.get(pos);
         		final Set<Map.Entry<EntityID, EntityID>> entries = kmeansResult.entrySet();
 
         		for (Map.Entry<EntityID, EntityID> entry : entries) {
@@ -292,6 +296,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         if(DEBUG){
         	heatMap.writeMapToFile();
         	printHumanTargets();
+        	writeClusters();
         }
 
         /* === -------- === *
@@ -733,6 +738,58 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         for (HumanTarget hum : humanTargets) {
         	Logger.debug("Human Target: "+ hum.getHuman() + " Utility: "+ hum.getUtility() + " Human ID:" + hum.getHuman().getID() + " pos:" + hum.getHuman().getPosition() + " burriedness:" + hum.getHuman().getBuriedness() + " damage:" + hum.getHuman().getDamage() + " HP:" + hum.getHuman().getHP());
         }
+	}
+	
+	public void writeClusters(){
+		String clustersfileName = "/tmp/cluster_list_" + me.getID().getValue() + ".txt";
+		String centroidsfileName = "/tmp/cluster_centroids.txt";
+		
+		PrintWriter writer;
+		try {
+			writer = new PrintWriter(clustersfileName, "UTF-8");
+			StringBuilder strBuilder = new StringBuilder();
+			
+			for (Iterator<EntityID> it = clusterToVisit.iterator(); it.hasNext();) {
+				EntityID ent = it.next();
+				
+				Area area0 = (Area) this.world.getEntity(ent);
+				
+				strBuilder.append(area0.getX());
+				strBuilder.append(" ");
+				strBuilder.append(area0.getY());
+				strBuilder.append("\n");
+			}
+			
+			writer.println(strBuilder.toString());
+			writer.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		
+		try {
+			writer = new PrintWriter(centroidsfileName, "UTF-8");
+			StringBuilder strBuilder = new StringBuilder();
+			
+			for (Iterator<EntityID> it = clusterCentroids.iterator(); it.hasNext();) {
+				EntityID ent = it.next();
+				
+				Area area0 = (Area) this.world.getEntity(ent);
+				
+				strBuilder.append(area0.getX());
+				strBuilder.append(" ");
+				strBuilder.append(area0.getY());
+				strBuilder.append("\n");
+			}
+			
+			writer.println(strBuilder.toString());
+			writer.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

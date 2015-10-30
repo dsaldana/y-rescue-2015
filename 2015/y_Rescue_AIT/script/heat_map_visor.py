@@ -26,6 +26,21 @@ import os.path
 from threading import Thread
 import copy
 
+
+def rotate2d(degrees, point, origin):
+    """
+    A rotation function that rotates a point around a point
+    to rotate around the origin use [0,0]
+    """
+    x = point[0] - origin[0]
+    yorz = point[1] - origin[1]
+    newx = (x*math.cos(math.radians(degrees))) - (yorz*math.sin(math.radians(degrees)))
+    newyorz = (x*math.sin(math.radians(degrees))) + (yorz*math.cos(math.radians(degrees)))
+    newx += origin[0]
+    newyorz += origin[1]
+
+    return newx,newyorz
+
 sys.setrecursionlimit(1500)
 
 BLACK = (0,   0,   0)
@@ -58,6 +73,9 @@ if(not os.path.exists(heatmap_file_name)):
     print "The file ", heatmap_file_name, "do not exists, verify the agent ID!"
     sys.exit(2)
 
+clusters_file_name = "/tmp/cluster_list_" + str(agent_entity_id) + ".txt"
+centroids_file_name = "/tmp/cluster_centroids.txt"
+
 pygame.init()
 mono_font = pygame.font.SysFont("monospace", 12)
 clock = pygame.time.Clock()
@@ -83,7 +101,66 @@ is_loop_active = True
 heat_map = {}
 heat_map['can_write'] = True
 
+centroids = []
+cluster_points = []
+
 conversion_factor = 300
+
+def read_centroids():
+    global centroids
+    global centroids_file_name
+    global conversion_factor
+    global map_centroid
+
+    data = open(centroids_file_name)
+    for line in data:
+
+        values = line.split()
+
+        if len(values) != 2:
+            continue
+
+        #print values
+
+        x_pos = (-1 * int(int(values[0])/conversion_factor)) + conversion_factor*2
+        y_pos = int(int(values[1])/conversion_factor)
+
+        x0, y0 = rotate2d(180, (x_pos, y_pos), map_centroid)
+        centroid = ( int(x0), int(y0))
+
+        centroids.append(centroid)
+    pass
+
+def read_clusters():
+    global cluster_points
+    global clusters_file_name
+    global conversion_factor
+    global map_centroid
+
+    data = open(clusters_file_name)
+    for line in data:
+
+        values = line.split()
+
+        if len(values) != 2:
+            continue
+
+        #print values
+
+        x_pos = (-1 * int(int(values[0])/conversion_factor)) + conversion_factor*2
+        y_pos = int(int(values[1])/conversion_factor)
+
+        x0, y0 = rotate2d(180, (x_pos, y_pos), map_centroid)
+        centroid = ( int(x0), int(y0))
+
+        cluster_points.append(centroid)
+    pass
+
+read_centroids()
+read_clusters()
+
+print 'centroids', centroids
+print 'cluster', cluster_points
 
 class update_heat_thread(Thread):
     def __init__ (self, file_name):
@@ -250,6 +327,14 @@ while is_loop_active:
         label = monoFont.render(str(heat_info['entity_id']), 2, YELLOW)
         background.blit(label, heat_info['centroid'])
         pass
+
+    for i in cluster_points:
+        pygame.draw.circle(background, BLUE, i, 3)
+        pygame.draw.circle(background, BLACK, i, 2)
+
+    for i in centroids:
+        pygame.draw.circle(background, WHITE, i, 5)
+        pygame.draw.circle(background, BLACK, i, 2)
 
     #background = pygame.transform.flip(background, 0, 1)
     #bg2 = background.subsurface(movement_map[0], movement_map[1], IMAGE_WIDTH, IMAGE_HEIGHT)

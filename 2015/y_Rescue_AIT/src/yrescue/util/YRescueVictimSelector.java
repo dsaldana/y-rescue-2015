@@ -1,6 +1,8 @@
 package yrescue.util;
 
+import adk.sample.basic.util.BasicRouteSearcher;
 import adk.team.util.graph.PositionUtil;
+import adk.team.util.RouteSearcher;
 import adk.team.util.VictimSelector;
 import adk.team.util.provider.WorldProvider;
 import rescuecore2.standard.entities.*;
@@ -23,12 +25,22 @@ public class YRescueVictimSelector implements VictimSelector {
     public Set<Civilian> civilianList;
     public Set<Human> agentList;
     public HumanTargetMapper humanTargetM;
+    private RouteSearcher routerSearcher;
 
+    public YRescueVictimSelector(WorldProvider<? extends StandardEntity> user, RouteSearcher routerSearcher) {
+        this.provider = user;
+        this.civilianList = new HashSet<>();
+        this.agentList = new HashSet<>();
+        this.routerSearcher = routerSearcher;
+        this.humanTargetM = new HumanTargetMapper(this.provider, this.routerSearcher);
+    }
+    
     public YRescueVictimSelector(WorldProvider<? extends StandardEntity> user) {
         this.provider = user;
         this.civilianList = new HashSet<>();
         this.agentList = new HashSet<>();
-        this.humanTargetM = new HumanTargetMapper(this.provider);
+        this.humanTargetM = new HumanTargetMapper(this.provider, this.routerSearcher);
+        this.routerSearcher = new BasicRouteSearcher((WorldProvider<? extends Human>) this.provider);
     }
 
     @Override
