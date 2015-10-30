@@ -12,6 +12,8 @@ import java.util.Set;
 
 
 
+
+
 import org.apache.log4j.MDC;
 
 import com.vividsolutions.jts.geom.Geometry;
@@ -136,6 +138,8 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     
     @Override
     public void preparation(Config config, MessageManager messageManager) {
+    	long prepStart = System.currentTimeMillis();
+    	
         this.routeSearcher = this.initRouteSearcher();
         this.impassableSelector = this.initImpassableSelector();
         this.blockedAreaSelector = new BlockedAreaSelector(this);
@@ -200,7 +204,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     		}
     	}
 
-    	Logger.info("Cluster to visit :" + clusterToVisit);
+    	Logger.debug("Cluster to visit :" + clusterToVisit);
     	if(clusterToVisit.size() > 0){
     		Building b = (Building) world.getEntity(clusterCenter);
     		BlockedArea ba = new BlockedArea(clusterCenter, clusterCenter, b.getX(), b.getY());
@@ -208,7 +212,8 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     		this.blockedAreaSelector.add(ba);
     	}
         
-        Logger.info("Preparation complete!");
+    	long secsToProcess = (System.currentTimeMillis() - prepStart);
+    	Logger.info(">>> Policeman ready. Preparation took(ms): " + secsToProcess);
     }
     
     private void updateVisitHistory(){
