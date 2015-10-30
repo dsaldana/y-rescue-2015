@@ -137,6 +137,7 @@ public class MessageManager {
 		this.receivedMessages.clear();
 		this.heardAgentHelp = false;
 
+		Logger.trace("---RECEIVING MESSAGES: " + heard);
 		for (BitOutputStream bos : bitOutputStreamList) {
 			bos.reset();
 		}
@@ -172,6 +173,7 @@ public class MessageManager {
 					// TODO: refactoring
 				}
 				else {
+					Logger.trace("Will process radio message!");
 					this.receiveRadioMessage((AKSpeak)command, this.receivedMessages);
 				}
 			}
@@ -183,7 +185,6 @@ public class MessageManager {
 			Logger.trace("Ignoring radio message 'cuz it has no content or my list is null");
 			return;
 		}
-		
 		BitStreamReader bsr = new BitStreamReader(akSpeak.getContent());
 		Logger.trace("SizeOfMsgID: " + this.radioConfig.getSizeOfMessageID());
 		int msgID = bsr.getBits(this.radioConfig.getSizeOfMessageID());

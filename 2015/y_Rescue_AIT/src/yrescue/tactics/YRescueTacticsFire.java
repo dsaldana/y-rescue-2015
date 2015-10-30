@@ -17,6 +17,7 @@ import java.util.Set;
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
 import org.apache.log4j.PropertyConfigurator;
+import org.apache.log4j.net.SyslogAppender;
 import org.apache.log4j.spi.LoggerFactory;
 import org.hamcrest.core.IsInstanceOf;
 
@@ -290,6 +291,20 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                 }
                 Logger.warn("This should not happen! I'm in a burning building and can't get out!");
             }
+        }        
+        
+        // Check if the last step building is not on fire anymore and then send a message to the others update it
+        Action cmd = tacticsAgent.commandHistory.get(currentTime-1); 
+        if (cmd instanceof ActionExtinguish){
+        	ActionExtinguish ext = (ActionExtinguish)cmd;
+        	EntityID buildLastTargetID = ext.getTarget();
+        	StandardEntity buildEntity = this.getWorld().getEntity(buildLastTargetID);
+        	if(buildEntity instanceof Building){
+        		Building buildLastTarget = (Building)buildEntity;
+        		if(!buildLastTarget.isOnFire()){
+        			manager.addSendMessage(new MessageBuilding(buildLastTarget));
+            	}
+        	}
         }
         
         // Update BusyHydrants
@@ -409,6 +424,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         // Also goes out of water source to throw water
         if(this.world.getDistance(this.agentID, this.target) > this.sightDistance || this.onWaterSource()) {
         	Logger.debug("Going to target " + target);
+        	Building b = (Building) this.getWorld().getEntity(target);
     		actionStateMachine.setState(ActionStates.MOVING_TO_TARGET);
     		statusStateMachine.setState(StatusStates.ACTING);
             return this.moveTarget(currentTime);
@@ -425,7 +441,6 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             	//return new ActionExtinguish(this, this.target, this.maxPower);
                 return this.world.getDistance(this.agentID, this.target) <= this.sightDistance ? new ActionExtinguish(this, this.target, this.maxPower) : this.moveTarget(currentTime);
             } else {
-            	//System.out.println(">>>>>> it's not on fire anymore. Target OK  = " + this.target.getValue());
             	Logger.trace(String.format("%s not on fire anymore, will remove from list.", building));
                 this.buildingSelector.remove(this.target);
             }

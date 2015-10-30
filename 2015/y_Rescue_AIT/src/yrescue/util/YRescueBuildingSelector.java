@@ -84,6 +84,10 @@ public class YRescueBuildingSelector implements BuildingSelector {
 
     @Override
     public EntityID updateTarget(int time, EntityID target) {
-        return target;
+    	Building building = (Building)provider.getWorld().getEntity(target);
+    	if(this.buildingList.contains(building) && building.isOnFire()){
+    		return target;
+    	}
+    	return getNewTarget(time);
     }
 }

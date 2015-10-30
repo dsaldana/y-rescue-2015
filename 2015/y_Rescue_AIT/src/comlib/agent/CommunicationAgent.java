@@ -105,7 +105,11 @@ public abstract class CommunicationAgent<E extends StandardEntity> extends Stand
 
     public void send(List<Message> msgs)
     {
-        for(Message msg : msgs) super.send(msg);
+    	Logger.trace("___ Will send messages: " + msgs);
+        for(Message msg : msgs) {
+        	
+        	super.send(msg);
+        }
     }
 
     // temp Leave ---
