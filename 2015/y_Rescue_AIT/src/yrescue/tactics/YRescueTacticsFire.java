@@ -290,25 +290,28 @@ public class YRescueTacticsFire extends BasicTacticsFire {
        
         // Check for buriedness and tries to extinguish fire in a close building
         if(this.me.getBuriedness() > 0) {
-        	Logger.info("I'm buried at " + me.getPosition());
+        	System.out.println("I'm buried at " + me.getPosition());
             return this.buriednessAction(manager);
         }
         
         // Going to cluster
         YRescueBuildingSelector bs = (YRescueBuildingSelector) buildingSelector;
         if(bs.buildingList.size() == 0){
+        	System.out.println("FLAG ONCE = " + flagOnce	);
         	if(flagOnce == 0){
         		actionStateMachine.setState(ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION);
 	    		statusStateMachine.setState(StatusStates.EXPLORING);
 	    		this.target = this.clusterCenter;
         	}
 	        if(this.statusStateMachine.currentState() == StatusStates.EXPLORING && this.actionStateMachine.currentState() == ActionStates.FireFighter.GOING_TO_CLUSTER_LOCATION){
+	        	Logger.trace("GOING TO TARGET");
 	        	Collection<StandardEntity> objects = world.getObjectsInRange(getOwnerID(), sightDistance);
 	        	int flagDestination = 0;
 	        	for(StandardEntity objB : objects){
 	        		if(objB instanceof Building){
 	        			Building b = (Building)objB;
 	        			if(b.getID().getValue() == target.getValue()){
+	        				System.out.println("GOT THERE!!!");
 	        				actionStateMachine.setState(ActionStates.IDLE);
 	        	    		statusStateMachine.setState(StatusStates.EXPLORING);
 	        	    		flagDestination = 1;
@@ -317,6 +320,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	        		}
 	        	}
 	        	if(flagDestination == 0){
+	        		Logger.trace("MOVING!!");
 	        		return this.moveTarget(currentTime);
 	        	}
 	        }
@@ -336,7 +340,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 		        	//System.out.println(String.format("Stuck! location=%s, previousPath.get(0)=%s", location, previousPath.get(0)));
 		        	//isStuck = true;
 	        		if(location instanceof Area){
-			        	Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)location, (Area)this.world.getEntity(lastPath.get(0)), this);
+			        	Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)location, (Area)this.world.getEntity(lastPath.get(0)), this,currentTime);
 			        	List<EntityID> newPath = new ArrayList<>();
 			        	newPath.add(location.getID());
 			        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
