@@ -246,9 +246,10 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	}
         	catch(Exception e){
         		Logger.error("ERROR on attempting stuck move", e);
+        		target = buildingSelector.getNewTarget(currentTime);
         	}
         	/*
-    		return new ActionRest(this);*/	//does nothing...
+    		*/	//does nothing...
     	}
         
         if(this.me.getDamage() >= 100) { //|| this.someoneOnBoard()
