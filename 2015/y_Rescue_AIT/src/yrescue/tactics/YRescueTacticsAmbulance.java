@@ -318,6 +318,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	BlockedArea mine = new BlockedArea(location.getID(), this.target, me.getX(), me.getY());
         	try{
         		this.reportBlockedArea(mine, manager, currentTime);
+        		
         	}
         	catch(Exception e){
         		// Do nothing
@@ -472,6 +473,17 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         		return new ActionUnload(this);
         	}
+        	else if(this.tacticsAgent.stuck(currentTime)&&this.someoneOnBoard()){
+        		Logger.info("I'm carrying someone but I'm stuck, selecting new target");
+        		this.target = null;
+        		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
+        		return new ActionUnload(this);
+        	}
+        	else if(this.tacticsAgent.stuck(currentTime)){
+        		Logger.info("I'm stuck, selecting new target");
+        		this.target = null;
+        		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
+        	}
         	else{
 	        	if(this.location instanceof Refuge) {
 	                if(this.someoneOnBoard()) {
@@ -565,7 +577,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 		
 		if (failSafeSomeoneOnBoard()) {
 			if (location() instanceof Refuge) {
-				Logger.info("Unloading");
+				Logger.info("FAILSAFE: Unloading");
 				return new ActionUnload(this);
 			} else {
 				return this.moveRefuge(currentTime);
@@ -575,19 +587,19 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 		for (Human next : failSafeGetTargets()) {
 			if (next.getPosition().equals(location().getID())) {
 				if ((next instanceof Civilian) && next.getBuriedness() == 0 && !(location() instanceof Refuge)) {
-					Logger.info("Loading " + next);
+					Logger.info("FAILSAFE: Loading " + next);
 					return new ActionLoad(this, (Civilian) next);
 				}
 				if (next.getBuriedness() > 0) {
 					Logger.info(String.format(
-						"Rescueing %s. HP: %d, B'ness: %d", next, next.getHP(), next.getBuriedness()
+						"FAILSAFE: Rescueing %s. HP: %d, B'ness: %d", next, next.getHP(), next.getBuriedness()
 					));
 					return new ActionRescue(this, next.getID());
 				}
 			} else {
 				List<EntityID> path = routeSearcher.getPath(currentTime, me().getPosition(), next.getPosition());
 				if (path != null) {
-					Logger.info("Moving to target with " + path);
+					Logger.info("FAILSAFE: Moving to target with " + path);
 					return new ActionMove(this, path);
 				}
 			}
@@ -598,7 +610,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 			sendMove(time, path);
 			return;
 		}*/
-		Logger.info("Moving randomly");
+		Logger.info("FAILSAFE: Moving randomly");
 		return new ActionMove(this, routeSearcher.noTargetMove(currentTime, me.getPosition()));
 	}
 
@@ -634,7 +646,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	if(ent instanceof Building){
         		Building b = (Building) ent;
         		if(b.isOnFire() || (b.isFierynessDefined() && b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT))){
-        			Logger.info("The next building is on FIRE or burnOut, select a new exploration target");
+        			Logger.debug("The next building is on FIRE or burnOut, select a new exploration target");
         			//this.heatMap.updateNode(ent.getID(), time);
         			this.heatMap.removeEntityID(ent.getID());
         			//getNewExplorationTarget(currentTime);
@@ -666,7 +678,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 					&& h.getHP() > 0
 					&& (h.getBuriedness() > 0 || h.getDamage() > 0)) {
 				Logger.trace(String.format(
-					"Adding %s to targets. HP: %d, B'ness: %d", h, h.getHP(), h.getBuriedness()
+					"FAILSAFE: Adding %s to targets. HP: %d, B'ness: %d", h, h.getHP(), h.getBuriedness()
 				));
 				targets.add(h);
 			}
@@ -684,7 +696,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 		for (StandardEntity next : model
 				.getEntitiesOfType(StandardEntityURN.CIVILIAN)) {
 			if (((Human) next).getPosition().equals(getID())) {
-				Logger.debug(next + " is on board");
+				Logger.debug("FAILSAFE: " + next + " is on board");
 				return true;
 			}
 		}

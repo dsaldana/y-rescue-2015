@@ -52,8 +52,8 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
         this.setAgentUniqueValue();
         this.setAgentEntity();
         
-        this.tactics.heatMap = this.tactics.initializeHeatMap();
         this.tactics.preparation(this.config, manager);
+        this.tactics.heatMap = this.tactics.initializeHeatMap();
         this.tactics.registerTacticsAgent(this);
         
         
