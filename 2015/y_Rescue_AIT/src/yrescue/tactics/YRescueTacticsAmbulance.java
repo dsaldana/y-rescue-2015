@@ -83,7 +83,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected List<EntityID> clusterToVisit;
 	protected EntityID clusterCenter;
 	
-	private boolean DEBUG = true;
+	private boolean DEBUG = false;
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
