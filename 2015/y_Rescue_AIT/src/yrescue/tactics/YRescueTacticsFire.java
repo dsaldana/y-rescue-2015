@@ -320,9 +320,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
+        	this.flagOnce = 1;
         	try{
 	        	Action a = this.tacticsAgent.commandHistory.get(currentTime - 1);
-	        	
 	        	if(a instanceof ActionMove){
 	        		List<EntityID> previousPath = ((ActionMove) a).getPath();
 	        		//System.out.println("previous action move: " + ((ActionMove)a));
