@@ -76,6 +76,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	private int lastWater;
 	
 	private int flagOnce;
+	private int flagStuck;
 	
 	private List<EntityID> lastPath;
 	
@@ -84,6 +85,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	
 	protected List<EntityID> clusterToVisit;
 	protected EntityID clusterCenter;
+	
+	public EntityID targetHydrant;
 	
 	@Override
     public String getTacticsName() {
@@ -186,7 +189,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
     	}
     	
-    	flagOnce = 0;
+    	this.flagOnce = 0;
+    	this.flagStuck = 0;
+    	this.targetHydrant = null;
 		
         MDC.put("agent", this);
         MDC.put("location", location());
@@ -282,7 +287,6 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         Logger.info("Busy Hydrants: " + busyHydrantIDs);
         
         //heatMap.writeMapToFile();
-        
        
         // Check for buriedness and tries to extinguish fire in a close building
         if(this.me.getBuriedness() > 0) {
@@ -321,7 +325,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
         	this.flagOnce = 1;
-        	try{
+        	this.target = this.buildingSelector.getNewTarget(currentTime);
+        	this.flagStuck = 1;
+        	/*try{
 	        	Action a = this.tacticsAgent.commandHistory.get(currentTime - 1);
 	        	if(a instanceof ActionMove){
 	        		List<EntityID> previousPath = ((ActionMove) a).getPath();
@@ -342,7 +348,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	catch(Exception e){
         		Logger.error("ERROR on attempting stuck move.");
         		target = buildingSelector.getNewTarget(currentTime);
-        	}
+        	}*/
         	/*
     		*/	//does nothing...
     	}
@@ -425,6 +431,11 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         		busyHydrantIDs.remove(e.getKey());
         	}
         }
+        if(flagStuck == 1){
+    		busyHydrantIDs.putIfAbsent(this.targetHydrant, 20);
+        	flagStuck = 0;
+        }
+        
         Logger.debug("New Busy Hydrants:" + busyHydrantIDs);
                 
         // Check if the agent should look for water even though the tank is not empty
@@ -513,6 +524,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
                 		actionStateMachine.setState(ActionStates.FireFighter.REFILLING_WATER_ANYWAY);
                 		statusStateMachine.setState(StatusStates.ACTING);
                     	// Only Refuge 
+                		
                     	return new ActionRefill(this, refugeIDs, null);
             		}
             	}	
