@@ -58,6 +58,31 @@ public class BlockadeUtil {
 		return closest;
 	}
 	
+	public static Blockade getClosestBlockade(EntityID area,Tactics<?> agent){
+		Area area0 = (Area) agent.world.getEntity(area);
+		List<EntityID> blocks = area0.getBlockades();
+		List<Vector2D> distances = new ArrayList<>();
+		Blockade closest = null;
+		double close,far;
+		close = Double.MAX_VALUE;
+		far = Double.MIN_VALUE;
+		for(EntityID next : blocks){
+			Blockade next1 = (Blockade)agent.world.getEntity(next);
+			Vector2D d = new Vector2D(next1.getX() - agent.me().getX(),next1.getY() - agent.me().getY());
+			distances.add(d); 
+		}
+		//Get closest and furthest blockades on the list.
+		for(int i =0; i < distances.size(); i++){
+			if(distances.get(i).getLength() < close){
+				close = distances.get(i).getLength();
+				closest = (Blockade)agent.world.getEntity(blocks.get(i));	
+			}
+		}
+		return closest;
+	}
+	
+	
+	
 	public static boolean isPassable(Area from, Area to,Tactics<?> agent){
 		boolean passable = false;
 		List<EntityID> blocks = from.getBlockades();
