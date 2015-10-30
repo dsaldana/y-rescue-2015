@@ -295,8 +295,19 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         // Check if the last step building is not on fire anymore and then send a message to the others update it
         Action cmd = tacticsAgent.commandHistory.get(currentTime-1); 
+        Action cmd2 = tacticsAgent.commandHistory.get(currentTime-2);
         if (cmd instanceof ActionExtinguish){
         	ActionExtinguish ext = (ActionExtinguish)cmd;
+        	EntityID buildLastTargetID = ext.getTarget();
+        	StandardEntity buildEntity = this.getWorld().getEntity(buildLastTargetID);
+        	if(buildEntity instanceof Building){
+        		Building buildLastTarget = (Building)buildEntity;
+        		if(!buildLastTarget.isOnFire()){
+        			manager.addSendMessage(new MessageBuilding(buildLastTarget));
+            	}
+        	}
+        }else if (cmd2 instanceof ActionExtinguish){
+        	ActionExtinguish ext = (ActionExtinguish)cmd2;
         	EntityID buildLastTargetID = ext.getTarget();
         	StandardEntity buildEntity = this.getWorld().getEntity(buildLastTargetID);
         	if(buildEntity instanceof Building){
@@ -322,6 +333,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         		actionStateMachine.setState(ActionStates.IDLE);
         		statusStateMachine.setState(StatusStates.EXPLORING);
         	}else if(onWaterSource()){
+        		this.target = this.buildingSelector.getNewTarget(currentTime);
         		return new ActionRest(this);
         	}
         }
@@ -332,6 +344,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         		actionStateMachine.setState(ActionStates.IDLE);
         		statusStateMachine.setState(StatusStates.EXPLORING);
         	}else if(this.location instanceof Refuge){
+        		this.target = this.buildingSelector.getNewTarget(currentTime);
         		return new ActionRest(this);
         	}else{
         		Collection<StandardEntity> objects = world.getObjectsInRange(getOwnerID(), sightDistance);
@@ -359,6 +372,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             	        	}
             	        	return new ActionRefill(this, refugeIDs, freeHydrants);
             			}else if(this.location instanceof Hydrant){
+            				this.target = this.buildingSelector.getNewTarget(currentTime);
                     		return new ActionRest(this);
                     	}
             			break;
