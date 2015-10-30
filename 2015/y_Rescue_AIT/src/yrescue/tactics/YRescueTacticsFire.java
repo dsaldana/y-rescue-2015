@@ -245,7 +245,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	        	}
         	}
         	catch(Exception e){
-        		Logger.error("ERROR on attempting stuck move", e);
+        		Logger.error("ERROR on attempting stuck move.");
         		target = buildingSelector.getNewTarget(currentTime);
         	}
         	/*
@@ -258,14 +258,14 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         if(this.stuckExtinguishLoop(currentTime)) {
         	if (!updateWorldData.getChangedEntities().contains(target)){
-        		Logger.warn("Warning: extinguishing same building for more than 3 timesteps without seeing it.");
+        		Logger.warn("Warning: extinguishing same building for more than 2 timesteps without seeing it.");
         		Logger.warn("Will move to target");
         		actionStateMachine.setState(ActionStates.MOVING_TO_TARGET);
         		statusStateMachine.setState(StatusStates.ACTING);
         		return moveTarget(currentTime);
         	}
         	else{
-        		Logger.info("Extinguishing same building for more than 3 timesteps, but I'm seeing it. No problem (I hope).");
+        		Logger.info("Extinguishing same building for more than 2 timesteps, but I'm seeing it. No problem (I hope).");
         	}
         }
         
@@ -330,11 +330,11 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         		busyHydrantIDs.remove(e.getKey());
         	}
         }
-        Logger.info("New Busy Hydrants:" + busyHydrantIDs);
+        Logger.debug("New Busy Hydrants:" + busyHydrantIDs);
                 
         // Check if the agent should look for water even though the tank is not empty
         if(this.statusStateMachine.currentState() == StatusStates.ACTING && this.actionStateMachine.currentState() == ActionStates.FireFighter.REFILLING_WATER_ANYWAY){
-        	Logger.info("I have water, but Im going to refill anyway.");
+        	Logger.info("I have water, but I'm going to refill anyway.");
         	if(me().getWater() == maxWater){
         		actionStateMachine.setState(ActionStates.IDLE);
         		statusStateMachine.setState(StatusStates.EXPLORING);
@@ -429,12 +429,12 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	
         	if(path.size() > 1) {
         		if(world.getEntity(path.get(path.size() - 1 )) instanceof Building) {
-        			Logger.info("Last path item is a building, I'll go to its door");
+        			Logger.debug("Last path item is a building, I'll go to its door");
         			path.remove(path.size() - 1);
         		}
         	}
         	else {
-        		Logger.info("Path is too short... but I'll follow it anyway");
+        		Logger.debug("Path is too short... but I'll follow it anyway");
         	}       	
         	lastPath = path;
             return new ActionMove(this, path);
@@ -480,12 +480,12 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     	
     	if(path.size() > 1) {
     		if(world.getEntity(path.get(path.size() - 1 )) instanceof Building) {
-    			Logger.info("Last path item is a building, I'll go to its door");
+    			Logger.debug("Last path item is a building, I'll go to its door");
     			path.remove(path.size() - 1);
     		}
     	}
     	else {
-    		Logger.info("Path is too short... but I'll follow it anyway");
+    		Logger.debug("Path is too short... but I'll follow it anyway");
     	}
     	lastPath = path;
         return new ActionMove(this, path);
@@ -542,12 +542,12 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     	
     	if(path.size() > 1) {
     		if(world.getEntity(path.get(path.size() - 1 )) instanceof Building) {
-    			Logger.info("Last path item is a building, I'll go to its door");
+    			Logger.debug("Last path item is a building, I'll go to its door");
     			path.remove(path.size() - 1);
     		}
     	}
     	else {
-    		Logger.info("Path is too short... but I'll follow it anyway");
+    		Logger.debug("Path is too short... but I'll follow it anyway");
     	}
     	
     	return path;
@@ -559,7 +559,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     
     private boolean stuckExtinguishLoop(int currentTime){
     	if (tacticsAgent.commandHistory.size() < 2){
-    		Logger.info("Insufficient commands in history");
+    		Logger.debug("Insufficient commands in history");
     		return false;
     	}
     	Action lastCmd = null;
@@ -588,7 +588,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 		FireBrigade me = me();
 	    // Are we currently filling with water?
 	    if (me.isWaterDefined() && me.getWater() < maxWater && location() instanceof Refuge) {
-	        Logger.info("Filling water at " + location()+ ". Now I have " + me().getWater());
+	        Logger.info("FAILSAFE: Filling water at " + location()+ ". Now I have " + me().getWater());
 	        return new ActionRest(this);
 	    }
 	    // Are we out of water?
@@ -602,7 +602,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	    // Can we extinguish any right now?
 	    for (EntityID next : all) {
 	        if (model.getDistance(getID(), next) <= sightDistance) {
-	            Logger.info("Extinguishing " + next);
+	            Logger.info("FAILSAFE: Extinguishing " + next);
         		return new ActionExtinguish(this, next, maxPower);
 	        }
 	    }
@@ -610,15 +610,15 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	    for (EntityID next : all) {
 	        List<EntityID> path = failSafePlanPathToFire(next);
 	        if (path != null) {
-	            Logger.info("Moving to target");
+	            Logger.info("FAILSAFE: Moving to target");
 	            lastPath = path;
 	            return new ActionMove(this, path);
 	        }
 	    }
 	    List<EntityID> path = null;
-	    Logger.debug("Couldn't plan a path to a fire.");
+	    Logger.debug("FAILSAFE: Couldn't plan a path to a fire.");
 	    path = this.routeSearcher.noTargetMove(currentTime, this.location.getID());
-	    Logger.info("Moving randomly with: " + path);
+	    Logger.info("FAILSAFE: Moving randomly with: " + path);
 	    lastPath = path;
 	    return new ActionMove(this, path);
 		
