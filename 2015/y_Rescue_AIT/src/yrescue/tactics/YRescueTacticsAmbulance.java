@@ -187,7 +187,14 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             if(entity instanceof Civilian) {
             	Civilian c = (Civilian) entity;
             	Logger.trace(String.format("It's a Civilian. HP: %d, B'ness: %d", c.getHP(), c.getBuriedness()));
-            	if(c.getBuriedness() > 0 && c.getHP() > 0) {
+            	
+            	boolean isOnFire = false;
+            	if(world.getEntity(c.getPosition()) instanceof Building){
+            		Building b = (Building) world.getEntity(c.getPosition());
+            		if(b.isOnFire()) isOnFire = true;
+            	}
+            	
+            	if(c.getBuriedness() > 0 && c.getHP() > 0 && !isOnFire) {
 	                this.victimSelector.add(c);
 	                manager.addSendMessage(new MessageCivilian(c));
 	                Logger.trace("  added to victimSelector and sent a message reporting it");
@@ -196,7 +203,14 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             else if(entity instanceof Human) {
             	Human h = (Human) entity;
             	Logger.trace(String.format("It's a Human. HP: %d, B'ness: %d", h.getHP(), h.getBuriedness()));
-            	if(h.getBuriedness() > 0){
+            	
+            	boolean isOnFire = false;
+            	if(world.getEntity(h.getPosition()) instanceof Building){
+            		Building b = (Building) world.getEntity(h.getPosition());
+            		if(b.isOnFire()) isOnFire = true;
+            	}
+            	
+            	if(h.getBuriedness() > 0 && h.getHP() > 0 && !isOnFire){
             		this.victimSelector.add(h);
             		Logger.trace("  added to victimSelector.");
             	}
@@ -316,11 +330,21 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	        }
         }
         
+        // Check for damage and remove target if necessary
         if(this.me.getDamage() >= 30) {
+        	if(this.target != null && this.world.getEntity(this.target) instanceof Human){
+        		if(this.location.getID().getValue() == ((Human) this.world.getEntity(this.target)).getPosition().getValue()){
+	        		if(this.world.getEntity(this.location.getID()) instanceof Building){
+	        			Building b = (Building) this.world.getEntity(this.location.getID());
+	        			if(b.isOnFire()){
+	        				((YRescueVictimSelector) this.victimSelector).remove(this.target);
+	        				this.target = null;
+	        			}
+	        		}
+        		}
+        	}
         	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_REFUGE);
         }       
-        
-        
           
         Refuge result = PositionUtil.getNearTarget(this.world, this.me, this.getRefuges());
         EntityID results = result.getID();           
@@ -332,8 +356,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         /* === ---------------------------------- === *
          *  Possible states and their implementation  *
          * === ---------------------------------- === */
-        
-      
         
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.GOING_TO_CLUSTER_LOCATION)){
         	Logger.info("Going to cluster location..");
@@ -439,7 +461,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		this.target = null;
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         	}
-        	else if(this.target == null || (this.world.getEntity(this.target) instanceof Human && ((Human) this.world.getEntity(this.target)).getHP() <= 0)){
+        	else if(this.target != null && (this.world.getEntity(this.target) instanceof Human && ((Human) this.world.getEntity(this.target)).getHP() <= 0)){
         		Logger.info("The human im carrying on is dead, selecting new target..");
         		this.target = null;
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
@@ -488,6 +510,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                 // Threshold to rescue
                 if (victim.getHP() <= 100){ 
                 	this.victimSelector.remove(victim.getID());
+                	this.target = this.victimSelector.getNewTarget(currentTime);
                 	continue;
                 }
                 
