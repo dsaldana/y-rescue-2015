@@ -8,6 +8,7 @@ import comlib.message.information.MessageBuilding;
 import comlib.provider.MapMessageProvider;
 import comlib.util.BitOutputStream;
 import comlib.util.BitStreamReader;
+import rescuecore2.log.Logger;
 
 
 public class MessageBuildingProvider extends MapMessageProvider<MessageBuilding, MessageBuildingEvent>
@@ -23,7 +24,7 @@ public class MessageBuildingProvider extends MapMessageProvider<MessageBuilding,
 		bos.writeBits(msg.getBuildingID().getValue(), config.getSizeOfBuildingID());
 		bos.writeBits(msg.getBrokenness(), config.getSizeOfBuildingBrokenness());
 		bos.writeBits(msg.getFieryness(), config.getSizeOfBuildingFieryness());
-		bos.writeBits(msg.getFieryness(), config.getSizeOfBuildingTemperature());
+		bos.writeBits(msg.getTemperature(), config.getSizeOfBuildingTemperature());		
 	}
 
 	protected void writeMessage(VoiceConfig config, StringBuilder sb, MessageBuilding msg)
@@ -33,12 +34,21 @@ public class MessageBuildingProvider extends MapMessageProvider<MessageBuilding,
 
 	protected MessageBuilding createMessage(RadioConfig config, int time, BitStreamReader bsr)
 	{
+		int rawID = bsr.getBits(config.getSizeOfBuildingID());
+		int rawBrokenness = bsr.getBits(config.getSizeOfBuildingBrokenness());
+		int rawFieryness = bsr.getBits(config.getSizeOfBuildingFieryness()); 
+		int rawTemperature = bsr.getBits(config.getSizeOfBuildingTemperature());
+		
+		Logger.trace(String.format(
+			"Decoding! rawID=%d, rawBrk=%d, rawFyeri=%d, rawTemp=%d", 
+			rawID, rawBrokenness, rawFieryness, rawTemperature
+		));
 		return new MessageBuilding(time, -1,
-				bsr.getBits(config.getSizeOfBuildingID()),
-				bsr.getBits(config.getSizeOfBuildingBrokenness()),
-				bsr.getBits(config.getSizeOfBuildingFieryness()),
-				bsr.getBits(config.getSizeOfBuildingTemperature())
-				);
+			rawID,
+			rawBrokenness,
+			rawFieryness,
+			rawTemperature
+		);
 	}
 
 	protected MessageBuilding createMessage(VoiceConfig config, int time, int ttl, String[] data, int next)
