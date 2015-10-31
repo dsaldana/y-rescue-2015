@@ -628,6 +628,15 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             	this.target = null;
             }
             else {
+            	if(path.size() > 1) {
+            		if(world.getEntity(path.get(path.size() - 1 )) instanceof Building) {
+            			Logger.debug("Last path item is a building, I'll go to its door");
+            			path.remove(path.size() - 1);
+            		}
+            	}
+            	else {
+            		Logger.debug("Path is too short... but I'll follow it anyway");
+            	}            	
                 return new ActionMove(this, path);
             }
         }
@@ -635,6 +644,15 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         EntityID explorationTgt = heatMap.getNodeToVisit();
     	Logger.info("Target is null... Heatmapping to: " + explorationTgt);
     	path = this.safePathToBuilding(explorationTgt);
+    	if(path.size() > 1) {
+    		if(world.getEntity(path.get(path.size() - 1 )) instanceof Building) {
+    			Logger.debug("Last path item is a building, I'll go to its door");
+    			path.remove(path.size() - 1);
+    		}
+    	}
+    	else {
+    		Logger.debug("Path is too short... but I'll follow it anyway");
+    	}
         return new ActionMove(this, path);
     }
     
