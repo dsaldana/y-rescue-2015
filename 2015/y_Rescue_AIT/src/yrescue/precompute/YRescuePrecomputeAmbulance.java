@@ -21,6 +21,7 @@ import adk.team.precompute.PrecomputeAmbulance;
 import adk.team.util.graph.RouteManager;
 import comlib.manager.MessageManager;
 import rescuecore2.config.Config;
+import rescuecore2.log.Logger;
 import rescuecore2.misc.collections.LazyMap;
 import rescuecore2.standard.entities.AmbulanceTeam;
 import rescuecore2.standard.entities.Area;
@@ -44,6 +45,8 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
     
     @Override
     public void preparation(Config config, MessageManager messageManager) {
+    	long prepStart = System.currentTimeMillis();
+    	
         this.victimSelector = new YRescueVictimSelector(this);
         this.routeSearcher = new BasicRouteSearcher(this);
         
@@ -64,6 +67,9 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
                 allNodes.add(next.getID());
             }
         }
+        
+        long secsToProcess = (System.currentTimeMillis() - prepStart);
+    	Logger.info(">>> PRE-Ambulance ready. Preparation took(ms): " + secsToProcess);
     }
 
     @Override
@@ -78,7 +84,7 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
 
     @Override
     public String getTacticsName() {
-        return "Y-Rescue pre-processing";
+        return "Y-Rescue Ambulance pre-processing";
     }
 
 	@Override
@@ -98,6 +104,7 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
 	
 	@Override
 	public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
+		long thinkStart = System.currentTimeMillis();
 		System.out.println("PRECOMPUTE THINK AMBULANCE");
 		
 		PrintWriter writer;
@@ -131,6 +138,9 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		long secsToProcess = (System.currentTimeMillis() - thinkStart);
+    	Logger.info(">>> Ambulance think done. It took(ms): " + secsToProcess);
 		
 		return new ActionRest(this);
 	}
