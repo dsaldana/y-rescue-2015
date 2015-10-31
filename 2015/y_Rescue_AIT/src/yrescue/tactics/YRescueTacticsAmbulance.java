@@ -103,13 +103,11 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected Map<RouteCacheKey, List<EntityID>> routeBreadthFirstCache;
 	protected List<Integer> targetBurriednessHist;
 	
-<<<<<<< HEAD
-	private final boolean DEBUG = true;
-=======
+
 	private final boolean DEBUG = false;
 	private StateMachine statusStateMachine;
 	private int stuckCounter;
->>>>>>> d05656d24fb02c1f482464f9415631bd65424425
+
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
