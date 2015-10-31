@@ -89,7 +89,6 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	protected List<EntityID> clusterToVisit;
 	protected EntityID clusterCenter;
 	
-	public EntityID targetHydrant;
 	protected Map<RouteCacheKey, List<EntityID>> routeBreadthFirstCache;
 	
 	@Override
