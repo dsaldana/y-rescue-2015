@@ -239,12 +239,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                 Building b = (Building) entity;
                 if(b.isOnFire()) {
                     manager.addSendMessage(new MessageBuilding(b));
-                    if(b.isTemperatureDefined() && b.getTemperature() > 40 && b.isFierynessDefined() && b.getFieryness() < 4 && b.isBrokennessDefined() && b.getBrokenness() > 10) {
-                    	heatMap.removeEntityID(b.getID());
-                    }
+                    Logger.trace("Removing burning building from heatMap " + b);
+                    //if(b.isTemperatureDefined() && b.getTemperature() > 40 && b.isFierynessDefined() && b.getFieryness() < 4 && b.isBrokennessDefined() && b.getBrokenness() > 10) {
+                    heatMap.removeEntityID(b.getID());
+                    //}
                 }
                 if(b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT)){
-                	Logger.trace("Removing completely burnt Building from heatMap" + b);
+                	Logger.trace("Removing COMPLETELY burnt building from heatMap" + b);
                 	heatMap.removeEntityID(b.getID());
                 }
             }
@@ -498,7 +499,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         		return new ActionUnload(this);
         	}
-        	else if(this.tacticsAgent.stuck(currentTime)&&this.someoneOnBoard()){
+        	else if(this.tacticsAgent.stuck(currentTime) && this.someoneOnBoard()){
         		Logger.info("I'm carrying someone but I'm stuck, selecting new target");
         		this.target = null;
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
@@ -643,9 +644,18 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	 * Check if someone is on board, use a location with some tolerance
 	 */
 	public boolean someoneOnBoard() {
-		if(this.target != null && (this.world.getEntity(this.target) instanceof Civilian || this.world.getEntity(this.target) instanceof Human)){
+		if(this.target != null && /*(this.world.getEntity(this.target) instanceof Civilian ||*/ world.getEntity(this.target) instanceof Human){
 			Human h = (Human) this.world.getEntity(this.target);
-			int traveledDistance = 0;
+			
+			if(h.isPositionDefined() && h.getPosition().equals(me.getID())){
+				Logger.info("" + h + " is on board.");
+				return true;
+			}
+			else {
+				Logger.info("Nobody on board.");
+				return false;
+			}
+			/*int traveledDistance = 0;
 			int burriedness = 0;
 			int hp = 0;
 			
@@ -653,11 +663,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 			if(h.isBuriednessDefined()) burriedness = h.getBuriedness();
 			if(h.isHPDefined()) hp = h.getHP();
 					
-			return PositionUtil.equalsPoint(this.world.getEntity(this.target).getLocation(world), this.me.getLocation(world), 50) && burriedness <= 0 && hp > 0 && traveledDistance <= 0;
+			return PositionUtil.equalsPoint(this.world.getEntity(this.target).getLocation(world), this.me.getLocation(world), 50) && burriedness <= 0 && hp > 0 && traveledDistance <= 0;*/
 		}
 		else{
+			Logger.warn("WARNING! Target " + target + " is not a Human!");
 			return false;
 		}
+			
     }
 	
 	/**
