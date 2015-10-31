@@ -1,5 +1,6 @@
 package yrescue.tactics;
 
+import java.awt.Polygon;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -12,6 +13,7 @@ import java.util.Set;
 
 import org.apache.log4j.MDC;
 
+import com.sun.corba.se.impl.ior.GenericTaggedProfile;
 import com.vividsolutions.jts.geom.Geometry;
 
 import adk.sample.basic.event.BasicRoadEvent;
@@ -250,10 +252,39 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     	}
     }
     
-    public boolean humanIsCloseToABlockade(Human a, EntityID id){
-    	Blockade closest = yrescue.problem.blockade.BlockadeUtil.getClosestBlockade(id, this, a.getX(), a.getY());
-    	int distance = this.world.getDistance(a.getID(), closest.getID());
-    	if(distance < 100) return true;
+    public boolean humanIsCloseToABlockade(Human h, EntityID id){
+    	Blockade closest = yrescue.problem.blockade.BlockadeUtil.getClosestBlockade(id, this, h.getX(), h.getY());
+    	
+    	if(closest != null){
+	    	Polygon p = yrescue.util.GeometricUtil.getPolygon(closest.getApexes());
+	    	Point2D point0 = new Point2D(h.getX(),h.getY());
+	    	
+	    	double distance = Double.MAX_VALUE;
+	    	for(int i = 0; i < p.npoints ; i++){
+	    		Point2D point1 = new Point2D(p.xpoints[i], p.ypoints[i]);
+	    		Point2D point2 = null;
+	    		
+	    		if(i == (p.npoints - 1)) {
+	    			point2 = new Point2D(p.xpoints[0],p.ypoints[0]);
+	    		}
+	    		else {
+	    			point2 = new Point2D(p.xpoints[i+1],p.ypoints[i+1]);
+	    		}
+	    		Line2D line = new Line2D(point1, point2);
+	    		Point2D closestPoint = GeometryTools2D.getClosestPointOnSegment(line,point0);
+	    		double d = GeometryTools2D.getDistance(point0, closestPoint);
+	    		if(d < distance)	{
+	    			distance = d;
+	    		}
+	    	}
+	    	Logger.debug(String.format("DISTANCE BETWEEN %s AND %s: %s", h, closest, distance));
+	    	if(distance < 500) {
+	    		return true;
+	    	}
+	    	else {
+	    		return false;
+	    	}
+    	}
     	else return false;
     }
 
@@ -393,14 +424,29 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         }
         
         /* Test if there's a human stuck in a Blockade with no needing of a message. */
-        Collection<StandardEntity> objectsInRange = this.world.getObjectsInRange(me.getID(), clearRange/2);// CHECK IF THIS IS THE RIGHT RANGE!!!
+        Collection<StandardEntity> objectsInRange = this.world.getObjectsInRange(me.getID(), clearRange);// CHECK IF THIS IS THE RIGHT RANGE!!!
+        Logger.debug("Objects in range " + objectsInRange);
         for(StandardEntity next : objectsInRange){
-        	if((next instanceof Human) && (next.getID() != me.getID())){
+        	if((next instanceof Human) && !(next.getID().equals(me.getID()))){
+        		Logger.debug("Testing... HUMAN CLOSE TO BLOCKADE");
         		Human h = (Human) next;
+        		Logger.debug("ID AGENT :  " + next.getID());
+        		Logger.debug("Human Close to blockade:      " + humanIsCloseToABlockade(h, location.getID()));
+        		//System.out.println("HUMAN IS TOO CLOSE TO BLOCKADE:           " +  humanIsCloseToABlockade(h, location.getID()));
         		if(humanIsCloseToABlockade(h, location.getID())){//Human is too close to a blockade, he is probably stuck!!!
-        			System.out.println("HUMAN IS TOO CLOSE TO BLOCKADE");
-        			Logger.info("HUMAN IS TOO CLOSE TO BLOCKADE");
-        			return new ActionClear(this,h.getX(),h.getY());
+        			if(this.world.getDistance(me.getID(), h.getID()) < clearRange){
+	        			System.out.println("HUMAN IS TOO CLOSE TO BLOCKADE");
+	        			Logger.debug("HUMAN IS TOO CLOSE TO BLOCKADE");
+	        			Vector2D agentToTarget = new Vector2D(h.getX() - me.getX(),h.getY() - me.getY());
+        				agentToTarget = agentToTarget.normalised();
+        				agentToTarget = agentToTarget.scale(10000);
+	        			return new ActionClear(this,h.getX() + (int)agentToTarget.getX(),h.getY() + (int)agentToTarget.getY());
+        			}else{
+        				Logger.debug("MOVING TO HUMAN");
+        				List<EntityID> newPath = new ArrayList<>();
+        				newPath.add(location.getID());
+        				return new ActionMove(this, newPath,h.getX(),h.getY());
+        			}
         			
         		}
         	}
