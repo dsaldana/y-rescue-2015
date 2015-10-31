@@ -18,6 +18,7 @@ import java.util.Random;
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
 
+
 //import adf.util.map.PositionUtil;
 import adk.team.util.graph.PositionUtil;
 import adk.sample.basic.event.BasicAmbulanceEvent;
@@ -42,6 +43,7 @@ import comlib.message.information.MessageFireBrigade;
 import comlib.message.information.MessagePoliceForce;
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
+import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.standard.entities.AmbulanceTeam;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Building;
@@ -67,9 +69,11 @@ import yrescue.message.information.MessageBlockedArea;
 import yrescue.message.information.MessageRecruitment;
 import yrescue.message.information.Task;
 import yrescue.message.recruitment.RecruitmentManager;
+import yrescue.problem.blockade.BlockadeUtil;
 import yrescue.problem.blockade.BlockedArea;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
+import yrescue.statemachine.StatusStates;
 import yrescue.util.DistanceSorter;
 import yrescue.util.GeometricUtil;
 import yrescue.util.PathUtil;
@@ -92,6 +96,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected List<Integer> targetBurriednessHist;
 	
 	private final boolean DEBUG = false;
+	private StateMachine statusStateMachine;
+	private int stuckCounter;
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
@@ -105,6 +111,9 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     	long prepStart = System.currentTimeMillis();
     	
     	this.stateMachine = new StateMachine(ActionStates.Ambulance.EXPLORING);
+    	this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
+    	this.stuckCounter = 0;
+    	
     	routeBreadthFirstCache = PathUtil.getRouteCache();
     	this.routeSearcher = new BasicRouteSearcher(this, routeBreadthFirstCache);
     	this.victimSelector = new YRescueVictimSelector(this, this.routeSearcher);
@@ -319,7 +328,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
          *   Basic actions  *
          * === -------- === */
         
-        // Check for buriedness and tries to extinguish fire in a close building
+        // Check for buriedness 
         if(this.me.getBuriedness() > 0) {
         	Logger.info("I'm buried at " + me.getPosition());
         	AmbulanceTeam ambulanceTeam = (AmbulanceTeam) this.me();
@@ -330,15 +339,42 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         if (this.tacticsAgent.stuck(currentTime)){
         	//Logger.trace("I'm blocked. Added a MessageBlockedArea");
         	//manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+        	if(statusStateMachine.getCurrentState().equals(StatusStates.STUCK) || 
+        			statusStateMachine.getCurrentState().equals(StatusStates.STUCK_NAVIGATION)){
+        		
+        		stuckCounter++;
+        		Logger.debug("incrementing stuck counter");
+        	}
+        	else{
+        		Logger.debug("setting stuck counter to 1");
+        		stuckCounter = 1;
+        	}
+        	Logger.info("I'm stuck for " + stuckCounter + " timesteps =/");
         	
+        	statusStateMachine.setState(StatusStates.STUCK);
+        	//Logger.info("Adding a MessageBlockedArea");
+        	//manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
         	BlockedArea mine = new BlockedArea(location.getID(), this.target, me.getX(), me.getY());
         	try{
         		this.reportBlockedArea(mine, manager, currentTime);
-        		
         	}
         	catch(Exception e){
-        		// Do nothing
+        		Logger.error("An error occurred when trying to report blocked area");
         	}
+        	
+        	Point2D navTgt = BlockadeUtil.calculateNavigationMove(this);
+        	if (navTgt != null){
+        		
+        		List<EntityID> fooPath = new ArrayList<>();
+        		fooPath.add(location.getID());
+        		
+        		statusStateMachine.setState(StatusStates.STUCK_NAVIGATION);
+        		Logger.info(String.format("Will attempt stuck-move to %s of %s", navTgt, fooPath));
+        		return new ActionMove(this, fooPath, (int)navTgt.getX(), (int)navTgt.getY());
+        	}
+        	
+    	}else {
+    		statusStateMachine.setState(StatusStates.ACTING);
     	}
         
         // If we are not in the special condition exploring, update target or get a new one 
