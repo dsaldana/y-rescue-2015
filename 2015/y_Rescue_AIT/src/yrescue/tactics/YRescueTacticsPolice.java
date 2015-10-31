@@ -399,7 +399,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         		Human h = (Human) next;
         		if(humanIsCloseToABlockade(h, location.getID())){//Human is too close to a blockade, he is probably stuck!!!
         			System.out.println("HUMAN IS TOO CLOSE TO BLOCKADE");
-        			Logger.debug("HUMAN IS TOO CLOSE TO BLOCKADE");
+        			Logger.info("HUMAN IS TOO CLOSE TO BLOCKADE");
         			return new ActionClear(this,h.getX(),h.getY());
         			
         		}
