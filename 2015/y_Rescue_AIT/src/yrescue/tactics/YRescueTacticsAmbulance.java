@@ -91,7 +91,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected Map<RouteCacheKey, List<EntityID>> routeBreadthFirstCache;
 	protected List<Integer> targetBurriednessHist;
 	
-	private final boolean DEBUG = false;
+	private final boolean DEBUG = true;
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
@@ -243,7 +243,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                     	heatMap.removeEntityID(b.getID());
                     }
                 }
-                if(b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT)){
+                if(b.isOnFire() || b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT) || b.isIgnitionDefined()){
                 	Logger.trace("Removing completely burnt Building from heatMap" + b);
                 	heatMap.removeEntityID(b.getID());
                 }
@@ -357,7 +357,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		if(this.location.getID().getValue() == ((Human) this.world.getEntity(this.target)).getPosition().getValue()){
 	        		if(this.world.getEntity(this.location.getID()) instanceof Building){
 	        			Building b = (Building) this.world.getEntity(this.location.getID());
-	        			if(b.isOnFire()){
+	        			////////
+	        			if(b.isOnFire() || b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT)){
 	        				((YRescueVictimSelector) this.victimSelector).remove(this.target);
 	        				this.target = null;
 	        			}
@@ -560,6 +561,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                 	this.stateMachine.setState(ActionStates.Ambulance.RESCUING);
                     return new ActionRescue(this, this.target);
                 }
+                //Drop the dead civilian
+                if (this.someoneOnBoard() && victim.getHP()<=0)
+                {	
+                	
+                	this.target = this.victimSelector.getNewTarget(currentTime);
+                	return new ActionUnload(this);
+                }
                 
                 // In the case of rescue already
                 if (victim instanceof Civilian) {
@@ -592,6 +600,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         
         Logger.info("Cannot define a target or action, going to explore!");
         getNewExplorationTarget(currentTime);
+        
         return moveTarget(currentTime);
     }
 
@@ -667,6 +676,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	public Action moveTarget(int currentTime) {
         List<EntityID> path = getPathToTarget(currentTime);
         if(path != null && !path.isEmpty()){
+        	
         	Entity ent = this.world.getEntity(path.get(path.size() -1));
         	if(ent instanceof Building){
         		Building b = (Building) ent;
@@ -680,6 +690,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	}
         }
         
+        
+        //if ((Area)this.location)
         return new ActionMove(this, path != null ? path : this.routeSearcher.noTargetMove(currentTime, this.me));
     }
 	
