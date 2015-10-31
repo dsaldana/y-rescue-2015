@@ -345,6 +345,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     public Action think(int currentTime, ChangeSet updateWorldData, MessageManager manager) {
         this.organizeUpdateInfo(currentTime, updateWorldData, manager);
         MDC.put("location", location());
+        MDC.put("status", stateMachine.getCurrentState());
         
         /* === ---- === *
          *     MISC     *
@@ -741,11 +742,11 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 			Human h = (Human) this.world.getEntity(this.target);
 			
 			if(h.isPositionDefined() && h.getPosition().equals(me.getID())){
-				Logger.info("" + h + " is on board.");
+				Logger.debug("" + h + " is on board.");
 				return true;
 			}
 			else {
-				Logger.info("Nobody on board.");
+				Logger.debug("Nobody on board.");
 				return false;
 			}
 			/*int traveledDistance = 0;
