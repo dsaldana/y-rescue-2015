@@ -27,7 +27,7 @@ public class BasicRouteSearcher implements RouteSearcher {
         this.search = new SampleSearch(user.getWorld());
         this.random = new Random((new Date()).getTime());
         this.initRandomWalk();
-        this.mapCache = null;
+        this.mapCache = new HashMap<RouteCacheKey, List<EntityID>>();
     }
 
     public BasicRouteSearcher(WorldProvider<? extends Human> user, Map<RouteCacheKey, List<EntityID>> mapCache) {
@@ -101,7 +101,19 @@ public class BasicRouteSearcher implements RouteSearcher {
 				return routeCache;
 			}
     	}
-    	//List<EntityID> cacheList = 
-        return this.search.breadthFirstSearch(from, to);
+    	List<EntityID> path = this.search.breadthFirstSearch(from, to);
+    	
+    	for(int i=0; i < path.size(); i++){
+    		for(int j=0; i < path.size(); i++){
+    			if(i == j) continue;
+    			RouteCacheKey lMapKey = new RouteCacheKey(path.get(i).getValue(), path.get(j).getValue());
+    			if(!this.mapCache.containsKey(lMapKey)){
+    				List<EntityID> subPath = path.subList(i, i+j);
+    				this.mapCache.put(lMapKey, subPath);
+    			}
+        	}
+    	}
+    	
+        return path;
     }
 }

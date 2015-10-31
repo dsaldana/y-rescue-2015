@@ -1,12 +1,20 @@
 package yrescue.tactics;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -14,11 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
 
-//import adf.util.map.PositionUtil;
 import adk.team.util.graph.PositionUtil;
 import adk.sample.basic.event.BasicAmbulanceEvent;
 import adk.sample.basic.event.BasicCivilianEvent;
@@ -68,6 +76,7 @@ import yrescue.message.information.MessageRecruitment;
 import yrescue.message.information.Task;
 import yrescue.message.recruitment.RecruitmentManager;
 import yrescue.problem.blockade.BlockedArea;
+import yrescue.search.PreComputeSearch;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.util.DistanceSorter;
@@ -168,8 +177,57 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     		this.stateMachine = new StateMachine(ActionStates.Ambulance.GOING_TO_CLUSTER_LOCATION);
     	}
     	long secsToProcess = (System.currentTimeMillis() - prepStart);
+    	
+    	if(this.pre){
+    		preCompute();
+    	}
+    	
     	Logger.info(">>> Ambulance ready. Preparation took(ms): " + secsToProcess);
     }
+    
+    public void preCompute(){
+    	long prepStart = System.currentTimeMillis();
+    	int nodeNumber = 0;
+    	
+    	try{
+    		File file = new File(PathUtil.NODE_CACHE_FILE_NAME);
+    		file.delete();
+    		file = new File(PathUtil.BUILDING_CACHE_FILE_NAME);
+    		file.delete();
+    		file = new File(PathUtil.ROADS_CACHE_FILE_NAME);
+    		file.delete();
+    		file = new File(PathUtil.NODE_CACHE_DB_FILE_NAME);
+    		file.delete();
+    	}catch(Exception e){
+    		e.printStackTrace();
+    	}
+    	
+    	List<EntityID> allBuildings = new LinkedList<EntityID>();
+        for (StandardEntity next : this.world.getEntitiesOfType(StandardEntityURN.BUILDING, StandardEntityURN.AMBULANCE_CENTRE, StandardEntityURN.FIRE_STATION, StandardEntityURN.GAS_STATION, StandardEntityURN.HYDRANT, StandardEntityURN.POLICE_OFFICE, StandardEntityURN.REFUGE)) {
+        	if(next instanceof Area){
+        		allBuildings.add(next.getID());
+        	}
+        }
+        
+        List<EntityID> allRoads = new LinkedList<EntityID>();
+        for (StandardEntity next : this.world.getEntitiesOfType(StandardEntityURN.ROAD)) {
+        	if(next instanceof Area){
+        		allRoads.add(next.getID());
+        	}
+        }
+        
+        List<EntityID> allNodes = new LinkedList<EntityID>();
+        for (StandardEntity next : this.world.getAllEntities()) {
+        	if(next instanceof Area){
+        		allNodes.add(next.getID());
+        	}
+        }
+        
+        PreComputeSearch preCompSearch = new PreComputeSearch(this.getWorld());
+        
+		long secsToProcess = (System.currentTimeMillis() - prepStart);
+		Logger.info(">>> preCompute ready. Preparation took(secs): " + secsToProcess/1000.0f + " nodes" + nodeNumber);
+    } 
 
     @Override
     public VictimSelector initVictimSelector() {

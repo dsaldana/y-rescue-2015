@@ -107,6 +107,7 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
 		long thinkStart = System.currentTimeMillis();
 		System.out.println("PRECOMPUTE THINK AMBULANCE");
 		
+		Set<StringBuilder> sbList = new HashSet<StringBuilder>();
 		PrintWriter writer;
 		try {
 			writer = new PrintWriter(PathUtil.NODE_CACHE_FILE_NAME, "UTF-8");
@@ -114,6 +115,10 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
 	        for(EntityID ent1 : allNodes){
 	        	for(EntityID ent2 : allNodes){
 	        		if(ent1.getValue() == ent2.getValue()) continue;
+	        		int euclideanDist = this.world.getDistance(ent1, ent2);
+	        		int stimatedSteps = (int) (euclideanDist / 25000); // TODO: Hard-coded for now, 25000 its the mean size of buildings, set as variable
+	        		if(stimatedSteps <= 8) continue;
+	        		
 	        		StringBuilder sb = new StringBuilder();
 	        		
 	        		sb.append(ent1.getValue());
@@ -127,12 +132,13 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
 		        			sb.append(pathEnt.getValue());
 			        		sb.append(" ");
 		        		}
-		        		writer.write(sb.toString());
-		        		writer.write("\n");
+		        		sbList.add(sb);
 	        		}
 	        	}
 	        }
 		
+	        //writer.write(sb.toString());
+    		//writer.write("\n");
 			writer.close();
 		} catch (FileNotFoundException | UnsupportedEncodingException e) {
 			// TODO Auto-generated catch block
