@@ -91,7 +91,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected Map<RouteCacheKey, List<EntityID>> routeBreadthFirstCache;
 	protected List<Integer> targetBurriednessHist;
 	
-	private final boolean DEBUG = false;
+	private final boolean DEBUG = true;
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
@@ -682,10 +682,32 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	Entity ent = this.world.getEntity(path.get(path.size() -1));
         	if(ent instanceof Building){
         		Building b = (Building) ent;
+        		//Test if the building is on fire or burned
+        		if (b.isFierynessDefined()){
+        		Logger.debug(""+b.isOnFire()+"  =====  "+b.getFieryness());
+        		}
         		if(b.isOnFire() || (b.isFierynessDefined() && b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT))){
         			Logger.debug("The next building is on FIRE or burnOut, select a new exploration target");
+        			
+        			
         			//this.heatMap.updateNode(ent.getID(), time);
         			this.heatMap.removeEntityID(ent.getID());
+        			if(path.size() > 1 ) {
+        				path.remove(path.size() - 1);
+        			}else if(path.size() == 1){  
+        				
+        				Logger.debug("============     PATH EH APENAS 1     ==============");   
+        				Logger.debug("TARGET ANTES    "+this.target);
+        				this.target = null;
+        				getNewExplorationTarget(currentTime);
+        				
+        				Logger.debug("TARGET depois    "+this.target);
+        			
+        			}
+        			     			
+        			
+        			//PathUtil.makeSafePath(this,path);       			
+        			     			
         			//getNewExplorationTarget(currentTime);
         			//path = getPathToTarget(currentTime);
         		}
