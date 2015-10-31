@@ -186,7 +186,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     		}
     	}
 
-    	Logger.info("Cluster to visit :" + clusterToVisit);
+    	Logger.debug("Cluster to visit :" + clusterToVisit);
     	if(clusterToVisit.size() > 0){
     		Building b = (Building) world.getEntity(clusterCenter);
     		this.target = b.getID();
@@ -219,7 +219,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         */
         
         long secsToProcess = (System.currentTimeMillis() - prepStart);
-        Logger.debug(String.format(
+        Logger.info(String.format(
     		">>>> FireFighter ON. maxDistance=%d, sightDistance=%d, prepTime=%d ms ----", 
     		this.maxDistance, this.sightDistance, secsToProcess
     	));
@@ -305,7 +305,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	this.flagOnce = 1;
         	this.target = this.buildingSelector.getNewTarget(currentTime);
         	this.flagStuck = 1;
-        	/*try{
+        	try{
 	        	Action a = this.tacticsAgent.commandHistory.get(currentTime - 1);
 	        	if(a instanceof ActionMove){
 	        		List<EntityID> previousPath = ((ActionMove) a).getPath();
@@ -326,7 +326,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	catch(Exception e){
         		Logger.error("ERROR on attempting stuck move.");
         		target = buildingSelector.getNewTarget(currentTime);
-        	}*/
+        	}
     	}
         
         if(this.me.getDamage() >= 100) { //|| this.someoneOnBoard()
@@ -628,6 +628,15 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             	this.target = null;
             }
             else {
+            	if(path.size() > 1) {
+            		if(world.getEntity(path.get(path.size() - 1 )) instanceof Building) {
+            			Logger.debug("Last path item is a building, I'll go to its door");
+            			path.remove(path.size() - 1);
+            		}
+            	}
+            	else {
+            		Logger.debug("Path is too short... but I'll follow it anyway");
+            	}            	
                 return new ActionMove(this, path);
             }
         }
@@ -635,6 +644,15 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         EntityID explorationTgt = heatMap.getNodeToVisit();
     	Logger.info("Target is null... Heatmapping to: " + explorationTgt);
     	path = this.safePathToBuilding(explorationTgt);
+    	if(path.size() > 1) {
+    		if(world.getEntity(path.get(path.size() - 1 )) instanceof Building) {
+    			Logger.debug("Last path item is a building, I'll go to its door");
+    			path.remove(path.size() - 1);
+    		}
+    	}
+    	else {
+    		Logger.debug("Path is too short... but I'll follow it anyway");
+    	}
         return new ActionMove(this, path);
     }
     

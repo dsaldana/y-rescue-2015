@@ -37,6 +37,10 @@ public class BasicRouteSearcher implements RouteSearcher {
         this.initRandomWalk();
         this.mapCache = mapCache;
     }
+    
+    public Map<RouteCacheKey, List<EntityID>> getMapCache(){
+    	return this.mapCache;
+    }
 
     private void initRandomWalk() {
         this.neighbours = new LazyMap<EntityID, Set<EntityID>>() {
