@@ -305,7 +305,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	this.flagOnce = 1;
         	this.target = this.buildingSelector.getNewTarget(currentTime);
         	this.flagStuck = 1;
-        	/*try{
+        	try{
 	        	Action a = this.tacticsAgent.commandHistory.get(currentTime - 1);
 	        	if(a instanceof ActionMove){
 	        		List<EntityID> previousPath = ((ActionMove) a).getPath();
@@ -326,7 +326,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	catch(Exception e){
         		Logger.error("ERROR on attempting stuck move.");
         		target = buildingSelector.getNewTarget(currentTime);
-        	}*/
+        	}
     	}
         
         if(this.me.getDamage() >= 100) { //|| this.someoneOnBoard()
