@@ -18,10 +18,6 @@ import java.util.Random;
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
 
-
-
-
-
 //import adf.util.map.PositionUtil;
 import adk.team.util.graph.PositionUtil;
 import adk.sample.basic.event.BasicAmbulanceEvent;
