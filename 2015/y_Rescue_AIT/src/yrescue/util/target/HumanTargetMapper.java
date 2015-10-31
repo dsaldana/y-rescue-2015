@@ -17,6 +17,8 @@ import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.PoliceForce;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.worldmodel.EntityID;
+import yrescue.search.YRescueRouteSearcher;
+import yrescue.util.YRescueVictimSelector;
 
 public class HumanTargetMapper {
 	private WorldProvider provider;
@@ -143,7 +145,15 @@ public class HumanTargetMapper {
     	
     	for(HumanTarget ht : humanList){
     		if(!ht.getHuman().isHPDefined() || ht.getHuman().getHP() <= 100) removeTarget(ht.getHuman().getID());
-    		else ht.updateUtility(time, this.owner, ambulanceList);
+    		else{
+    			if(this.routeSearcher instanceof BasicRouteSearcher && ((BasicRouteSearcher) this.routeSearcher).getMapCache() == null ||  ((BasicRouteSearcher) this.routeSearcher).getMapCache().isEmpty()){
+    				ht.updateUtility(time, this.owner, ambulanceList, true);
+    			}
+    			else{
+    				ht.updateUtility(time, this.owner, ambulanceList, false);
+    			}
+    			
+    		}
     	}
 	}
 	
