@@ -1,12 +1,20 @@
 package yrescue.tactics;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -14,11 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
 
-//import adf.util.map.PositionUtil;
 import adk.team.util.graph.PositionUtil;
 import adk.sample.basic.event.BasicAmbulanceEvent;
 import adk.sample.basic.event.BasicCivilianEvent;
@@ -42,6 +50,7 @@ import comlib.message.information.MessageFireBrigade;
 import comlib.message.information.MessagePoliceForce;
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
+import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.standard.entities.AmbulanceTeam;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Building;
@@ -67,9 +76,12 @@ import yrescue.message.information.MessageBlockedArea;
 import yrescue.message.information.MessageRecruitment;
 import yrescue.message.information.Task;
 import yrescue.message.recruitment.RecruitmentManager;
+import yrescue.problem.blockade.BlockadeUtil;
 import yrescue.problem.blockade.BlockedArea;
+import yrescue.search.PreComputeSearch;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
+import yrescue.statemachine.StatusStates;
 import yrescue.util.DistanceSorter;
 import yrescue.util.GeometricUtil;
 import yrescue.util.PathUtil;
@@ -91,7 +103,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected Map<RouteCacheKey, List<EntityID>> routeBreadthFirstCache;
 	protected List<Integer> targetBurriednessHist;
 	
+<<<<<<< HEAD
 	private final boolean DEBUG = true;
+=======
+	private final boolean DEBUG = false;
+	private StateMachine statusStateMachine;
+	private int stuckCounter;
+>>>>>>> d05656d24fb02c1f482464f9415631bd65424425
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
@@ -105,6 +123,9 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     	long prepStart = System.currentTimeMillis();
     	
     	this.stateMachine = new StateMachine(ActionStates.Ambulance.EXPLORING);
+    	this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
+    	this.stuckCounter = 0;
+    	
     	routeBreadthFirstCache = PathUtil.getRouteCache();
     	this.routeSearcher = new BasicRouteSearcher(this, routeBreadthFirstCache);
     	this.victimSelector = new YRescueVictimSelector(this, this.routeSearcher);
@@ -168,8 +189,57 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     		this.stateMachine = new StateMachine(ActionStates.Ambulance.GOING_TO_CLUSTER_LOCATION);
     	}
     	long secsToProcess = (System.currentTimeMillis() - prepStart);
+    	
+    	if(this.pre){
+    		preCompute();
+    	}
+    	
     	Logger.info(">>> Ambulance ready. Preparation took(ms): " + secsToProcess);
     }
+    
+    public void preCompute(){
+    	long prepStart = System.currentTimeMillis();
+    	int nodeNumber = 0;
+    	
+    	try{
+    		File file = new File(PathUtil.NODE_CACHE_FILE_NAME);
+    		file.delete();
+    		file = new File(PathUtil.BUILDING_CACHE_FILE_NAME);
+    		file.delete();
+    		file = new File(PathUtil.ROADS_CACHE_FILE_NAME);
+    		file.delete();
+    		file = new File(PathUtil.NODE_CACHE_DB_FILE_NAME);
+    		file.delete();
+    	}catch(Exception e){
+    		e.printStackTrace();
+    	}
+    	
+    	List<EntityID> allBuildings = new LinkedList<EntityID>();
+        for (StandardEntity next : this.world.getEntitiesOfType(StandardEntityURN.BUILDING, StandardEntityURN.AMBULANCE_CENTRE, StandardEntityURN.FIRE_STATION, StandardEntityURN.GAS_STATION, StandardEntityURN.HYDRANT, StandardEntityURN.POLICE_OFFICE, StandardEntityURN.REFUGE)) {
+        	if(next instanceof Area){
+        		allBuildings.add(next.getID());
+        	}
+        }
+        
+        List<EntityID> allRoads = new LinkedList<EntityID>();
+        for (StandardEntity next : this.world.getEntitiesOfType(StandardEntityURN.ROAD)) {
+        	if(next instanceof Area){
+        		allRoads.add(next.getID());
+        	}
+        }
+        
+        List<EntityID> allNodes = new LinkedList<EntityID>();
+        for (StandardEntity next : this.world.getAllEntities()) {
+        	if(next instanceof Area){
+        		allNodes.add(next.getID());
+        	}
+        }
+        
+        PreComputeSearch preCompSearch = new PreComputeSearch(this.getWorld());
+        
+		long secsToProcess = (System.currentTimeMillis() - prepStart);
+		Logger.info(">>> preCompute ready. Preparation took(secs): " + secsToProcess/1000.0f + " nodes" + nodeNumber);
+    } 
 
     @Override
     public VictimSelector initVictimSelector() {
@@ -319,7 +389,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
          *   Basic actions  *
          * === -------- === */
         
-        // Check for buriedness and tries to extinguish fire in a close building
+        // Check for buriedness 
         if(this.me.getBuriedness() > 0) {
         	Logger.info("I'm buried at " + me.getPosition());
         	AmbulanceTeam ambulanceTeam = (AmbulanceTeam) this.me();
@@ -330,15 +400,42 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         if (this.tacticsAgent.stuck(currentTime)){
         	//Logger.trace("I'm blocked. Added a MessageBlockedArea");
         	//manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+        	if(statusStateMachine.getCurrentState().equals(StatusStates.STUCK) || 
+        			statusStateMachine.getCurrentState().equals(StatusStates.STUCK_NAVIGATION)){
+        		
+        		stuckCounter++;
+        		Logger.debug("incrementing stuck counter");
+        	}
+        	else{
+        		Logger.debug("setting stuck counter to 1");
+        		stuckCounter = 1;
+        	}
+        	Logger.info("I'm stuck for " + stuckCounter + " timesteps =/");
         	
+        	statusStateMachine.setState(StatusStates.STUCK);
+        	//Logger.info("Adding a MessageBlockedArea");
+        	//manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
         	BlockedArea mine = new BlockedArea(location.getID(), this.target, me.getX(), me.getY());
         	try{
         		this.reportBlockedArea(mine, manager, currentTime);
-        		
         	}
         	catch(Exception e){
-        		// Do nothing
+        		Logger.error("An error occurred when trying to report blocked area");
         	}
+        	
+        	Point2D navTgt = BlockadeUtil.calculateNavigationMove(this);
+        	if (navTgt != null){
+        		
+        		List<EntityID> fooPath = new ArrayList<>();
+        		fooPath.add(location.getID());
+        		
+        		statusStateMachine.setState(StatusStates.STUCK_NAVIGATION);
+        		Logger.info(String.format("Will attempt stuck-move to %s of %s", navTgt, fooPath));
+        		return new ActionMove(this, fooPath, (int)navTgt.getX(), (int)navTgt.getY());
+        	}
+        	
+    	}else {
+    		statusStateMachine.setState(StatusStates.ACTING);
     	}
         
         // If we are not in the special condition exploring, update target or get a new one 

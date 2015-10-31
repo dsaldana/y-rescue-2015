@@ -20,10 +20,10 @@
 -->
   <!--<rcr:policeforce rcr:location="268"/>
   <rcr:policeforce rcr:location="270"/>
-
+-->
 
   <rcr:ambulanceteam rcr:location="297"/>
-  <rcr:ambulanceteam rcr:location="969"/>-->
+  <rcr:ambulanceteam rcr:location="969"/>
   <rcr:ambulanceteam rcr:location="976"/>
   
   <!-- <rcr:fire rcr:location="248"/> -->

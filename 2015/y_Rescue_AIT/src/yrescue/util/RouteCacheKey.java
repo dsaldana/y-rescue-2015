@@ -9,6 +9,14 @@ public class RouteCacheKey {
         this.x = x;
         this.y = y;
     }
+    
+    public int getX(){
+    	return this.x;
+    }
+    
+    public int getY(){
+    	return this.y;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -23,6 +31,11 @@ public class RouteCacheKey {
         int result = x;
         result = 31 * result + y;
         return result;
+    }
+    
+    @Override
+    public String toString(){
+    	return this.x + "->" + this.y;
     }
 
 }
