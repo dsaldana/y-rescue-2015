@@ -41,6 +41,7 @@ import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Civilian;
 import rescuecore2.standard.entities.Edge;
 import rescuecore2.standard.entities.GasStation;
+import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.Hydrant;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.Road;
@@ -249,6 +250,12 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     	}
     }
     
+    public boolean humanIsCloseToABlockade(Human a, EntityID id){
+    	Blockade closest = yrescue.problem.blockade.BlockadeUtil.getClosestBlockade(id, this, a.getX(), a.getY());
+    	int distance = this.world.getDistance(a.getID(), closest.getID());
+    	if(distance < 100) return true;
+    	else return false;
+    }
 
     @Override
     public void organizeUpdateInfo(int currentTime, ChangeSet updateWorldInfo, MessageManager manager) {
@@ -384,6 +391,26 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         	return moveRefuge(currentTime);
         	
         }
+        
+        /* Test if there's a human stuck in a Blockade with no needing of a message. */
+        Collection<StandardEntity> objectsInRange = this.world.getObjectsInRange(me.getID(), clearRange/2);// CHECK IF THIS IS THE RIGHT RANGE!!!
+        for(StandardEntity next : objectsInRange){
+        	if((next instanceof Human) && (next.getID() != me.getID())){
+        		Human h = (Human) next;
+        		if(humanIsCloseToABlockade(h, location.getID())){//Human is too close to a blockade, he is probably stuck!!!
+        			System.out.println("HUMAN IS TOO CLOSE TO BLOCKADE");
+        			Logger.debug("HUMAN IS TOO CLOSE TO BLOCKADE");
+        			return new ActionClear(this,h.getX(),h.getY());
+        			
+        		}
+        	}
+        }
+        
+       
+        
+        
+        
+        
         
         //Ensuring the police stays in the refuge until the damage drops to 0
         Refuge result = PositionUtil.getNearTarget(this.world, this.me, this.getRefuges());
