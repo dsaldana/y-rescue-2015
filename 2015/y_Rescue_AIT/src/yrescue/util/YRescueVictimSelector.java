@@ -121,10 +121,14 @@ public class YRescueVictimSelector implements VictimSelector {
     public EntityID getNewTarget(int time, List<EntityID> cluster, List<EntityID> notCluster) {
         return getNewTarget(time);
     }
+    
+    public HumanTarget getHumanTarget(EntityID entity){
+    	return this.humanTargetM.getTarget(entity);
+    }
 
     @Override
     public EntityID updateTarget(int time, EntityID target) {
-        Human victim = (Human)this.provider.getWorld().getEntity(target);
+        Human victim = (Human) this.provider.getWorld().getEntity(target);
         EntityID victimPositionID = victim.getPosition();
         if(victim.getBuriedness() == 0) {
             for(StandardEntity ambulance : this.provider.getWorld().getEntitiesOfType(StandardEntityURN.AMBULANCE_TEAM)) {

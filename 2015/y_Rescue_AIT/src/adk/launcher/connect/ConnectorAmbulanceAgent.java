@@ -10,6 +10,7 @@ import rescuecore2.components.ComponentConnectionException;
 import rescuecore2.components.ComponentLauncher;
 import rescuecore2.config.Config;
 import rescuecore2.connection.ConnectionException;
+import rescuecore2.log.Logger;
 
 public class ConnectorAmbulanceAgent implements Connector {
 
@@ -69,9 +70,11 @@ public class ConnectorAmbulanceAgent implements Connector {
         try {
             for (int i = 0; i != count; ++i) {
                 if(config.getBooleanValue(ConfigKey.KEY_PRECOMPUTE, false)) {
-                    launcher.connect(new AmbulanceTeamAgent(team.getAmbulancePrecompute(), true));
+                	Logger.info(">>> Will pre-compute <<<");
+                    launcher.connect(new AmbulanceTeamAgent(team.getAmbulanceTeamTactics(), true));
                 }
                 else {
+                	Logger.info(">>> Not pre-computing <<<");
                     launcher.connect(new AmbulanceTeamAgent(team.getAmbulanceTeamTactics(), config.getBooleanValue(ConfigKey.KEY_PRECOMPUTE, false)));
                 }
 
@@ -79,6 +82,7 @@ public class ConnectorAmbulanceAgent implements Connector {
                 connectAgent++;
             }
         } catch (ComponentConnectionException | InterruptedException | ConnectionException ignored) {
+        	Logger.error("An error happened when connecting... agent won't run. :(");
         }
         System.out.println("[END  ] Connect Ambulance (success:" + connectAgent + ")");
     }

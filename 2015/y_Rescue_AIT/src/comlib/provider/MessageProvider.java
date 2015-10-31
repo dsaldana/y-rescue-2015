@@ -78,7 +78,8 @@ public abstract class MessageProvider<M extends CommunicationMessage, E extends 
 			msg = this.createMessage(config, manager.getTime() - 1, bsr);
 		} catch (Exception e) {
 			// System.out.println("[ERROR] ");
-			Logger.error("Message from " + fromID + " could not be processed :(", e);
+			//Logger.error("Message from " + fromID + " could not be processed :(", e);
+			Logger.error("Message from " + fromID + " could not be processed :(");
 			return null;
 		}
 

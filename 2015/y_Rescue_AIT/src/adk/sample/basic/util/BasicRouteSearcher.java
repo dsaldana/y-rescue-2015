@@ -2,10 +2,12 @@ package adk.sample.basic.util;
 
 import adk.team.util.RouteSearcher;
 import adk.team.util.provider.WorldProvider;
+import rescuecore2.log.Logger;
 import rescuecore2.misc.collections.LazyMap;
 import rescuecore2.standard.entities.*;
 import rescuecore2.worldmodel.Entity;
 import sample.SampleSearch;
+import yrescue.util.RouteCacheKey;
 import rescuecore2.worldmodel.EntityID;
 
 import java.util.*;
@@ -18,12 +20,26 @@ public class BasicRouteSearcher implements RouteSearcher {
     private Random random;
 
     private SampleSearch search;
-
+    private Map<RouteCacheKey, List<EntityID>> mapCache;
+    
     public BasicRouteSearcher(WorldProvider<? extends Human> user) {
         this.provider = user;
         this.search = new SampleSearch(user.getWorld());
         this.random = new Random((new Date()).getTime());
         this.initRandomWalk();
+        this.mapCache = null;
+    }
+
+    public BasicRouteSearcher(WorldProvider<? extends Human> user, Map<RouteCacheKey, List<EntityID>> mapCache) {
+        this.provider = user;
+        this.search = new SampleSearch(user.getWorld());
+        this.random = new Random((new Date()).getTime());
+        this.initRandomWalk();
+        this.mapCache = mapCache;
+    }
+    
+    public Map<RouteCacheKey, List<EntityID>> getMapCache(){
+    	return this.mapCache;
     }
 
     private void initRandomWalk() {
@@ -77,6 +93,15 @@ public class BasicRouteSearcher implements RouteSearcher {
 
     @Override
     public List<EntityID> getPath(int time, EntityID from, EntityID to) {
+    	RouteCacheKey lKey = new RouteCacheKey(from.getValue(), to.getValue());
+    	if(this.mapCache != null && this.mapCache.containsKey(lKey)){
+			List<EntityID> routeCache = this.mapCache.get(lKey);
+			if(routeCache != null && !routeCache.isEmpty()){
+				Logger.trace(String.format("Returned route from %s to %s, using cache!", from, to));
+				return routeCache;
+			}
+    	}
+    	//List<EntityID> cacheList = 
         return this.search.breadthFirstSearch(from, to);
     }
 }

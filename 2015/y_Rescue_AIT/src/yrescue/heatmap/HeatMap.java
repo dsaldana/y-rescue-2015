@@ -16,6 +16,7 @@ import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Edge;
 import rescuecore2.standard.entities.StandardWorldModel;
 import rescuecore2.worldmodel.EntityID;
+import yrescue.util.RouteCacheKey;
 
 public class HeatMap {
 	protected Map<EntityID, HeatNode> heatNodeMap = null;
@@ -28,11 +29,22 @@ public class HeatMap {
 	private int lastTime = 0;
 	
 	private EntityID explorationTarget = null;
+	protected Map<RouteCacheKey, List<EntityID>> mapCache;
 	
 	public HeatMap(EntityID ownerID, StandardWorldModel worldModel){
 		this.heatNodeMap = new HashMap<EntityID, HeatNode>();
 		this.ownerID = ownerID;
 		this.worldModel = worldModel;
+		this.mapCache = null;
+		
+		this.defaultFileName = "/tmp/heatmap_" + this.ownerID.getValue() + ".txt";
+	}
+	
+	public HeatMap(EntityID ownerID, StandardWorldModel worldModel, Map<RouteCacheKey, List<EntityID>> mapCache){
+		this.heatNodeMap = new HashMap<EntityID, HeatNode>();
+		this.ownerID = ownerID;
+		this.worldModel = worldModel;
+		this.mapCache = mapCache;
 		
 		this.defaultFileName = "/tmp/heatmap_" + this.ownerID.getValue() + ".txt";
 	}
@@ -207,6 +219,17 @@ public class HeatMap {
 						return compPriority;
 					}
 					else{
+						RouteCacheKey lKey1 = new RouteCacheKey(((HeatNode) o1).getEntity().getValue(), lastFrom.getValue());
+						RouteCacheKey lKey2 = new RouteCacheKey(((HeatNode) o2).getEntity().getValue(), lastFrom.getValue());
+				    	
+						if(mapCache != null && (mapCache.containsKey(lKey1) && mapCache.containsKey(lKey2))){
+							List<EntityID> routeCache1 = mapCache.get(lKey1);
+							List<EntityID> routeCache2 = mapCache.get(lKey2);
+							if(routeCache1 != null && routeCache2 != null){
+								return Integer.compare(routeCache1.size(), routeCache2.size());
+							}
+				    	}
+						
 						Integer d1 = worldModel.getDistance(((HeatNode) o1).getEntity(), lastFrom);
 						Integer d2 = worldModel.getDistance(((HeatNode) o2).getEntity(), lastFrom);
 						return d1.compareTo(d2);

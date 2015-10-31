@@ -13,7 +13,7 @@ public class RadioConfig {
 
 	public RadioConfig(Config config) {
 		this.channel = config.getIntValue("comlib.message.channel", 1);
-		this.sizeOfTime = IntegerDataHelper.getBitSize(31); //config.getIntValue("comlib.size.time", 9);
+		this.sizeOfTime = 10; //up to 1024 timesteps... //config.getIntValue("comlib.size.time", 9);
 		this.updateMessageIDSize(31);//(config.getIntValue("comlib.message.messageID", 32) - 1);
 		
 		Logger.debug("-------- BEGIN: COMM PARAMETERS ---------");
