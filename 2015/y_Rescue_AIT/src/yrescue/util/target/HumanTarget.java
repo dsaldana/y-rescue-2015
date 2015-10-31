@@ -49,7 +49,8 @@ public class HumanTarget {
 	private int previousBurriedness = 0;
 	private int previousBurriednessUpdateTime = 0;
 	
-	public final int AVERAGE_MOVE_TO_TARGET = 4;
+	public static final int AVERAGE_MOVE_TO_TARGET = 4;
+	public static final int AVERAGE_MOVE_PER_CYCLE = 25000;
 	
 	public HumanTarget(Human h, HumanTypes hType, WorldProvider<? extends Human> provider, RouteSearcher routeSearcher){
 		if(h == null || hType == null) throw new InvalidParameterException("Some parameter is null");
@@ -103,7 +104,7 @@ public class HumanTarget {
 		
 	}
 	
-	public void updateUtility(int time, Human ambulance, List<HumanTarget> ambulanceList){
+	public void updateUtility(int time, Human ambulance, List<HumanTarget> ambulanceList, boolean useEuclideanDistance){
 		updateBurriedness(time);
 		if(time == this.lastTimeUpdated) return; //&& Math.abs(time - this.lastTimeUpdated) > 4
 		if(time > 120) this.priorityWeight = 1.0f;
@@ -111,7 +112,7 @@ public class HumanTarget {
 		float actualUtility = 0;
 		try {
 			
-			int duration = getTimeToPerformTask(time, ambulance, ambulanceList);
+			int duration = getTimeToPerformTask(time, ambulance, ambulanceList, useEuclideanDistance);
 			int deathTime = getDeathTime(time);
 
 			int durationFactor = 0;
@@ -151,7 +152,7 @@ public class HumanTarget {
 		this.utility = actualUtility;
 	}
 	
-	private int getTimeToPerformTask(int time, Human ambulance, List<HumanTarget> ambulanceList) {
+	private int getTimeToPerformTask(int time, Human ambulance, List<HumanTarget> ambulanceList, boolean useEuclideanDistance) {
 		int cycle = 0;
 		try {
 			// Get ambulances in this specific spot
@@ -170,14 +171,25 @@ public class HumanTarget {
 			if (this.hType.equals(HumanTarget.HumanTypes.CIVILIAN)) {
 				cycle++;
 				Refuge result = PositionUtil.getNearTarget(this.provider.getWorld(), this.provider.getWorld().getEntity(this.human.getID()), this.provider.getRefuges());
-				List<EntityID> path = this.routeSearcher.getPath(time, this.human.getPosition(), result);
-				if(path != null) cycle += path.size();
+				
+				if(useEuclideanDistance){
+					cycle += (int) (this.provider.getWorld().getDistance(this.human.getID(), result.getID()) / HumanTarget.AVERAGE_MOVE_PER_CYCLE);
+				}
+				else{
+					List<EntityID> path = this.routeSearcher.getPath(time, this.human.getPosition(), result);
+					if(path != null) cycle += path.size();
+				}
 			}
 			
 			// Cycles to move to target
-			List<EntityID> path = this.routeSearcher.getPath(time, this.human.getPosition(), ambulance.getPosition());
-			long moveWeight = path.size();
-			cycle += moveWeight;
+			if(useEuclideanDistance){
+				cycle += (int) (this.provider.getWorld().getDistance(this.human.getPosition(), ambulance.getPosition()) / HumanTarget.AVERAGE_MOVE_PER_CYCLE);
+			}
+			else{
+				List<EntityID> path = this.routeSearcher.getPath(time, this.human.getPosition(), ambulance.getPosition());
+				long moveWeight = path.size();
+				cycle += moveWeight;
+			}
 
 		} catch (Exception ex) {
 			cycle += this.human.getBuriedness() + 2;
