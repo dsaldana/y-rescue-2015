@@ -1,5 +1,6 @@
 package adk.launcher.agent;
 
+import adf.util.map.PositionUtil;
 import adk.team.action.Action;
 import adk.team.action.ActionMove;
 import adk.team.tactics.Tactics;
@@ -173,8 +174,15 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
 		
 			//if move command was issued and I traversed small distance, I'm stuck
 			if ( (cmd instanceof ActionMove) && (distance  < tolerance)) {
-					Logger.info("Dammit, I'm stuck!");
-					return true;
+				ActionMove action = (ActionMove)cmd;
+				
+				if(PositionUtil.equalsPoint(action.getPosX(), action.getPosY(), tactics.me().getX(), tactics.me().getY(), 500)){
+					Logger.info("I'm right where I wanted to be. Not stuck");
+					return false;
+				}
+				
+				Logger.info("Dammit, I'm stuck!");
+				return true;
 			}
 		}
 		Logger.info("Not stuck!");
