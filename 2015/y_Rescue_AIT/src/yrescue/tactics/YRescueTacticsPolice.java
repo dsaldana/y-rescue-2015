@@ -258,27 +258,11 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     	if(closest != null){
 	    	Polygon p = yrescue.util.GeometricUtil.getPolygon(closest.getApexes());
 	    	Point2D point0 = new Point2D(h.getX(),h.getY());
-	    	
 	    	double distance = Double.MAX_VALUE;
-	    	for(int i = 0; i < p.npoints ; i++){
-	    		Point2D point1 = new Point2D(p.xpoints[i], p.ypoints[i]);
-	    		Point2D point2 = null;
-	    		
-	    		if(i == (p.npoints - 1)) {
-	    			point2 = new Point2D(p.xpoints[0],p.ypoints[0]);
-	    		}
-	    		else {
-	    			point2 = new Point2D(p.xpoints[i+1],p.ypoints[i+1]);
-	    		}
-	    		Line2D line = new Line2D(point1, point2);
-	    		Point2D closestPoint = GeometryTools2D.getClosestPointOnSegment(line,point0);
-	    		double d = GeometryTools2D.getDistance(point0, closestPoint);
-	    		if(d < distance)	{
-	    			distance = d;
-	    		}
-	    	}
-	    	Logger.debug(String.format("DISTANCE BETWEEN %s AND %s: %s", h, closest, distance));
-	    	if(distance < 500) {
+	    	Point2D closestPoint = yrescue.problem.blockade.BlockadeUtil.getClosestPointToABlockade(closest, h.getX(), h.getY());
+    		double d = GeometryTools2D.getDistance(point0, closestPoint);
+	    	Logger.debug(String.format("DISTANCE BETWEEN %s AND %s: %s", h, closest, d));
+	    	if(d <= 500.) {
 	    		return true;
 	    	}
 	    	else {
@@ -424,7 +408,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         }
         
         /* Test if there's a human stuck in a Blockade with no needing of a message. */
-        Collection<StandardEntity> objectsInRange = this.world.getObjectsInRange(me.getID(), clearRange);// CHECK IF THIS IS THE RIGHT RANGE!!!
+        Collection<StandardEntity> objectsInRange = this.world.getObjectsInRange(me.getID(), clearRange*2);// CHECK IF THIS IS THE RIGHT RANGE!!!
         Logger.debug("Objects in range " + objectsInRange);
         for(StandardEntity next : objectsInRange){
         	if((next instanceof Human) && !(next.getID().equals(me.getID()))){
@@ -437,7 +421,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         			if(this.world.getDistance(me.getID(), h.getID()) < clearRange){
 	        			System.out.println("HUMAN IS TOO CLOSE TO BLOCKADE");
 	        			Logger.debug("HUMAN IS TOO CLOSE TO BLOCKADE");
-	        			Vector2D agentToTarget = new Vector2D(h.getX() - me.getX(),h.getY() - me.getY());
+	        			Blockade b = yrescue.problem.blockade.BlockadeUtil.getClosestBlockade(location.getID(), this, h.getX(), h.getY());
+	        			Point2D newTarget = yrescue.problem.blockade.BlockadeUtil.getClosestPointToABlockade(b, h.getX(), h.getY());
+	        			Vector2D agentToTarget = new Vector2D(newTarget.getX() - me.getX(),newTarget.getY() - me.getY());
         				agentToTarget = agentToTarget.normalised();
         				agentToTarget = agentToTarget.scale(10000);
 	        			return new ActionClear(this,h.getX() + (int)agentToTarget.getX(),h.getY() + (int)agentToTarget.getY());

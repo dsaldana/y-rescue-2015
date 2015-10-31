@@ -60,7 +60,26 @@ public class BlockadeUtil {
 	
 	public static Blockade getClosestBlockade(EntityID area,Tactics<?> agent,int X,int Y){
 		Area area0 = (Area) agent.world.getEntity(area);
-		List<EntityID> blocks = area0.getBlockades();
+		List<EntityID> blocks = new ArrayList<>();
+		
+		if(area0.getBlockades() != null){
+			Logger.debug("LIST BLOCKS 1 :::::" + area0.getBlockades());
+			blocks.addAll(area0.getBlockades());
+		}
+		for(EntityID next : area0.getNeighbours()){
+			Area area1 = (Area)agent.world.getEntity(next);
+			if(area1 == null){
+				continue;
+			}
+			Logger.debug("Area1 is ::::::: " + area1);
+			Logger.debug("Blockades are ::::::: " + area1.getBlockades());
+			List<EntityID> list1 = area1.getBlockades();
+			//blocks.addAll(list1);
+			if(list1 != null){
+				blocks.addAll(list1);
+			}
+		}
+		Logger.debug("LIST BLOCKS 2 :::::" + blocks);
 		List<Vector2D> distances = new ArrayList<>();
 		Blockade closest = null;
 		double close,far;
@@ -215,6 +234,31 @@ public class BlockadeUtil {
 			yPoints[i] = (int) points[i].getY();
 		}
 		return new java.awt.geom.Area(new Polygon(xPoints, yPoints, points.length));
+	}
+	
+	public static Point2D getClosestPointToABlockade(Blockade b,int x,int y){
+		double distance = Double.MAX_VALUE;
+		Point2D point0 = new Point2D(x,y),pointReturn = null;
+		Polygon p = yrescue.util.GeometricUtil.getPolygon(b.getApexes());
+		for(int i = 0; i < p.npoints; i++){
+			Point2D point1 = new Point2D(p.xpoints[i],p.ypoints[i]);
+			Point2D point2 = null;
+			if(i == (p.npoints - 1)){
+				point2 = new Point2D(p.xpoints[0],p.ypoints[0]);
+			}
+			else{
+				point2 = new Point2D(p.xpoints[i + 1],p.ypoints[i+1]);
+			}
+			Line2D line = new Line2D(point1,point2);
+			Point2D closest = GeometryTools2D.getClosestPointOnSegment(line, point0);
+			double d = GeometryTools2D.getDistance(point0, closest);
+			if(d < distance){
+				pointReturn = closest;
+				distance = d;
+			}
+		}
+		return pointReturn;
+		
 	}
 	
 	public boolean checkBlockadesAround(WorldProvider<?> provider, Area location, int xPos, int yPos){
