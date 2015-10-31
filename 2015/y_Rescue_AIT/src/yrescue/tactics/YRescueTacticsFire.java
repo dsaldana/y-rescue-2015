@@ -324,6 +324,10 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	Logger.info("Adding a MessageBlockedArea");
         	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
         	
+        	if(stuckCounter > 5){
+        		Logger.info("I'll change my target // switch task. Stuck for too long");
+            	return this.switchTask();
+        	}
         	
         	Point2D navTgt = BlockadeUtil.calculateNavigationMove(this);
         	if (navTgt != null){
@@ -389,12 +393,6 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	}
         }
         
-        // Check for buriedness and tries to extinguish fire in a close building
-        if(this.me.getBuriedness() > 0) {
-        	Logger.info("I'm buried at " + me.getPosition());
-            return this.buriednessAction(manager);
-        }
-        
         YRescueBuildingSelector bs = (YRescueBuildingSelector) buildingSelector;
         Logger.info(String.format("I know %d buildings on fire", bs.buildingList.size()));
         Logger.debug("They are: " + bs.buildingList);
@@ -450,10 +448,10 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         		busyHydrantIDs.remove(e.getKey());
         	}
         }
-        if(flagStuck == 1){
+        /*if(flagStuck == 1){
     		busyHydrantIDs.put(this.targetHydrant, currentTime+20);
         	flagStuck = 0;
-        }
+        }*/
         
         Logger.debug("New Busy Hydrants:" + busyHydrantIDs);
                 
@@ -640,6 +638,22 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         return new ActionMove(this, path);
     }
 
+	private Action switchTask() {
+		if(me.isWaterDefined() && me.getWater() < maxPower) {
+        	Logger.info("SWITCH: setting targetHydrant as busy");
+        	if(targetHydrant != null){
+        		busyHydrantIDs.put(this.targetHydrant, getCurrentTime() + 20);
+        	}
+        	flagStuck = 0;
+        	return new ActionRefill(this, refugeIDs, hydrants);
+        }
+		else {
+			Logger.info("SWITCH: new target");
+			this.target = buildingSelector.getNewTarget(getCurrentTime());
+			return moveTarget(getCurrentTime());
+		}
+	}
+
 	private Action buriednessAction(MessageManager manager) {
 		manager.addSendMessage(new MessageFireBrigade(this.me, MessageFireBrigade.ACTION_REST, this.agentID));
 		for(StandardEntity entity : this.world.getObjectsInRange(this.me, this.maxDistance)) {
@@ -647,7 +661,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 		        Building building = (Building)entity;
 		        this.target = building.getID();
 		        //if (building.isOnFire() && (this.world.getDistance(this.agentID, this.target) <= this.maxDistance)) {
-		        if(building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4 && building.isBrokennessDefined() && building.getBrokenness() > 10) {
+		        if(building.isOnFire() && building.isTemperatureDefined() && building.getTemperature() > 40 && building.isFierynessDefined() && building.getFieryness() < 4 && building.isBrokennessDefined() /*&& building.getBrokenness() > 10*/) {
 		    		actionStateMachine.setState(ActionStates.FireFighter.EXTINGUISHING);
 		    		statusStateMachine.setState(StatusStates.ACTING);
 		        	return new ActionExtinguish(this, this.target, this.maxPower);

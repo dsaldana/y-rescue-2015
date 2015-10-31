@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import javax.sound.sampled.Line;
+
 import rescuecore2.log.Logger;
 import rescuecore2.misc.geometry.GeometryTools2D;
 import rescuecore2.misc.geometry.Line2D;
@@ -230,6 +232,27 @@ public class BlockadeUtil {
 		
 	}
 	
+	public static List<Vector2D> repulsionVectors(Blockade b, Tactics<?> agent){
+		Polygon p = yrescue.util.GeometricUtil.getPolygon(b.getApexes());
+		List<Line2D> linesBlock = new ArrayList<>();
+		List<Vector2D> sightLines = new ArrayList<>();
+		for(int i = 0; i < p.npoints; i++){
+			Point2D point1 = new Point2D(p.xpoints[i],p.ypoints[i]);
+			Point2D point2 = null;
+			if(i == (p.npoints - 1)){
+				point2 = new Point2D(p.xpoints[0],p.ypoints[0]);
+			}else{
+				point2 = new Point2D(p.xpoints[i+1], p.ypoints[i+1]);
+			}
+			Line2D line = new Line2D(point1,point2);
+			linesBlock.add(line);
+		}
+		for(int i = 0; i < 360; i += 10){
+			Vector2D sight = new Vector2D(Math.cos(Math.toRadians((double)i)),Math.sin(Math.toRadians(i)));
+			sightLines.add(sight);
+		}
+		return sightLines;
+	}
 	
 	public static Point2D calculateStuckMove(Area from, Area to, Tactics<?> agent,int currentTime){
 		System.out.println(String.format("Area1=%s, Area2=%s", from, to));
