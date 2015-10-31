@@ -177,6 +177,10 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
 				ActionMove action = (ActionMove)cmd;
 				
 				if(PositionUtil.equalsPoint(action.getPosX(), action.getPosY(), tactics.me().getX(), tactics.me().getY(), 500)){
+					Logger.debug(String.format(
+						"move (%d, %d) // myPos (%d, %d)", 
+						action.getPosX(), action.getPosY(), tactics.me().getX(), tactics.me().getY()
+					));
 					Logger.info("I'm right where I wanted to be. Not stuck");
 					return false;
 				}

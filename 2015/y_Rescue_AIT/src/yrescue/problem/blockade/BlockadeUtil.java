@@ -179,7 +179,8 @@ public class BlockadeUtil {
 						agentPoint.getX() - repulsionOrigin.getX(), agentPoint.getY() - repulsionOrigin.getY()
 				);
 				if (distance > 0){
-					repulsions.add(repulsion.normalised().scale(1.0 / distance));
+					Logger.debug("dist to blockade " + distance);
+					repulsions.add(repulsion.normalised().scale(stuckAgent.sightDistance / distance));
 				}
 				else {
 					repulsions.add(repulsion.normalised().scale(1.0E12));
@@ -199,7 +200,9 @@ public class BlockadeUtil {
 			resultant.add(repulsions.get(i));
 		}
 		
-		resultant.scale(1000000);
+		resultant.scale(1E18);
+		
+		Logger.debug("Repulsion resultant vector: " + resultant);
 		
 		Line2D intendedTrajectory = new Line2D(agentPoint, agentPoint.plus(resultant));
 		
