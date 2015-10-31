@@ -137,6 +137,92 @@ public class BlockadeUtil {
 		return passable;
 	}
 	
+	public static List<EntityID> getNearBlockades(Tactics<?> agent){
+		List<EntityID> blockades = new ArrayList<>();
+		
+        Area location = (Area)agent.location;
+        
+        if(location.isBlockadesDefined()){
+        	blockades.addAll(location.getBlockades());
+        }
+        
+        for(EntityID neigh : location.getNeighbours()){
+        	StandardEntity e = agent.world.getEntity(neigh);
+        	
+        	if(e instanceof Area){
+        		Area a = (Area) e;
+        		if(a.isBlockadesDefined()) {
+        			blockades.addAll(a.getBlockades());
+        		}
+        	}
+        }
+        
+        return blockades;
+	}
+	
+	public static Point2D calculateNavigationMove(Tactics<?> stuckAgent){
+		
+		Point2D agentPoint = new Point2D(stuckAgent.me().getX(), stuckAgent.me().getY());
+		
+		List<Vector2D> repulsions = new ArrayList<>();
+		
+		for(EntityID blkID : BlockadeUtil.getNearBlockades(stuckAgent)){
+			Blockade b = (Blockade) stuckAgent.world.getEntity(blkID);
+			if(b.isPositionDefined()){
+				
+				Point2D repulsionOrigin = new Point2D(b.getX(), b.getY());
+				double magnitude = GeometryTools2D.getDistance(agentPoint, repulsionOrigin);
+				
+				Vector2D repulsion = new Vector2D(
+						agentPoint.getX() - repulsionOrigin.getX(), agentPoint.getY() - repulsionOrigin.getY()
+				);
+				
+				repulsions.add(repulsion.normalised().scale(magnitude));
+			}
+		}
+		
+		if(repulsions.size() < 1) {
+			Logger.info("Not enough repulsion vectors");
+			return null;
+		}
+		
+		Vector2D resultant = repulsions.get(0);
+		
+		for(int i = 1; i < repulsions.size(); i++){
+			resultant.add(repulsions.get(i));
+		}
+		
+		Line2D intendedTrajectory = new Line2D(agentPoint, agentPoint.plus(resultant));
+		
+		List<Edge> areaEdges = ((Area)stuckAgent.location).getEdges();
+		for(Edge e : areaEdges){
+			Line2D edgeLine = e.getLine();
+			Point2D intersection = GeometryTools2D.getSegmentIntersectionPoint(intendedTrajectory, edgeLine);
+			if(intersection != null){
+				Logger.debug("Navigation target intersects with edge "+ e);
+				Logger.debug("Returning intersection point " + intersection);
+				return intersection;
+			}
+		}
+		
+		Logger.debug("Navigation target does not intersect with Area edges, returning it: " + agentPoint.plus(resultant));
+		return agentPoint.plus(resultant);
+		
+		/*Precise: raytrace from agent to blockade edge, calculating repulsion
+		 List<Line2D> sightLines = new ArrayList<>();
+		for(int angle = 0; angle < 360; angle += 10){
+			Vector2D vec = new Vector2D(
+				Math.cos(Math.toRadians(angle)), 
+				Math.sin(Math.toRadians(angle))
+			).scale(1000000);
+			
+			sightLines.add(new Line2D(agentPoint, vec));
+		}
+		GeometryTools2D.getSegmentIntersectionPoint(l1, l2);
+		*/
+		
+	}
+	
 	
 	public static Point2D calculateStuckMove(Area from, Area to, Tactics<?> agent,int currentTime){
 		System.out.println(String.format("Area1=%s, Area2=%s", from, to));

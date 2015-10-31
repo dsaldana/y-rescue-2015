@@ -49,6 +49,7 @@ import yrescue.kMeans.KMeans;
 import yrescue.message.event.MessageHydrantEvent;
 import yrescue.message.information.MessageBlockedArea;
 import yrescue.message.information.MessageHydrant;
+import yrescue.problem.blockade.BlockadeUtil;
 import yrescue.problem.blockade.BlockedArea;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
@@ -88,6 +89,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	
 	protected List<EntityID> clusterToVisit;
 	protected EntityID clusterCenter;
+	
+	public int stuckCounter;
 	
 	protected Map<RouteCacheKey, List<EntityID>> routeBreadthFirstCache;
 	
@@ -129,6 +132,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         lastPath = new ArrayList<>();
         busyHydrantIDs = new HashMap<>();
         lastWater = me.getWater();
+        
+        stuckCounter = 0;
         
         //Building the Lists of Refuge and Hydrant
         Collection<StandardEntity> refuge = this.world.getEntitiesOfType(StandardEntityURN.REFUGE);
@@ -296,12 +301,42 @@ public class YRescueTacticsFire extends BasicTacticsFire {
        
         // Check for buriedness and tries to extinguish fire in a close building
         if(this.me.getBuriedness() > 0) {
-        	System.out.println("I'm buried at " + me.getPosition());
+        	Logger.info("I'm buried at " + me.getPosition());
             return this.buriednessAction(manager);
         }
         
         // Check if the agent is stuck
         if (this.tacticsAgent.stuck(currentTime)){
+        	
+        	if(statusStateMachine.getCurrentState().equals(StatusStates.STUCK) || 
+        			statusStateMachine.getCurrentState().equals(StatusStates.STUCK_NAVIGATION)){
+        		
+        		stuckCounter++;
+        		Logger.debug("incrementing stuck counter");
+        	}
+        	else{
+        		Logger.debug("setting stuck counter to 1");
+        		stuckCounter = 1;
+        	}
+        	Logger.info("I'm stuck for " + stuckCounter + " timesteps =/");
+        	
+        	statusStateMachine.setState(StatusStates.STUCK);
+        	Logger.info("Adding a MessageBlockedArea");
+        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+        	
+        	
+        	Point2D navTgt = BlockadeUtil.calculateNavigationMove(this);
+        	if (navTgt != null){
+        		
+        		List<EntityID> fooPath = new ArrayList<>();
+        		fooPath.add(location.getID());
+        		
+        		statusStateMachine.setState(StatusStates.STUCK_NAVIGATION);
+        		Logger.info(String.format("Will attempt stuck-move to %s of %s", navTgt, fooPath));
+        		return new ActionMove(this, fooPath, (int)navTgt.getX(), (int)navTgt.getY());
+        	}
+        	
+        	/*
         	this.flagOnce = 1;
         	this.target = this.buildingSelector.getNewTarget(currentTime);
         	this.flagStuck = 1;
@@ -314,7 +349,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 		        	//System.out.println(String.format("Stuck! location=%s, previousPath.get(0)=%s", location, previousPath.get(0)));
 		        	//isStuck = true;
 	        		if(location instanceof Area){
-			        	Point2D destinationStuck = yrescue.problem.blockade.BlockadeUtil.calculateStuckMove((Area)location, (Area)this.world.getEntity(lastPath.get(0)), this,currentTime);
+			        	Point2D destinationStuck = BlockadeUtil.calculateStuckMove((Area)location, (Area)this.world.getEntity(lastPath.get(0)), this,currentTime);
 			        	List<EntityID> newPath = new ArrayList<>();
 			        	newPath.add(location.getID());
 			        	manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
@@ -326,10 +361,15 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	catch(Exception e){
         		Logger.error("ERROR on attempting stuck move.");
         		target = buildingSelector.getNewTarget(currentTime);
-        	}
+        	}*/
     	}
+        else {
+        	statusStateMachine.setState(StatusStates.ACTING);
+        	stuckCounter = 0;
+        }
         
-        if(this.me.getDamage() >= 100) { //|| this.someoneOnBoard()
+        if(this.me.getDamage() >= 50) { //|| this.someoneOnBoard()
+        	statusStateMachine.setState(StatusStates.HURT);
         	return moveRefuge(currentTime);
         }
         
