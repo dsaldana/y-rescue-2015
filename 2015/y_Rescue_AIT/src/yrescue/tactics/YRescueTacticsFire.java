@@ -335,6 +335,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         		Logger.info(String.format("Will attempt stuck-move to %s of %s", navTgt, fooPath));
         		return new ActionMove(this, fooPath, (int)navTgt.getX(), (int)navTgt.getY());
         	}
+        	else {
+        		Logger.info("I have no navigation tgt... will remain stuck");
+        	}
         	
         	/*
         	this.flagOnce = 1;

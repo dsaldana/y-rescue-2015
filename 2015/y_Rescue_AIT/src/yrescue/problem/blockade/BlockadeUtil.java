@@ -173,13 +173,18 @@ public class BlockadeUtil {
 			if(b.isPositionDefined()){
 				
 				Point2D repulsionOrigin = new Point2D(b.getX(), b.getY());
-				double magnitude = GeometryTools2D.getDistance(agentPoint, repulsionOrigin);
+				double distance = GeometryTools2D.getDistance(agentPoint, repulsionOrigin);
 				
 				Vector2D repulsion = new Vector2D(
 						agentPoint.getX() - repulsionOrigin.getX(), agentPoint.getY() - repulsionOrigin.getY()
 				);
+				if (distance > 0){
+					repulsions.add(repulsion.normalised().scale(1.0 / distance));
+				}
+				else {
+					repulsions.add(repulsion.normalised().scale(1.0E12));
+				}
 				
-				repulsions.add(repulsion.normalised().scale(magnitude));
 			}
 		}
 		
@@ -193,6 +198,8 @@ public class BlockadeUtil {
 		for(int i = 1; i < repulsions.size(); i++){
 			resultant.add(repulsions.get(i));
 		}
+		
+		resultant.scale(1000000);
 		
 		Line2D intendedTrajectory = new Line2D(agentPoint, agentPoint.plus(resultant));
 		

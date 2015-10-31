@@ -25,6 +25,9 @@ public class PathUtil {
 	}
 	
 	public static final String NODE_CACHE_FILE_NAME = "/tmp/breadth_first_all_to_all.txt";
+	public static final String BUILDING_CACHE_FILE_NAME = "/tmp/buildings_cache.txt";
+	public static final String ROADS_CACHE_FILE_NAME = "/tmp/road_cache.txt";
+	public static final String NODE_CACHE_DB_FILE_NAME = "/tmp/node_cache.db";
 	
 	/**
 	 * Removes a building from the destination of a path if it is on fire
