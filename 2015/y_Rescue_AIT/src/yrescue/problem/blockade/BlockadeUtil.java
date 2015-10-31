@@ -58,7 +58,7 @@ public class BlockadeUtil {
 		return closest;
 	}
 	
-	public static Blockade getClosestBlockade(EntityID area,Tactics<?> agent){
+	public static Blockade getClosestBlockade(EntityID area,Tactics<?> agent,int X,int Y){
 		Area area0 = (Area) agent.world.getEntity(area);
 		List<EntityID> blocks = area0.getBlockades();
 		List<Vector2D> distances = new ArrayList<>();
@@ -68,7 +68,7 @@ public class BlockadeUtil {
 		far = Double.MIN_VALUE;
 		for(EntityID next : blocks){
 			Blockade next1 = (Blockade)agent.world.getEntity(next);
-			Vector2D d = new Vector2D(next1.getX() - agent.me().getX(),next1.getY() - agent.me().getY());
+			Vector2D d = new Vector2D(next1.getX() - X,next1.getY() - Y);
 			distances.add(d); 
 		}
 		//Get closest and furthest blockades on the list.
