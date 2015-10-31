@@ -44,8 +44,8 @@ public class PathUtil {
     	}
 	}
 	
-	public static Map<EntityID, Map<EntityID, List<EntityID>>> getRouteCache(){
-		Map<EntityID, Map<EntityID, List<EntityID>>> routeCache = new HashMap<EntityID, Map<EntityID, List<EntityID>>>();
+	public static Map<RouteCacheKey, List<EntityID>> getRouteCache(){
+		Map<RouteCacheKey, List<EntityID>> routeCache = new HashMap<RouteCacheKey, List<EntityID>>();
 		
 		try (BufferedReader br = new BufferedReader(new FileReader(PathUtil.NODE_CACHE_FILE_NAME))) {
 		    String line;
@@ -62,9 +62,10 @@ public class PathUtil {
 		    				nodeList.add(new EntityID(node));
 		    			}
 		    			
-		    			Map<EntityID, List<EntityID>> lMap = new HashMap<EntityID, List<EntityID>>();
-		    			lMap.put(new EntityID(to), nodeList);
-		    			routeCache.put(new EntityID(to), lMap);
+		    			
+		    			RouteCacheKey lKey = new RouteCacheKey(from, to);
+		    			routeCache.put(lKey, nodeList);
+		    			Logger.trace("Cache from "+ from +" to " + to);
 		    		}
 		    		catch(Exception e){}
 		    	}

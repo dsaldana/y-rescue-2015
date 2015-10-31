@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -12,7 +13,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import java.util.Random;
 
 import org.apache.commons.logging.impl.Log4JLogger;
@@ -20,10 +20,10 @@ import org.apache.log4j.MDC;
 
 
 
+
+
 //import adf.util.map.PositionUtil;
 import adk.team.util.graph.PositionUtil;
-
-
 import adk.sample.basic.event.BasicAmbulanceEvent;
 import adk.sample.basic.event.BasicCivilianEvent;
 import adk.sample.basic.event.BasicFireEvent;
@@ -77,12 +77,13 @@ import yrescue.statemachine.StateMachine;
 import yrescue.util.DistanceSorter;
 import yrescue.util.GeometricUtil;
 import yrescue.util.PathUtil;
+import yrescue.util.RouteCacheKey;
 import yrescue.util.YRescueVictimSelector;
 import yrescue.util.target.HumanTarget;
 
 public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
-	protected final int EXPLORE_TIME_STEP_TRESH = 8;
+	protected final int EXPLORE_TIME_STEP_TRESH = 14;
 	protected int EXPLORE_TIME_LIMIT = EXPLORE_TIME_STEP_TRESH;
 	protected StateMachine stateMachine = null;
 	protected int timeoutAction = 0;
@@ -91,7 +92,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected List<EntityID> clusterToVisit;
 	protected List<EntityID> clusterCentroids;
 	protected EntityID clusterCenter;
-	protected Map<EntityID, Map<EntityID, List<EntityID>>> routeBreadthFirstCache;
+	protected Map<RouteCacheKey, List<EntityID>> routeBreadthFirstCache;
+	protected List<Integer> targetBurriednessHist;
 	
 	private final boolean DEBUG = false;
 	
@@ -180,7 +182,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
     @Override
     public RouteSearcher initRouteSearcher() {
-        return new BasicRouteSearcher(this);
+        return new BasicRouteSearcher(this, routeBreadthFirstCache);
     }
 
     @Override
@@ -214,6 +216,9 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	                manager.addSendMessage(new MessageCivilian(c));
 	                Logger.trace("  added to victimSelector and sent a message reporting it");
             	}
+            	else{
+            		this.victimSelector.remove(c);
+            	}
             }
             else if(entity instanceof Human) {
             	Human h = (Human) entity;
@@ -227,7 +232,10 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             	
             	if(h.getBuriedness() > 0 && h.getHP() > 0 && !isOnFire){
             		this.victimSelector.add(h);
-            		Logger.trace("  added to victimSelector.");
+            		Logger.trace("  added " + h + "to victimSelector.");
+            	}
+            	else{
+            		this.victimSelector.remove(h);
             	}
                 
             }
@@ -446,12 +454,22 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		return this.moveTarget(currentTime);
         	}
         	
-        	if(victim.getBuriedness() > 0 && victim.getHP() > 0){
+        	// If we are in the target position and the target is not there
+        	HumanTarget ht = ((YRescueVictimSelector) this.victimSelector).getHumanTarget(victim.getID());
+        	if(ht != null && ht.getPreviousBurriednessUpdatedTime() == currentTime -1 && ht.getPreviousBurriedness() == ht.getHuman().getBuriedness()){
+        		Logger.info("Victim not in previous location anymore (Burriedness stays the same), selecting new target ..");
+        		this.victimSelector.remove(this.target);
+        		this.target = null;
+        		this.stateMachine.setState((ActionStates.Ambulance.SELECT_NEW_TARGET));
+        	}
+        	else if(victim.getBuriedness() > 0 && victim.getHP() > 0){
+        		if(ht != null) ht.updateBurriedness(currentTime);
         		Logger.info("Send rescue command..");
         		return new ActionRescue(this, this.target);
         	}
         	else if (victim.getHP() <= 0){
         		Logger.info("Not rescuing, victim is dead. Will look for new target");
+        		this.target = null;
         		victimSelector.remove(victim);
         		this.stateMachine.setState((ActionStates.Ambulance.SELECT_NEW_TARGET));
         	}
@@ -722,7 +740,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	@Override
 	public HeatMap initializeHeatMap() {
 		// Prepare HeatMap
-    	HeatMap heatMap = new HeatMap(this.agentID, this.world);
+    	HeatMap heatMap = new HeatMap(this.agentID, this.world, this.routeBreadthFirstCache);
         for (Entity next : this.getWorld()) {
             if (next instanceof Area) {
             	// Ignore very small areas to explore

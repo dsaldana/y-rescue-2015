@@ -46,6 +46,8 @@ public class HumanTarget {
 	private HumanTypes hType;
 	private RouteSearcher routeSearcher;
 	private WorldProvider<? extends Human> provider;
+	private int previousBurriedness = 0;
+	private int previousBurriednessUpdateTime = 0;
 	
 	public final int AVERAGE_MOVE_TO_TARGET = 4;
 	
@@ -55,6 +57,7 @@ public class HumanTarget {
 		this.hType = hType;
 		this.provider = provider;
 		this.routeSearcher = routeSearcher;
+		this.previousBurriedness = h.getBuriedness();
 		
 		if(hType.equals(HumanTypes.CIVILIAN)){
 			this.priorityWeight = 0.55f;
@@ -86,8 +89,23 @@ public class HumanTarget {
 		return this.utility;
 	}
 	
+	public int getPreviousBurriedness(){
+		return this.previousBurriedness;
+	}
+	
+	public int getPreviousBurriednessUpdatedTime(){
+		return this.previousBurriednessUpdateTime;
+	}
+	
+	public void updateBurriedness(int time){
+		this.previousBurriedness = this.human.getBuriedness();
+		this.previousBurriednessUpdateTime = time;
+		
+	}
+	
 	public void updateUtility(int time, Human ambulance, List<HumanTarget> ambulanceList){
-		if(time == this.lastTimeUpdated && Math.abs(time - this.lastTimeUpdated) > 4) return;
+		updateBurriedness(time);
+		if(time == this.lastTimeUpdated) return; //&& Math.abs(time - this.lastTimeUpdated) > 4
 		if(time > 120) this.priorityWeight = 1.0f;
 		
 		float actualUtility = 0;

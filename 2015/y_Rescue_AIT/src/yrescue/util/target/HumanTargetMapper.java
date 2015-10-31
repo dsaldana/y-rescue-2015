@@ -108,6 +108,10 @@ public class HumanTargetMapper {
     	if(humanList.size() <= 0) return null;
     	return humanList.get(0);
     }
+    
+    public HumanTarget getTarget(EntityID ent){
+    	return humanMap.get(ent);
+    }
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private List<HumanTarget> orderHumanTargetList(List<HumanTarget> htList) {

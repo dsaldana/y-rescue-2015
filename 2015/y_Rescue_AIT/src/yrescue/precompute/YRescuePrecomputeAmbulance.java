@@ -121,6 +121,7 @@ public class YRescuePrecomputeAmbulance extends PrecomputeAmbulance implements R
 			        		sb.append(" ");
 		        		}
 		        		writer.write(sb.toString());
+		        		writer.write("\n");
 	        		}
 	        	}
 	        }
