@@ -435,7 +435,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         		Logger.debug("Human Close to blockade:      " + humanIsCloseToABlockade(h, location.getID()));
         		//System.out.println("HUMAN IS TOO CLOSE TO BLOCKADE:           " +  humanIsCloseToABlockade(h, location.getID()));
         		if(humanIsCloseToABlockade(h, location.getID())){//Human is too close to a blockade, he is probably stuck!!!
-        			if(this.world.getDistance(me.getID(), h.getID()) < clearRange - 100){
+        			if(this.world.getDistance(me.getID(), h.getID()) < clearRange - 1000){
 	        			System.out.println("HUMAN IS TOO CLOSE TO BLOCKADE");
 	        			Logger.debug("HUMAN IS TOO CLOSE TO BLOCKADE");
 	        			Blockade b = yrescue.problem.blockade.BlockadeUtil.getClosestBlockade(location.getID(), this, h.getX(), h.getY());
@@ -448,6 +448,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         				Logger.debug("MOVING TO HUMAN");
         				List<EntityID> newPath = new ArrayList<>();
         				newPath.add(location.getID());
+        				if(!h.getPosition().equals(me.getID())){
+        					newPath.add(h.getPosition());
+        				}
         				return new ActionMove(this, newPath,h.getX(),h.getY());
         			}
         			
