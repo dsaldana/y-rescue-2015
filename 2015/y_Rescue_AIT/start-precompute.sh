@@ -5,8 +5,8 @@ classpath=.:bin:library/util/default/commons-logging-1.1.1.jar:library/util/defa
 
 echo "Will connect to: $1"
 
-#command: ./start-all-agents.sh [SERVER IP]
+#command: ./start-precompute.sh [SERVER IP]
  
-java -Xms3G -Xmx7G -classpath $classpath adk.Main -h:$1 -pre:true
+java -Xms3G -Xmx7G -classpath $classpath adk.Main -h:$1 -pre:true -fb:1 -fs:0 -pf:1 -po:0 -at:1 -ac:0
 
 echo "Agents launched. To terminate them, hit Ctrl+C in this terminal."

@@ -186,7 +186,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     		}
     	}
 
-    	Logger.info("Cluster to visit :" + clusterToVisit);
+    	Logger.debug("Cluster to visit :" + clusterToVisit);
     	if(clusterToVisit.size() > 0){
     		Building b = (Building) world.getEntity(clusterCenter);
     		this.target = b.getID();
@@ -219,7 +219,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         */
         
         long secsToProcess = (System.currentTimeMillis() - prepStart);
-        Logger.debug(String.format(
+        Logger.info(String.format(
     		">>>> FireFighter ON. maxDistance=%d, sightDistance=%d, prepTime=%d ms ----", 
     		this.maxDistance, this.sightDistance, secsToProcess
     	));
