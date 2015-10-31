@@ -91,7 +91,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected Map<RouteCacheKey, List<EntityID>> routeBreadthFirstCache;
 	protected List<Integer> targetBurriednessHist;
 	
-	private final boolean DEBUG = true;
+	private final boolean DEBUG = false;
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
@@ -239,12 +239,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                 Building b = (Building) entity;
                 if(b.isOnFire()) {
                     manager.addSendMessage(new MessageBuilding(b));
-                    if(b.isTemperatureDefined() && b.getTemperature() > 40 && b.isFierynessDefined() && b.getFieryness() < 4 && b.isBrokennessDefined() && b.getBrokenness() > 10) {
-                    	heatMap.removeEntityID(b.getID());
-                    }
+                    Logger.trace("Removing burning building from heatMap " + b);
+                    //if(b.isTemperatureDefined() && b.getTemperature() > 40 && b.isFierynessDefined() && b.getFieryness() < 4 && b.isBrokennessDefined() && b.getBrokenness() > 10) {
+                    heatMap.removeEntityID(b.getID());
+                    //}
                 }
-                if(b.isOnFire() || b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT) || b.isIgnitionDefined()){
-                	Logger.trace("Removing completely burnt Building from heatMap" + b);
+                if(b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT)){
+                	Logger.trace("Removing COMPLETELY burnt building from heatMap" + b);
                 	heatMap.removeEntityID(b.getID());
                 }
             }
@@ -357,8 +358,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		if(this.location.getID().getValue() == ((Human) this.world.getEntity(this.target)).getPosition().getValue()){
 	        		if(this.world.getEntity(this.location.getID()) instanceof Building){
 	        			Building b = (Building) this.world.getEntity(this.location.getID());
-	        			////////
-	        			if(b.isOnFire() || b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT)){
+	        			if(b.isOnFire()){
 	        				((YRescueVictimSelector) this.victimSelector).remove(this.target);
 	        				this.target = null;
 	        			}
@@ -499,7 +499,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         		return new ActionUnload(this);
         	}
-        	else if(this.tacticsAgent.stuck(currentTime)&&this.someoneOnBoard()){
+        	else if(this.tacticsAgent.stuck(currentTime) && this.someoneOnBoard()){
         		Logger.info("I'm carrying someone but I'm stuck, selecting new target");
         		this.target = null;
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
@@ -561,13 +561,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                 	this.stateMachine.setState(ActionStates.Ambulance.RESCUING);
                     return new ActionRescue(this, this.target);
                 }
-                //Drop the dead civilian
-                if (this.someoneOnBoard() && victim.getHP()<=0)
-                {	
-                	
-                	this.target = this.victimSelector.getNewTarget(currentTime);
-                	return new ActionUnload(this);
-                }
                 
                 // In the case of rescue already
                 if (victim instanceof Civilian) {
@@ -600,7 +593,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         
         Logger.info("Cannot define a target or action, going to explore!");
         getNewExplorationTarget(currentTime);
-        
         return moveTarget(currentTime);
     }
 
@@ -652,9 +644,18 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	 * Check if someone is on board, use a location with some tolerance
 	 */
 	public boolean someoneOnBoard() {
-		if(this.target != null && (this.world.getEntity(this.target) instanceof Civilian || this.world.getEntity(this.target) instanceof Human)){
+		if(this.target != null && /*(this.world.getEntity(this.target) instanceof Civilian ||*/ world.getEntity(this.target) instanceof Human){
 			Human h = (Human) this.world.getEntity(this.target);
-			int traveledDistance = 0;
+			
+			if(h.isPositionDefined() && h.getPosition().equals(me.getID())){
+				Logger.info("" + h + " is on board.");
+				return true;
+			}
+			else {
+				Logger.info("Nobody on board.");
+				return false;
+			}
+			/*int traveledDistance = 0;
 			int burriedness = 0;
 			int hp = 0;
 			
@@ -662,11 +663,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 			if(h.isBuriednessDefined()) burriedness = h.getBuriedness();
 			if(h.isHPDefined()) hp = h.getHP();
 					
-			return PositionUtil.equalsPoint(this.world.getEntity(this.target).getLocation(world), this.me.getLocation(world), 50) && burriedness <= 0 && hp > 0 && traveledDistance <= 0;
+			return PositionUtil.equalsPoint(this.world.getEntity(this.target).getLocation(world), this.me.getLocation(world), 50) && burriedness <= 0 && hp > 0 && traveledDistance <= 0;*/
 		}
 		else{
+			Logger.warn("WARNING! Target " + target + " is not a Human!");
 			return false;
 		}
+			
     }
 	
 	/**
@@ -676,7 +679,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	public Action moveTarget(int currentTime) {
         List<EntityID> path = getPathToTarget(currentTime);
         if(path != null && !path.isEmpty()){
-        	
         	Entity ent = this.world.getEntity(path.get(path.size() -1));
         	if(ent instanceof Building){
         		Building b = (Building) ent;
@@ -690,8 +692,6 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	}
         }
         
-        
-        //if ((Area)this.location)
         return new ActionMove(this, path != null ? path : this.routeSearcher.noTargetMove(currentTime, this.me));
     }
 	
