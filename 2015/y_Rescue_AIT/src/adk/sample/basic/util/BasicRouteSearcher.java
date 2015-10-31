@@ -103,17 +103,6 @@ public class BasicRouteSearcher implements RouteSearcher {
     	}
     	List<EntityID> path = this.search.breadthFirstSearch(from, to);
     	
-    	for(int i=0; i < path.size(); i++){
-    		for(int j=0; i < path.size(); i++){
-    			if(i == j) continue;
-    			RouteCacheKey lMapKey = new RouteCacheKey(path.get(i).getValue(), path.get(j).getValue());
-    			if(!this.mapCache.containsKey(lMapKey)){
-    				List<EntityID> subPath = path.subList(i, i+j);
-    				this.mapCache.put(lMapKey, subPath);
-    			}
-        	}
-    	}
-    	
         return path;
     }
 }
