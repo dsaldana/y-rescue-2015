@@ -40,6 +40,8 @@ import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
 import yrescue.util.DistanceSorter;
 import yrescue.util.GeometricUtil;
+import yrescue.util.PathUtil;
+import yrescue.util.RouteCacheKey;
 import yrescue.action.ActionRefill;
 import yrescue.heatmap.HeatMap;
 import yrescue.heatmap.HeatNode;
@@ -87,6 +89,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	protected EntityID clusterCenter;
 	
 	public EntityID targetHydrant;
+	protected Map<RouteCacheKey, List<EntityID>> routeBreadthFirstCache;
 	
 	@Override
     public String getTacticsName() {
@@ -100,7 +103,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 
     @Override
     public RouteSearcher initRouteSearcher() {
-    	return new BasicRouteSearcher(this);
+    	return new BasicRouteSearcher(this, this.routeBreadthFirstCache);
         //return new YRescueRouteSearcher(this, new RouteManager(this.world));
     }
 
@@ -119,7 +122,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
     public void preparation(Config config, MessageManager messageManager) {
     	long prepStart = System.currentTimeMillis();
     	
-        this.routeSearcher = this.initRouteSearcher();
+    	routeBreadthFirstCache = PathUtil.getRouteCache();
+    	this.routeSearcher = new BasicRouteSearcher(this, routeBreadthFirstCache);
+    	
         this.buildingSelector = this.initBuildingSelector();
         lastPath = new ArrayList<>();
         busyHydrantIDs = new HashMap<>();

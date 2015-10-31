@@ -65,6 +65,7 @@ import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
 import yrescue.util.GeometricUtil;
 import yrescue.util.PathUtil;
+import yrescue.util.RouteCacheKey;
 import yrescue.util.YRescueImpassableSelector;
 
 public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedAreaSelectorProvider {
@@ -102,6 +103,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     
     protected List<EntityID> clusterToVisit;
 	protected EntityID clusterCenter;
+	protected Map<RouteCacheKey, List<EntityID>> routeBreadthFirstCache;
 
     @Override
     public String getTacticsName() {
@@ -122,7 +124,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 
     @Override
     public RouteSearcher initRouteSearcher() {
-        return new BasicRouteSearcher(this);
+    	return new BasicRouteSearcher(this, this.routeBreadthFirstCache);
     }
     
     @Override
@@ -138,7 +140,9 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
     public void preparation(Config config, MessageManager messageManager) {
     	long prepStart = System.currentTimeMillis();
     	
-        this.routeSearcher = this.initRouteSearcher();
+    	routeBreadthFirstCache = PathUtil.getRouteCache();
+    	this.routeSearcher = new BasicRouteSearcher(this, routeBreadthFirstCache);
+
         this.impassableSelector = this.initImpassableSelector();
         this.blockedAreaSelector = new BlockedAreaSelector(this);
         this.beforeMove = false;
