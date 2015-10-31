@@ -425,7 +425,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         }
         
         /* Test if there's a human stuck in a Blockade with no needing of a message. */
-        Collection<StandardEntity> objectsInRange = this.world.getObjectsInRange(me.getID(), clearRange*2);// CHECK IF THIS IS THE RIGHT RANGE!!!
+        Collection<StandardEntity> objectsInRange = this.world.getObjectsInRange(me.getID(), sightDistance);// CHECK IF THIS IS THE RIGHT RANGE!!!
         Logger.debug("Objects in range " + objectsInRange);
         for(StandardEntity next : objectsInRange){
         	if((next instanceof Human) && !(next.getID().equals(me.getID()))){
@@ -436,7 +436,6 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         		//System.out.println("HUMAN IS TOO CLOSE TO BLOCKADE:           " +  humanIsCloseToABlockade(h, location.getID()));
         		if(humanIsCloseToABlockade(h, location.getID())){//Human is too close to a blockade, he is probably stuck!!!
         			if(this.world.getDistance(me.getID(), h.getID()) < clearRange - 1000){
-	        			System.out.println("HUMAN IS TOO CLOSE TO BLOCKADE");
 	        			Logger.debug("HUMAN IS TOO CLOSE TO BLOCKADE");
 	        			Blockade b = yrescue.problem.blockade.BlockadeUtil.getClosestBlockade(location.getID(), this, h.getX(), h.getY());
 	        			Point2D newTarget = yrescue.problem.blockade.BlockadeUtil.getClosestPointToABlockade(b, h.getX(), h.getY());
