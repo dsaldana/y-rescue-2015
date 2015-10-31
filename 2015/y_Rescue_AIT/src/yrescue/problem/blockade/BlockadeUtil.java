@@ -58,9 +58,28 @@ public class BlockadeUtil {
 		return closest;
 	}
 	
-	public static Blockade getClosestBlockade(EntityID area,Tactics<?> agent){
+	public static Blockade getClosestBlockade(EntityID area,Tactics<?> agent,int X,int Y){
 		Area area0 = (Area) agent.world.getEntity(area);
-		List<EntityID> blocks = area0.getBlockades();
+		List<EntityID> blocks = new ArrayList<>();
+		
+		if(area0.getBlockades() != null){
+			Logger.debug("LIST BLOCKS 1 :::::" + area0.getBlockades());
+			blocks.addAll(area0.getBlockades());
+		}
+		for(EntityID next : area0.getNeighbours()){
+			Area area1 = (Area)agent.world.getEntity(next);
+			if(area1 == null){
+				continue;
+			}
+			Logger.debug("Area1 is ::::::: " + area1);
+			Logger.debug("Blockades are ::::::: " + area1.getBlockades());
+			List<EntityID> list1 = area1.getBlockades();
+			//blocks.addAll(list1);
+			if(list1 != null){
+				blocks.addAll(list1);
+			}
+		}
+		Logger.debug("LIST BLOCKS 2 :::::" + blocks);
 		List<Vector2D> distances = new ArrayList<>();
 		Blockade closest = null;
 		double close,far;
@@ -68,7 +87,7 @@ public class BlockadeUtil {
 		far = Double.MIN_VALUE;
 		for(EntityID next : blocks){
 			Blockade next1 = (Blockade)agent.world.getEntity(next);
-			Vector2D d = new Vector2D(next1.getX() - agent.me().getX(),next1.getY() - agent.me().getY());
+			Vector2D d = new Vector2D(next1.getX() - X,next1.getY() - Y);
 			distances.add(d); 
 		}
 		//Get closest and furthest blockades on the list.
@@ -116,6 +135,99 @@ public class BlockadeUtil {
 		
 		
 		return passable;
+	}
+	
+	public static List<EntityID> getNearBlockades(Tactics<?> agent){
+		List<EntityID> blockades = new ArrayList<>();
+		
+        Area location = (Area)agent.location;
+        
+        if(location.isBlockadesDefined()){
+        	blockades.addAll(location.getBlockades());
+        }
+        
+        for(EntityID neigh : location.getNeighbours()){
+        	StandardEntity e = agent.world.getEntity(neigh);
+        	
+        	if(e instanceof Area){
+        		Area a = (Area) e;
+        		if(a.isBlockadesDefined()) {
+        			blockades.addAll(a.getBlockades());
+        		}
+        	}
+        }
+        
+        return blockades;
+	}
+	
+	public static Point2D calculateNavigationMove(Tactics<?> stuckAgent){
+		
+		Point2D agentPoint = new Point2D(stuckAgent.me().getX(), stuckAgent.me().getY());
+		
+		List<Vector2D> repulsions = new ArrayList<>();
+		
+		for(EntityID blkID : BlockadeUtil.getNearBlockades(stuckAgent)){
+			Blockade b = (Blockade) stuckAgent.world.getEntity(blkID);
+			if(b.isPositionDefined()){
+				
+				Point2D repulsionOrigin = new Point2D(b.getX(), b.getY());
+				double distance = GeometryTools2D.getDistance(agentPoint, repulsionOrigin);
+				
+				Vector2D repulsion = new Vector2D(
+						agentPoint.getX() - repulsionOrigin.getX(), agentPoint.getY() - repulsionOrigin.getY()
+				);
+				if (distance > 0){
+					repulsions.add(repulsion.normalised().scale(1.0 / distance));
+				}
+				else {
+					repulsions.add(repulsion.normalised().scale(1.0E12));
+				}
+				
+			}
+		}
+		
+		if(repulsions.size() < 1) {
+			Logger.info("Not enough repulsion vectors");
+			return null;
+		}
+		
+		Vector2D resultant = repulsions.get(0);
+		
+		for(int i = 1; i < repulsions.size(); i++){
+			resultant.add(repulsions.get(i));
+		}
+		
+		resultant.scale(1000000);
+		
+		Line2D intendedTrajectory = new Line2D(agentPoint, agentPoint.plus(resultant));
+		
+		List<Edge> areaEdges = ((Area)stuckAgent.location).getEdges();
+		for(Edge e : areaEdges){
+			Line2D edgeLine = e.getLine();
+			Point2D intersection = GeometryTools2D.getSegmentIntersectionPoint(intendedTrajectory, edgeLine);
+			if(intersection != null){
+				Logger.debug("Navigation target intersects with edge "+ e);
+				Logger.debug("Returning intersection point " + intersection);
+				return intersection;
+			}
+		}
+		
+		Logger.debug("Navigation target does not intersect with Area edges, returning it: " + agentPoint.plus(resultant));
+		return agentPoint.plus(resultant);
+		
+		/*Precise: raytrace from agent to blockade edge, calculating repulsion
+		 List<Line2D> sightLines = new ArrayList<>();
+		for(int angle = 0; angle < 360; angle += 10){
+			Vector2D vec = new Vector2D(
+				Math.cos(Math.toRadians(angle)), 
+				Math.sin(Math.toRadians(angle))
+			).scale(1000000);
+			
+			sightLines.add(new Line2D(agentPoint, vec));
+		}
+		GeometryTools2D.getSegmentIntersectionPoint(l1, l2);
+		*/
+		
 	}
 	
 	
@@ -215,6 +327,31 @@ public class BlockadeUtil {
 			yPoints[i] = (int) points[i].getY();
 		}
 		return new java.awt.geom.Area(new Polygon(xPoints, yPoints, points.length));
+	}
+	
+	public static Point2D getClosestPointToABlockade(Blockade b,int x,int y){
+		double distance = Double.MAX_VALUE;
+		Point2D point0 = new Point2D(x,y),pointReturn = null;
+		Polygon p = yrescue.util.GeometricUtil.getPolygon(b.getApexes());
+		for(int i = 0; i < p.npoints; i++){
+			Point2D point1 = new Point2D(p.xpoints[i],p.ypoints[i]);
+			Point2D point2 = null;
+			if(i == (p.npoints - 1)){
+				point2 = new Point2D(p.xpoints[0],p.ypoints[0]);
+			}
+			else{
+				point2 = new Point2D(p.xpoints[i + 1],p.ypoints[i+1]);
+			}
+			Line2D line = new Line2D(point1,point2);
+			Point2D closest = GeometryTools2D.getClosestPointOnSegment(line, point0);
+			double d = GeometryTools2D.getDistance(point0, closest);
+			if(d < distance){
+				pointReturn = closest;
+				distance = d;
+			}
+		}
+		return pointReturn;
+		
 	}
 	
 	public boolean checkBlockadesAround(WorldProvider<?> provider, Area location, int xPos, int yPos){

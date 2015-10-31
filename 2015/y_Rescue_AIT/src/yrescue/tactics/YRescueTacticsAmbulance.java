@@ -50,6 +50,7 @@ import comlib.message.information.MessageFireBrigade;
 import comlib.message.information.MessagePoliceForce;
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
+import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.standard.entities.AmbulanceTeam;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Building;
@@ -75,10 +76,12 @@ import yrescue.message.information.MessageBlockedArea;
 import yrescue.message.information.MessageRecruitment;
 import yrescue.message.information.Task;
 import yrescue.message.recruitment.RecruitmentManager;
+import yrescue.problem.blockade.BlockadeUtil;
 import yrescue.problem.blockade.BlockedArea;
 import yrescue.search.PreComputeSearch;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
+import yrescue.statemachine.StatusStates;
 import yrescue.util.DistanceSorter;
 import yrescue.util.GeometricUtil;
 import yrescue.util.PathUtil;
@@ -101,6 +104,8 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected List<Integer> targetBurriednessHist;
 	
 	private final boolean DEBUG = false;
+	private StateMachine statusStateMachine;
+	private int stuckCounter;
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
@@ -114,6 +119,9 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
     	long prepStart = System.currentTimeMillis();
     	
     	this.stateMachine = new StateMachine(ActionStates.Ambulance.EXPLORING);
+    	this.statusStateMachine = new StateMachine(StatusStates.EXPLORING);
+    	this.stuckCounter = 0;
+    	
     	routeBreadthFirstCache = PathUtil.getRouteCache();
     	this.routeSearcher = new BasicRouteSearcher(this, routeBreadthFirstCache);
     	this.victimSelector = new YRescueVictimSelector(this, this.routeSearcher);
@@ -297,12 +305,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                 Building b = (Building) entity;
                 if(b.isOnFire()) {
                     manager.addSendMessage(new MessageBuilding(b));
-                    if(b.isTemperatureDefined() && b.getTemperature() > 40 && b.isFierynessDefined() && b.getFieryness() < 4 && b.isBrokennessDefined() && b.getBrokenness() > 10) {
-                    	heatMap.removeEntityID(b.getID());
-                    }
+                    Logger.trace("Removing burning building from heatMap " + b);
+                    //if(b.isTemperatureDefined() && b.getTemperature() > 40 && b.isFierynessDefined() && b.getFieryness() < 4 && b.isBrokennessDefined() && b.getBrokenness() > 10) {
+                    heatMap.removeEntityID(b.getID());
+                    //}
                 }
                 if(b.getFierynessEnum().equals(StandardEntityConstants.Fieryness.BURNT_OUT)){
-                	Logger.trace("Removing completely burnt Building from heatMap" + b);
+                	Logger.trace("Removing COMPLETELY burnt building from heatMap" + b);
                 	heatMap.removeEntityID(b.getID());
                 }
             }
@@ -376,7 +385,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
          *   Basic actions  *
          * === -------- === */
         
-        // Check for buriedness and tries to extinguish fire in a close building
+        // Check for buriedness 
         if(this.me.getBuriedness() > 0) {
         	Logger.info("I'm buried at " + me.getPosition());
         	AmbulanceTeam ambulanceTeam = (AmbulanceTeam) this.me();
@@ -387,15 +396,42 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         if (this.tacticsAgent.stuck(currentTime)){
         	//Logger.trace("I'm blocked. Added a MessageBlockedArea");
         	//manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
+        	if(statusStateMachine.getCurrentState().equals(StatusStates.STUCK) || 
+        			statusStateMachine.getCurrentState().equals(StatusStates.STUCK_NAVIGATION)){
+        		
+        		stuckCounter++;
+        		Logger.debug("incrementing stuck counter");
+        	}
+        	else{
+        		Logger.debug("setting stuck counter to 1");
+        		stuckCounter = 1;
+        	}
+        	Logger.info("I'm stuck for " + stuckCounter + " timesteps =/");
         	
+        	statusStateMachine.setState(StatusStates.STUCK);
+        	//Logger.info("Adding a MessageBlockedArea");
+        	//manager.addSendMessage(new MessageBlockedArea(this, this.location.getID(), this.target));
         	BlockedArea mine = new BlockedArea(location.getID(), this.target, me.getX(), me.getY());
         	try{
         		this.reportBlockedArea(mine, manager, currentTime);
-        		
         	}
         	catch(Exception e){
-        		// Do nothing
+        		Logger.error("An error occurred when trying to report blocked area");
         	}
+        	
+        	Point2D navTgt = BlockadeUtil.calculateNavigationMove(this);
+        	if (navTgt != null){
+        		
+        		List<EntityID> fooPath = new ArrayList<>();
+        		fooPath.add(location.getID());
+        		
+        		statusStateMachine.setState(StatusStates.STUCK_NAVIGATION);
+        		Logger.info(String.format("Will attempt stuck-move to %s of %s", navTgt, fooPath));
+        		return new ActionMove(this, fooPath, (int)navTgt.getX(), (int)navTgt.getY());
+        	}
+        	
+    	}else {
+    		statusStateMachine.setState(StatusStates.ACTING);
     	}
         
         // If we are not in the special condition exploring, update target or get a new one 
@@ -556,7 +592,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
         		return new ActionUnload(this);
         	}
-        	else if(this.tacticsAgent.stuck(currentTime)&&this.someoneOnBoard()){
+        	else if(this.tacticsAgent.stuck(currentTime) && this.someoneOnBoard()){
         		Logger.info("I'm carrying someone but I'm stuck, selecting new target");
         		this.target = null;
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
@@ -701,9 +737,18 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	 * Check if someone is on board, use a location with some tolerance
 	 */
 	public boolean someoneOnBoard() {
-		if(this.target != null && (this.world.getEntity(this.target) instanceof Civilian || this.world.getEntity(this.target) instanceof Human)){
+		if(this.target != null && /*(this.world.getEntity(this.target) instanceof Civilian ||*/ world.getEntity(this.target) instanceof Human){
 			Human h = (Human) this.world.getEntity(this.target);
-			int traveledDistance = 0;
+			
+			if(h.isPositionDefined() && h.getPosition().equals(me.getID())){
+				Logger.info("" + h + " is on board.");
+				return true;
+			}
+			else {
+				Logger.info("Nobody on board.");
+				return false;
+			}
+			/*int traveledDistance = 0;
 			int burriedness = 0;
 			int hp = 0;
 			
@@ -711,11 +756,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 			if(h.isBuriednessDefined()) burriedness = h.getBuriedness();
 			if(h.isHPDefined()) hp = h.getHP();
 					
-			return PositionUtil.equalsPoint(this.world.getEntity(this.target).getLocation(world), this.me.getLocation(world), 50) && burriedness <= 0 && hp > 0 && traveledDistance <= 0;
+			return PositionUtil.equalsPoint(this.world.getEntity(this.target).getLocation(world), this.me.getLocation(world), 50) && burriedness <= 0 && hp > 0 && traveledDistance <= 0;*/
 		}
 		else{
+			Logger.warn("WARNING! Target " + target + " is not a Human!");
 			return false;
 		}
+			
     }
 	
 	/**
