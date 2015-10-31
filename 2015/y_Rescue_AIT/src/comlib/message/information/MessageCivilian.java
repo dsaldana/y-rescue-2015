@@ -11,7 +11,7 @@ public class MessageCivilian extends MessageHuman
 {
 	public MessageCivilian(Civilian civilian)
 	{
-		super(MessageID.civilianMessage, (Human)civilian);
+		super(MessageID.civilianMessage, (Human) civilian);
 	}
 
 	public MessageCivilian(int time, int ttl, int hp, int buriedness, int damage, int position, int id)
