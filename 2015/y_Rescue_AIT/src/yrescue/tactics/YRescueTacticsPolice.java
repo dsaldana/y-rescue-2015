@@ -386,6 +386,23 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
             return this.buriednessAction(manager);
         }
         
+        if(this.stuckClearLoop(currentTime, !manager.canUseRadio())) {
+        	Logger.warn("Warning: clearing the same position for more than 3 timesteps");
+        	EntityID theTarget = null;
+        	if(blockedAreaTarget != null){
+        		theTarget =  this.blockedAreaTarget.getOriginID();
+        		
+        	}
+        	else{
+        		Logger.info("I have no target, using heatmap exploration...");
+        		theTarget = heatMap.getNodeToVisit();
+        	}
+        	List<EntityID> path = this.routeSearcher.getPath(currentTime, location.getID(), theTarget);
+    		PathUtil.makeSafePath(this, path);
+    		return new ActionMove(this, path);
+        }
+        
+        
         Logger.debug("                          BLOCKADE AROUND TESTING!!!");
         if(checkBlockadesAround()){
         	Blockade closest = BlockadeUtil.getClosestBlockadeInMyRoad(this);
@@ -418,7 +435,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         		Logger.debug("Human Close to blockade:      " + humanIsCloseToABlockade(h, location.getID()));
         		//System.out.println("HUMAN IS TOO CLOSE TO BLOCKADE:           " +  humanIsCloseToABlockade(h, location.getID()));
         		if(humanIsCloseToABlockade(h, location.getID())){//Human is too close to a blockade, he is probably stuck!!!
-        			if(this.world.getDistance(me.getID(), h.getID()) < clearRange){
+        			if(this.world.getDistance(me.getID(), h.getID()) < clearRange - 100){
 	        			System.out.println("HUMAN IS TOO CLOSE TO BLOCKADE");
 	        			Logger.debug("HUMAN IS TOO CLOSE TO BLOCKADE");
 	        			Blockade b = yrescue.problem.blockade.BlockadeUtil.getClosestBlockade(location.getID(), this, h.getX(), h.getY());
@@ -452,21 +469,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 			return new ActionRest(this);
 		}
         
-        if(this.stuckClearLoop(currentTime, !manager.canUseRadio())) {
-        	Logger.warn("Warning: clearing the same position for more than 3 timesteps");
-        	EntityID theTarget = null;
-        	if(blockedAreaTarget != null){
-        		theTarget =  this.blockedAreaTarget.getOriginID();
-        		
-        	}
-        	else{
-        		Logger.info("I have no target, using heatmap exploration...");
-        		theTarget = heatMap.getNodeToVisit();
-        	}
-        	List<EntityID> path = this.routeSearcher.getPath(currentTime, location.getID(), theTarget);
-    		PathUtil.makeSafePath(this, path);
-    		return new ActionMove(this, path);
-        }
+       
         
         
         
