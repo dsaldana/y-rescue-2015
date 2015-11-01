@@ -427,7 +427,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		Logger.error("An error occurred when trying to report blocked area");
         	}
         	
-        	Point2D navTgt = BlockadeUtil.calculateNavigationMoveRayTracing(this);
+        	Point2D navTgt = BlockadeUtil.calculateNavigationMove(this);
         	if (navTgt != null){
         		
         		List<EntityID> fooPath = new ArrayList<>();
@@ -436,6 +436,11 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		statusStateMachine.setState(StatusStates.STUCK_NAVIGATION);
         		Logger.info(String.format("Will attempt stuck-move to %s of %s", navTgt, fooPath));
         		return new ActionMove(this, fooPath, (int)navTgt.getX(), (int)navTgt.getY());
+        	}
+        	else{
+        		Logger.info("All attempts to shake while stuck failed... going failsafe");
+        		
+        		return this.failsafeThink(currentTime, updateWorldData, manager);
         	}
         	
     	}else {
