@@ -162,6 +162,47 @@ public class BlockadeUtil {
         return blockades;
 	}
 	
+	public static Point2D calculateNavigationMoveRayTracing(Tactics<?> stuckAgent){
+		Blockade b = BlockadeUtil.getClosestBlockade(
+			stuckAgent.location.getID(), stuckAgent, stuckAgent.me().getX(), stuckAgent.me().getY()
+		);
+		List<Vector2D> repulsionVectors = BlockadeUtil.repulsionVectors(b, stuckAgent);
+		Logger.debug("      REPULSION VECTORS::  " + repulsionVectors);
+		
+		if(repulsionVectors.size() < 1) {
+			Logger.info("Not enough repulsion vectors");
+			return null;
+		}
+		
+		Vector2D resultant = repulsionVectors.get(0);
+		
+		for(int i = 1; i < repulsionVectors.size(); i++){
+			resultant = resultant.add(repulsionVectors.get(i));
+		}
+		resultant = resultant.scale(10000);
+		
+		Logger.debug("Repulsion resultant vector: " + resultant);
+		
+		Point2D agentPoint = new Point2D(stuckAgent.me().getX(), stuckAgent.me().getY());
+		
+		Line2D intendedTrajectory = new Line2D(agentPoint, agentPoint.plus(resultant));
+		
+		List<Edge> areaEdges = ((Area)stuckAgent.location).getEdges();
+		for(Edge e : areaEdges){
+			Line2D edgeLine = e.getLine();
+			Point2D intersection = GeometryTools2D.getSegmentIntersectionPoint(intendedTrajectory, edgeLine);
+			if(intersection != null){
+				Logger.debug("Navigation target intersects with edge "+ e);
+				Logger.debug("Returning intersection point " + intersection);
+				return intersection;
+			}
+		}
+		
+		Logger.debug("Navigation target does not intersect with Area edges, returning it: " + agentPoint.plus(resultant));
+		return agentPoint.plus(resultant);
+		
+	}
+	
 	public static Point2D calculateNavigationMove(Tactics<?> stuckAgent){
 		
 		Point2D agentPoint = new Point2D(stuckAgent.me().getX(), stuckAgent.me().getY());

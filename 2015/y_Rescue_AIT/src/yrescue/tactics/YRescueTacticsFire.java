@@ -296,9 +296,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         
         // Check if the agent is stuck
         if (this.fireFighterStuck(currentTime)){
-        	Blockade b = yrescue.problem.blockade.BlockadeUtil.getClosestBlockade(location.getID(), this, me.getX(), me.getY());
-    		List<Vector2D> repulsionVectors = yrescue.problem.blockade.BlockadeUtil.repulsionVectors(b, this);
-    		Logger.debug("      REPULSION VECTORS::  " + repulsionVectors);
+        	
         	if(statusStateMachine.getCurrentState().equals(StatusStates.STUCK) || 
         			statusStateMachine.getCurrentState().equals(StatusStates.STUCK_NAVIGATION)){
         		
@@ -317,6 +315,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         	
         	if(stuckCounter > 5){
         		Logger.info("I'll change my target // switch task. Stuck for too long");
+        		stuckCounter = 0;
             	return this.switchTask();
         	}
         	
@@ -687,12 +686,12 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 			Action cmd = tacticsAgent.commandHistory.get(time -1); 
 		
 			Logger.debug(String.format(
-				"Stuckness test: last command: %s, Last position (%d, %d), Curr position (%d, %d)", 
-				cmd, tacticsAgent.lastPosition.first(), tacticsAgent.lastPosition.second(), currentPos.first(), currentPos.second()
+				"Firefighter stuckness test: AKcmd: %s, last position (%d, %d), curr position (%d, %d)", 
+				cmd.getCommand(agentID, time), tacticsAgent.lastPosition.first(), tacticsAgent.lastPosition.second(), currentPos.first(), currentPos.second()
 			));
 		
 			//if i'm not at refuge and I traversed small distance, I'm stuck
-			if ( !onWaterSource() && (distance  < tolerance)) {
+			if ( (cmd.getCommand(agentID, time) instanceof AKMove) && (distance  < tolerance)) {
 				//ActionMove action = (ActionMove)cmd;
 				
 				Logger.info("Dammit, I'm stuck!");
