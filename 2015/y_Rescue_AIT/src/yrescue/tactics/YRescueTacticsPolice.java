@@ -582,7 +582,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         if(this.blockedAreaTarget == null){
         	if (location instanceof Refuge){
         		this.cleanRefuges.add(location.getID());
-        		Logger.debug("Refuge cleaned " +location.getID());
+        		Logger.debug("Refuge cleaned " + location.getID());
         	}
         	
         	//System.out.println("The heatmap " +heatMap);
