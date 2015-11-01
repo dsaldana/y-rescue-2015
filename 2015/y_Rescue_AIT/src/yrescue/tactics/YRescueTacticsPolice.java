@@ -49,6 +49,7 @@ import rescuecore2.standard.entities.Edge;
 import rescuecore2.standard.entities.GasStation;
 import rescuecore2.standard.entities.Human;
 import rescuecore2.standard.entities.Hydrant;
+import rescuecore2.standard.entities.PoliceForce;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
@@ -446,7 +447,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         Collection<StandardEntity> objectsInRange = this.world.getObjectsInRange(me.getID(), sightDistance);// CHECK IF THIS IS THE RIGHT RANGE!!!
         Logger.debug("Objects in range " + objectsInRange);
         for(StandardEntity next : objectsInRange){
-        	if((next instanceof Human) && !(next.getID().equals(me.getID()))){
+        	if((next instanceof Human) && !(next.getID().equals(me.getID())&&!(next instanceof PoliceForce))){
         		Logger.debug("Testing... HUMAN CLOSE TO BLOCKADE");
         		Human h = (Human) next;
         		Logger.debug("ID AGENT :  " + next.getID());
