@@ -81,6 +81,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 	private List<StandardEntity> hydrants;
 	public Map<EntityID, Integer> busyHydrantIDs;
 	
+	public Map<EntityID, Integer> blockedBuildingIDs;
+	
 	private int lastWater;
 	
 	private int flagOnce;
@@ -136,6 +138,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         this.buildingSelector = this.initBuildingSelector();
         lastPath = new ArrayList<>();
         busyHydrantIDs = new HashMap<>();
+        blockedBuildingIDs = new HashMap<>();
         lastWater = me.getWater();
         
         stuckCounter = 0;
@@ -294,8 +297,19 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             return this.buriednessAction(manager);
         }
         
+        // Update buildingOnFire List
+        for(Entry<EntityID,Integer> e : blockedBuildingIDs.entrySet()){
+        	if(currentTime >= e.getValue()){
+        		blockedBuildingIDs.remove(e.getKey());
+        		buildingSelector.add(e.getKey());
+        	}
+        }
+        
         // Check if the agent is stuck
         if (this.fireFighterStuck(currentTime)){
+        	
+        	blockedBuildingIDs.put(target, currentTime+30);
+        	buildingSelector.remove(target);
         	
         	if(statusStateMachine.getCurrentState().equals(StatusStates.STUCK) || 
         			statusStateMachine.getCurrentState().equals(StatusStates.STUCK_NAVIGATION)){
