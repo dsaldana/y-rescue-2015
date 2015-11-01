@@ -319,7 +319,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             	return this.switchTask();
         	}
         	
-        	Point2D navTgt = BlockadeUtil.calculateNavigationMove(this);
+        	Point2D navTgt = BlockadeUtil.calculateNavigationMoveRayTracing(this);
         	if (navTgt != null){
         		
         		List<EntityID> fooPath = new ArrayList<>();
