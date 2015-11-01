@@ -10,6 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
+
+
+
 import org.apache.log4j.MDC;
 
 import rescuecore2.config.Config;
@@ -550,6 +554,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         		Logger.debug("Refuge cleaned " + location.getID());
         	}
         	
+        	
         	//System.out.println("The heatmap " +heatMap);
         	if(heatMap == null){
         		Logger.warn("WARNING: null heatmap. Will build a new one");
@@ -621,6 +626,8 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
             		statusStateMachine.setState(StatusStates.ACTING);
                 	return new ActionClear(this, (int)target.getX(), (int)target.getY());
         		}
+        			
+        		
         	}
         }
         
