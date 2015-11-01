@@ -291,7 +291,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         while(iter.hasNext()){
         	Entry<EntityID, Integer> e = iter.next();
         	if(currentTime >= e.getValue()){
-        		blockedBuildingIDs.remove(e.getKey());
+        		if(blockedBuildingIDs.containsKey(e.getKey())) 
+        			blockedBuildingIDs.remove(e.getKey());
         		buildingSelector.add(e.getKey());
         	}
         }
@@ -443,7 +444,8 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         while(iter.hasNext()){
         	Entry<EntityID, Integer> e = iter.next();
         	if(currentTime >= e.getValue()){
-        		busyHydrantIDs.remove(e.getKey());
+        		if(busyHydrantIDs.containsKey(e.getKey()))
+        			busyHydrantIDs.remove(e.getKey());
         	}
         }
         
