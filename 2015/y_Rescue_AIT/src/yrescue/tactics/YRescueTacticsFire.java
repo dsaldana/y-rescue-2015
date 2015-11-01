@@ -11,23 +11,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.Set;
 
-import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.log4j.MDC;
-import org.apache.log4j.PropertyConfigurator;
-import org.apache.log4j.net.SyslogAppender;
-import org.apache.log4j.spi.LoggerFactory;
-import org.hamcrest.core.IsInstanceOf;
 
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
 import rescuecore2.misc.Pair;
 import rescuecore2.misc.geometry.Point2D;
-import rescuecore2.misc.geometry.Vector2D;
 import rescuecore2.standard.entities.Area;
-import rescuecore2.standard.entities.Blockade;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Civilian;
 import rescuecore2.standard.entities.FireBrigade;
@@ -42,24 +34,20 @@ import rescuecore2.standard.messages.AKMove;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
-import yrescue.util.DistanceSorter;
-import yrescue.util.GeometricUtil;
-import yrescue.util.PathUtil;
-import yrescue.util.RouteCacheKey;
 import yrescue.action.ActionRefill;
 import yrescue.heatmap.HeatMap;
 import yrescue.heatmap.HeatNode;
 import yrescue.kMeans.KMeans;
 import yrescue.message.event.MessageHydrantEvent;
 import yrescue.message.information.MessageBlockedArea;
-import yrescue.message.information.MessageHydrant;
 import yrescue.problem.blockade.BlockadeUtil;
-import yrescue.problem.blockade.BlockedArea;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
+import yrescue.util.DistanceSorter;
+import yrescue.util.PathUtil;
+import yrescue.util.RouteCacheKey;
 import yrescue.util.YRescueBuildingSelector;
-import adf.util.map.PositionUtil;
 //import yrescue.util.YRescueRouteSearcher;
 import adk.sample.basic.event.BasicBuildingEvent;
 import adk.sample.basic.tactics.BasicTacticsFire;
@@ -70,9 +58,9 @@ import adk.team.action.ActionMove;
 import adk.team.action.ActionRest;
 import adk.team.util.BuildingSelector;
 import adk.team.util.RouteSearcher;
+
 import comlib.manager.MessageManager;
 import comlib.message.information.MessageBuilding;
-import comlib.message.information.MessageCivilian;
 import comlib.message.information.MessageFireBrigade;
 
 public class YRescueTacticsFire extends BasicTacticsFire {
@@ -333,7 +321,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             	return this.switchTask();
         	}
         	
-        	Point2D navTgt = BlockadeUtil.calculateNavigationMove(this);
+        	Point2D navTgt = BlockadeUtil.calculateNavigationMoveRayTracing(this);
         	if (navTgt != null){
         		
         		List<EntityID> fooPath = new ArrayList<>();
@@ -610,7 +598,12 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             if(building.isOnFire()){
             	Logger.trace(String.format("%s on fire, I'll tackle it", building));
             	//return new ActionExtinguish(this, this.target, this.maxPower);
-                return this.world.getDistance(this.agentID, this.target) <= this.sightDistance ? new ActionExtinguish(this, this.target, this.maxPower) : this.moveTarget(currentTime);
+            	if(this.world.getDistance(this.agentID, this.target) <= this.sightDistance || updateWorldData.getChangedEntities().contains(this.target)){
+            		return  new ActionExtinguish(this, this.target, this.maxPower);
+            	}
+            	else{
+            		return this.moveTarget(currentTime);
+            	}
             } else {
             	Logger.trace(String.format("%s not on fire anymore, will remove from list.", building));
                 this.buildingSelector.remove(this.target);
