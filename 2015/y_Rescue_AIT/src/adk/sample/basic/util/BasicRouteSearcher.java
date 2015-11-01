@@ -93,6 +93,7 @@ public class BasicRouteSearcher implements RouteSearcher {
 
     @Override
     public List<EntityID> getPath(int time, EntityID from, EntityID to) {
+    	/*
     	RouteCacheKey lKey = new RouteCacheKey(from.getValue(), to.getValue());
     	if(this.mapCache != null && this.mapCache.containsKey(lKey)){
 			List<EntityID> routeCache = this.mapCache.get(lKey);
@@ -101,6 +102,7 @@ public class BasicRouteSearcher implements RouteSearcher {
 				return routeCache;
 			}
     	}
+    	*/
     	List<EntityID> path = this.search.breadthFirstSearch(from, to);
     	
         return path;

@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -286,7 +287,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         }
         
         // Update buildingOnFire List
-        for(Entry<EntityID,Integer> e : blockedBuildingIDs.entrySet()){
+        Iterator<Entry<EntityID, Integer>> iter = blockedBuildingIDs.entrySet().iterator();
+        while(iter.hasNext()){
+        	Entry<EntityID, Integer> e = iter.next();
         	if(currentTime >= e.getValue()){
         		blockedBuildingIDs.remove(e.getKey());
         		buildingSelector.add(e.getKey());
@@ -436,11 +439,19 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         }
         
         // Update BusyHydrants
-        for(Entry<EntityID,Integer> e : busyHydrantIDs.entrySet()){
+        iter = busyHydrantIDs.entrySet().iterator();
+        while(iter.hasNext()){
+        	Entry<EntityID, Integer> e = iter.next();
         	if(currentTime >= e.getValue()){
         		busyHydrantIDs.remove(e.getKey());
         	}
         }
+        
+        /*for(Entry<EntityID,Integer> e : busyHydrantIDs.entrySet()){
+        	if(currentTime >= e.getValue()){
+        		busyHydrantIDs.remove(e.getKey());
+        	}
+        }*/
         /*if(flagStuck == 1){
     		busyHydrantIDs.put(this.targetHydrant, currentTime+20);
         	flagStuck = 0;
