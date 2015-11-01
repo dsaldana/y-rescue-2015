@@ -91,21 +91,26 @@ import yrescue.util.target.HumanTarget;
 
 public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
-	protected final int EXPLORE_TIME_STEP_TRESH = 14;
+	public final int EXPLORE_TIME_STEP_TRESH = 8;
+	public final int EXPLORE_AREA_SIZE_TRESH = 10000010;
+	public final int LOCAL_SEARCH_WHEN_EXPLORING_TRESH = 2;
+	public final int DAMAGE_TRESH = 30;
+	
 	protected int EXPLORE_TIME_LIMIT = EXPLORE_TIME_STEP_TRESH;
 	protected StateMachine stateMachine = null;
 	protected int timeoutAction = 0;
 	protected Set<Road> impassableRoadList = new HashSet<>();
-	protected int EXPLORE_AREA_SIZE_TRESH = 10000010;
+	
 	protected List<EntityID> clusterToVisit;
 	protected List<EntityID> clusterCentroids;
 	protected EntityID clusterCenter;
 	protected Map<RouteCacheKey, List<EntityID>> routeBreadthFirstCache;
-	protected List<Integer> targetBurriednessHist;
 	
-	private final boolean DEBUG = false;
+	private final boolean DEBUG = true;
 	private StateMachine statusStateMachine;
 	private int stuckCounter;
+	
+	private int counterForLocalSearch;
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
@@ -447,7 +452,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         }
         
         // Check for damage and remove target if necessary
-        if(this.me.getDamage() >= 30) {
+        if(this.me.getDamage() >= DAMAGE_TRESH) {
         	if(this.target != null && this.world.getEntity(this.target) instanceof Human){
         		if(this.location.getID().getValue() == ((Human) this.world.getEntity(this.target)).getPosition().getValue()){
 	        		if(this.world.getEntity(this.location.getID()) instanceof Building){
@@ -501,7 +506,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		return this.moveTarget(currentTime);
         	}
         	
-        	if(!this.tacticsAgent.stuck(time) && (this.target != null && this.target.getValue() != this.location.getID().getValue())){
+        	if(this.tacticsAgent.stuck(time)){
+        		heatMap.updateNode(this.target, time, HeatNode.MAX_HEAT);
+    			getNewExplorationTarget(currentTime);
+            	return moveTarget(currentTime);
+        	}
+        	
+        	if((this.target != null && this.target.getValue() != this.location.getID().getValue())){
         		return this.moveTarget(currentTime);
         	}
         	
@@ -517,7 +528,40 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		getNewExplorationTarget(currentTime);
             	return moveTarget(currentTime);
         	}
-        	else if (victim.getPosition().getValue() != this.location.getID().getValue()) {
+        	if(this.counterForLocalSearch >= LOCAL_SEARCH_WHEN_EXPLORING_TRESH){
+        		this.counterForLocalSearch = 0;
+        		boolean isTargetInSight = false;
+        		List<Building> bList = new LinkedList<Building>();
+        		for(StandardEntity entity : this.world.getObjectsInRange(this.me, this.sightDistance)) {
+                    if(entity instanceof Building){
+                    	Building lb = (Building) entity;
+                    	if(lb.getID().equals(victim.getPosition())){
+                    		isTargetInSight = true;
+                    		break;
+                    	}
+                    	else{
+                    		bList.add(lb);
+                    	}
+                    }                        
+                }
+        		
+        		if(bList.size() > 0 && !isTargetInSight){
+	        		Building b = PositionUtil.getNearTarget(this.world, this.me, bList);
+	        		if(!b.isOnFire() && victim.getPosition() != b.getID()){
+		        		List<EntityID> path = this.routeSearcher.getPath(currentTime, this.me, b);
+		                if(path != null) {
+		                	Logger.info("Choosing local building as temporary target..");
+		                    return new ActionMove(this, path);
+		                }
+	        		}
+        		}
+        	}
+        	if (victim.getPosition().getValue() != this.location.getID().getValue()) {
+        		this.counterForLocalSearch++;
+        		if(this.counterForLocalSearch == 0){
+        			EntityID nextTarget = this.victimSelector.getNewTarget(currentTime);
+        			if(nextTarget != this.target) this.target = nextTarget;
+        		}
                 return this.moveTarget(currentTime);
             }
         	
@@ -582,7 +626,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         if(this.stateMachine.getCurrentState().equals(ActionStates.Ambulance.GOING_TO_REFUGE)){
         	Logger.info("Going to refugee..");
         	
-        	if(!this.someoneOnBoard() && this.me.getDamage() <= 0){
+        	if(!this.someoneOnBoard() && this.me.getDamage() <= DAMAGE_TRESH){
         		Logger.info("Does not need to go to refugee, selecting new target..");
         		this.target = null;
         		this.stateMachine.setState(ActionStates.Ambulance.SELECT_NEW_TARGET);
