@@ -426,7 +426,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         		Logger.error("An error occurred when trying to report blocked area");
         	}
         	
-        	Point2D navTgt = BlockadeUtil.calculateNavigationMove(this);
+        	Point2D navTgt = BlockadeUtil.calculateNavigationMoveRayTracing(this);
         	if (navTgt != null){
         		
         		List<EntityID> fooPath = new ArrayList<>();
@@ -439,6 +439,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
         	
     	}else {
     		statusStateMachine.setState(StatusStates.ACTING);
+    		stuckCounter = 0;
     	}
         
         // If we are not in the special condition exploring, update target or get a new one 
