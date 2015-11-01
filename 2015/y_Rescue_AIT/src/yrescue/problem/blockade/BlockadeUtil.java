@@ -237,8 +237,10 @@ public class BlockadeUtil {
 	
 	public static List<Vector2D> repulsionVectors(Blockade b, Tactics<?> agent){
 		Polygon p = yrescue.util.GeometricUtil.getPolygon(b.getApexes());
+		Point2D point0 = new Point2D(agent.me().getX(), agent.me().getY()),intersection = null;
 		List<Line2D> linesBlock = new ArrayList<>();
 		List<Vector2D> sightLines = new ArrayList<>();
+		List<Vector2D> repulsionVector = new ArrayList<>();
 		for(int i = 0; i < p.npoints; i++){
 			Point2D point1 = new Point2D(p.xpoints[i],p.ypoints[i]);
 			Point2D point2 = null;
@@ -251,10 +253,35 @@ public class BlockadeUtil {
 			linesBlock.add(line);
 		}
 		for(int i = 0; i < 360; i += 10){
-			Vector2D sight = new Vector2D(Math.cos(Math.toRadians((double)i)),Math.sin(Math.toRadians(i)));
+			Vector2D sight = new Vector2D(Math.cos(Math.toRadians((double)i)),Math.sin(Math.toRadians(i))).scale(100000);
 			sightLines.add(sight);
 		}
-		return sightLines;
+		for(int i = 0; i < sightLines.size(); i++){
+			Line2D line0 = new Line2D(point0, sightLines.get(i));
+			double distance = Double.MAX_VALUE;
+			intersection = null;
+			for(Line2D lineBlock : linesBlock){
+				Point2D intersec = GeometryTools2D.getSegmentIntersectionPoint(line0, lineBlock);
+				if(intersec == null){
+					continue;
+				}
+				double distance1 = GeometryTools2D.getDistance(point0, intersec);
+				if(distance1 < distance){
+					distance = distance1;
+					intersection = intersec;
+				}
+			}
+			if(intersection == null){
+				Vector2D v = new Vector2D(0,0);
+				repulsionVector.add(v);
+			}
+			else{
+				Vector2D v = new Vector2D(intersection.getX() - agent.me().getX(),intersection.getY() - agent.me().getY());
+				v = v.scale(-30000.0/distance);
+				repulsionVector.add(v);
+			}
+		}
+		return repulsionVector;
 	}
 	
 	public static Point2D calculateStuckMove(Area from, Area to, Tactics<?> agent,int currentTime){

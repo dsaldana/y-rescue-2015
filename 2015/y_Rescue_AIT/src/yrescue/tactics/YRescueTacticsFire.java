@@ -25,7 +25,9 @@ import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
 import rescuecore2.misc.Pair;
 import rescuecore2.misc.geometry.Point2D;
+import rescuecore2.misc.geometry.Vector2D;
 import rescuecore2.standard.entities.Area;
+import rescuecore2.standard.entities.Blockade;
 import rescuecore2.standard.entities.Building;
 import rescuecore2.standard.entities.Civilian;
 import rescuecore2.standard.entities.FireBrigade;
@@ -293,8 +295,10 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         }
         
         // Check if the agent is stuck
-        if (this.fireFighterStuck(currentTime)) { 
-        	
+        if (this.fireFighterStuck(currentTime)){
+        	Blockade b = yrescue.problem.blockade.BlockadeUtil.getClosestBlockade(location.getID(), this, me.getX(), me.getY());
+    		List<Vector2D> repulsionVectors = yrescue.problem.blockade.BlockadeUtil.repulsionVectors(b, this);
+    		Logger.debug("      REPULSION VECTORS::  " + repulsionVectors);
         	if(statusStateMachine.getCurrentState().equals(StatusStates.STUCK) || 
         			statusStateMachine.getCurrentState().equals(StatusStates.STUCK_NAVIGATION)){
         		

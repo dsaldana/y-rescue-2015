@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 
@@ -16,6 +17,24 @@ import java.util.Set;
 
 import org.apache.log4j.MDC;
 
+import com.sun.corba.se.impl.ior.GenericTaggedProfile;
+import com.vividsolutions.jts.geom.Geometry;
+
+import adk.sample.basic.event.BasicRoadEvent;
+import adk.sample.basic.tactics.BasicTacticsPolice;
+import adk.sample.basic.util.BasicRouteSearcher;
+import adk.team.action.Action;
+import adk.team.action.ActionClear;
+import adk.team.action.ActionMove;
+import adk.team.action.ActionRest;
+import adk.team.util.ImpassableSelector;
+import adk.team.util.RouteSearcher;
+import adk.team.util.graph.PositionUtil;
+import comlib.manager.MessageManager;
+import comlib.message.information.MessageBuilding;
+import comlib.message.information.MessageCivilian;
+import comlib.message.information.MessagePoliceForce;
+import jdk.nashorn.internal.runtime.linker.JavaAdapterFactory;
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
 import rescuecore2.misc.geometry.GeometryTools2D;
@@ -29,6 +48,7 @@ import rescuecore2.standard.entities.Civilian;
 import rescuecore2.standard.entities.Edge;
 import rescuecore2.standard.entities.GasStation;
 import rescuecore2.standard.entities.Human;
+import rescuecore2.standard.entities.Hydrant;
 import rescuecore2.standard.entities.Refuge;
 import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
@@ -50,6 +70,7 @@ import yrescue.search.SampleSearch;
 import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
+import yrescue.util.GeometricUtil;
 import yrescue.util.PathUtil;
 import yrescue.util.RouteCacheKey;
 import yrescue.util.YRescueImpassableSelector;
@@ -454,6 +475,12 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         	}
         }
         
+       
+        
+        
+        
+        
+        
         //Ensuring the police stays in the refuge until the damage drops to 0
         Refuge result = PositionUtil.getNearTarget(this.world, this.me, this.getRefuges());
         EntityID results = result.getID();           
@@ -461,6 +488,10 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
 		if ((local == results) && (this.me.getDamage() > 0)) {
 			return new ActionRest(this);
 		}
+        
+       
+        
+        
         
         /***************************************
          * 
@@ -554,7 +585,6 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         		Logger.debug("Refuge cleaned " + location.getID());
         	}
         	
-        	
         	//System.out.println("The heatmap " +heatMap);
         	if(heatMap == null){
         		Logger.warn("WARNING: null heatmap. Will build a new one");
@@ -626,8 +656,6 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
             		statusStateMachine.setState(StatusStates.ACTING);
                 	return new ActionClear(this, (int)target.getX(), (int)target.getY());
         		}
-        			
-        		
         	}
         }
         
