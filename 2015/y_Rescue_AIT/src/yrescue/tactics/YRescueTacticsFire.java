@@ -596,7 +596,12 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             if(building.isOnFire()){
             	Logger.trace(String.format("%s on fire, I'll tackle it", building));
             	//return new ActionExtinguish(this, this.target, this.maxPower);
-                return this.world.getDistance(this.agentID, this.target) <= this.sightDistance ? new ActionExtinguish(this, this.target, this.maxPower) : this.moveTarget(currentTime);
+            	if(this.world.getDistance(this.agentID, this.target) <= this.sightDistance || updateWorldData.getChangedEntities().contains(this.target)){
+            		return  new ActionExtinguish(this, this.target, this.maxPower);
+            	}
+            	else{
+            		return this.moveTarget(currentTime);
+            	}
             } else {
             	Logger.trace(String.format("%s not on fire anymore, will remove from list.", building));
                 this.buildingSelector.remove(this.target);
