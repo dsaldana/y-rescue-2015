@@ -180,7 +180,7 @@ public class BlockadeUtil {
 				);
 				if (distance > 0){
 					Logger.debug("dist to blockade " + distance);
-					repulsions.add(repulsion.normalised().scale(stuckAgent.sightDistance / distance));
+					repulsions.add(repulsion.normalised().scale(stuckAgent.sightDistance * 1000 / distance));
 				}
 				else {
 					repulsions.add(repulsion.normalised().scale(1.0E12));
@@ -197,10 +197,10 @@ public class BlockadeUtil {
 		Vector2D resultant = repulsions.get(0);
 		
 		for(int i = 1; i < repulsions.size(); i++){
-			resultant.add(repulsions.get(i));
+			resultant = resultant.add(repulsions.get(i));
 		}
 		
-		resultant.scale(1E18);
+		resultant = resultant.scale(10000);
 		
 		Logger.debug("Repulsion resultant vector: " + resultant);
 		

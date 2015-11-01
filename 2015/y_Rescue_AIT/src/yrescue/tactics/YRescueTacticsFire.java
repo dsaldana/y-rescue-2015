@@ -23,6 +23,7 @@ import org.hamcrest.core.IsInstanceOf;
 
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
+import rescuecore2.misc.Pair;
 import rescuecore2.misc.geometry.Point2D;
 import rescuecore2.standard.entities.Area;
 import rescuecore2.standard.entities.Building;
@@ -35,6 +36,7 @@ import rescuecore2.standard.entities.Road;
 import rescuecore2.standard.entities.StandardEntity;
 import rescuecore2.standard.entities.StandardEntityConstants;
 import rescuecore2.standard.entities.StandardEntityURN;
+import rescuecore2.standard.messages.AKMove;
 import rescuecore2.worldmodel.ChangeSet;
 import rescuecore2.worldmodel.Entity;
 import rescuecore2.worldmodel.EntityID;
@@ -55,6 +57,7 @@ import yrescue.statemachine.ActionStates;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
 import yrescue.util.YRescueBuildingSelector;
+import adf.util.map.PositionUtil;
 //import yrescue.util.YRescueRouteSearcher;
 import adk.sample.basic.event.BasicBuildingEvent;
 import adk.sample.basic.tactics.BasicTacticsFire;
@@ -206,22 +209,6 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 		
         MDC.put("agent", this);
         MDC.put("location", location());
-        /*
-        Log4JLogger lf = new Log4JLogger();
-        
-        org.apache.log4j.Logger d_logger = lf.getLogger();
-        String logFileName = "doSomething"+me.getID()+".log";
-
-        Properties prop = new Properties();
-        prop.setProperty("doSomething"+me.getID(),"TRACE, WORKLOG");
-        prop.setProperty("log4j.appender.WORKLOG","org.apache.log4j.FileAppender");
-        prop.setProperty("log4j.appender.WORKLOG.File", logFileName);
-        prop.setProperty("log4j.appender.WORKLOG.layout","org.apache.log4j.PatternLayout");
-        prop.setProperty("log4j.appender.WORKLOG.layout.ConversionPattern","%d %c{1} - %m%n");
-        //prop.setProperty("log4j.appender.WORKLOG.Threshold","INFO"); 
-
-        PropertyConfigurator.configure(prop);
-        */
         
         long secsToProcess = (System.currentTimeMillis() - prepStart);
         Logger.info(String.format(
@@ -306,7 +293,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         }
         
         // Check if the agent is stuck
-        if (this.tacticsAgent.stuck(currentTime)){
+        if (this.fireFighterStuck(currentTime)) { 
         	
         	if(statusStateMachine.getCurrentState().equals(StatusStates.STUCK) || 
         			statusStateMachine.getCurrentState().equals(StatusStates.STUCK_NAVIGATION)){
@@ -669,6 +656,51 @@ public class YRescueTacticsFire extends BasicTacticsFire {
 		    }
 		}
 		return new ActionRest(this);
+	}
+	
+	public boolean fireFighterStuck(int time){
+		if (tacticsAgent.stuck(time)) return true;
+		
+		int tolerance = 500;	//if agent moved less than this, will be considered as stuck
+		double distance;
+		
+		//agents cannot issue move commands in beginning
+		if (time == config.getIntValue(kernel.KernelConstants.IGNORE_AGENT_COMMANDS_KEY)) {
+			return false;
+		}
+	
+		if (tacticsAgent.commandHistory.size() == 0) {
+			return false;
+		}
+	
+		Pair<Integer, Integer> currentPos = me().getLocation(model);
+		
+		distance = Math.hypot(currentPos.first() - tacticsAgent.lastPosition.first(), currentPos.second() - tacticsAgent.lastPosition.second());
+		
+		Logger.debug("Stuckness test - distance from last position:" + distance);
+	
+		if (tacticsAgent.commandHistory.containsKey(time -1)) {
+			Action cmd = tacticsAgent.commandHistory.get(time -1); 
+		
+			Logger.debug(String.format(
+				"Stuckness test: last command: %s, Last position (%d, %d), Curr position (%d, %d)", 
+				cmd, tacticsAgent.lastPosition.first(), tacticsAgent.lastPosition.second(), currentPos.first(), currentPos.second()
+			));
+		
+			//if i'm not at refuge and I traversed small distance, I'm stuck
+			if ( !onWaterSource() && (distance  < tolerance)) {
+				//ActionMove action = (ActionMove)cmd;
+				
+				Logger.info("Dammit, I'm stuck!");
+				return true;
+			}
+		}
+		Logger.info("Not stuck!");
+		return false;
+		
+		
+		
+		
 	}
     
     // Move to a target if it exists otherwise walk randomly

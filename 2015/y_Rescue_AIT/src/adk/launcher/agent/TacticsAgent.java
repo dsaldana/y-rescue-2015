@@ -29,7 +29,7 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     protected Action action;						//current action of this agent
     public Map<Integer, Action> commandHistory;	//history of commands
     public int ignoreTime;
-    protected Pair<Integer, Integer> lastPosition;
+    public Pair<Integer, Integer> lastPosition;
     
 
     public TacticsAgent(Tactics t, boolean pre) {
