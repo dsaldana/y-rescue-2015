@@ -107,7 +107,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected Map<RouteCacheKey, List<EntityID>> routeBreadthFirstCache;
 	protected List<Integer> targetBurriednessHist;
 	
-	private final boolean DEBUG = false;
+	private final boolean DEBUG = true;
 
 	private StateMachine statusStateMachine;
 	private int stuckCounter;
@@ -709,7 +709,12 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                     else {
                     	Logger.debug("Victim is buried but I can't see it. Will get a new target");
                     	this.stateMachine.setState(ActionStates.Ambulance.RESCUING);
-                    	this.target = this.victimSelector.getNewTarget(currentTime);
+                    	EntityID newtarget = this.victimSelector.getNewTarget(currentTime);
+                    	if (newtarget.equals(this.target)){
+                    		this.victimSelector.remove(this.target);
+                    		this.target = null;
+                    		break;
+                    	}
                     	continue;
                     }
                 }
