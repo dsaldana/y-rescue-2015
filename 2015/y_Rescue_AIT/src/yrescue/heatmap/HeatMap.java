@@ -129,6 +129,7 @@ public class HeatMap {
 	 * @param entity
 	 */
 	public void removeEntityID(EntityID entity){
+		if( (entity != null && this.explorationTarget != null) && this.explorationTarget.getValue() == entity.getValue()) this.explorationTarget = null;
 		this.heatNodeMap.remove(entity);
 	}
 	

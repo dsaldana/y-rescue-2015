@@ -11,6 +11,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+
+
+
+
 import org.apache.log4j.MDC;
 
 import com.sun.corba.se.impl.ior.GenericTaggedProfile;
@@ -23,7 +27,6 @@ import adk.team.action.Action;
 import adk.team.action.ActionClear;
 import adk.team.action.ActionMove;
 import adk.team.action.ActionRest;
-import adk.team.tactics.TacticsPolice;
 import adk.team.util.ImpassableSelector;
 import adk.team.util.RouteSearcher;
 import adk.team.util.graph.PositionUtil;
@@ -31,7 +34,6 @@ import comlib.manager.MessageManager;
 import comlib.message.information.MessageBuilding;
 import comlib.message.information.MessageCivilian;
 import comlib.message.information.MessagePoliceForce;
-import firesimulator.world.PoliceForce;
 import jdk.nashorn.internal.runtime.linker.JavaAdapterFactory;
 import rescuecore2.config.Config;
 import rescuecore2.log.Logger;
@@ -66,13 +68,26 @@ import yrescue.problem.blockade.BlockedAreaSelector;
 import yrescue.problem.blockade.BlockedAreaSelectorProvider;
 import yrescue.search.SampleSearch;
 import yrescue.statemachine.ActionStates;
-import yrescue.statemachine.ActionStates.Policeman;
 import yrescue.statemachine.StateMachine;
 import yrescue.statemachine.StatusStates;
 import yrescue.util.GeometricUtil;
 import yrescue.util.PathUtil;
 import yrescue.util.RouteCacheKey;
 import yrescue.util.YRescueImpassableSelector;
+import adk.sample.basic.event.BasicRoadEvent;
+import adk.sample.basic.tactics.BasicTacticsPolice;
+import adk.sample.basic.util.BasicRouteSearcher;
+import adk.team.action.Action;
+import adk.team.action.ActionClear;
+import adk.team.action.ActionMove;
+import adk.team.action.ActionRest;
+import adk.team.util.ImpassableSelector;
+import adk.team.util.RouteSearcher;
+import adk.team.util.graph.PositionUtil;
+
+import comlib.manager.MessageManager;
+import comlib.message.information.MessageBuilding;
+import comlib.message.information.MessagePoliceForce;
 
 public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedAreaSelectorProvider {
 
@@ -431,7 +446,7 @@ public class YRescueTacticsPolice extends BasicTacticsPolice implements BlockedA
         Collection<StandardEntity> objectsInRange = this.world.getObjectsInRange(me.getID(), sightDistance);// CHECK IF THIS IS THE RIGHT RANGE!!!
         Logger.debug("Objects in range " + objectsInRange);
         for(StandardEntity next : objectsInRange){
-        	if((next instanceof Human) && !(next.getID().equals(me.getID()))&&!(next instanceof rescuecore2.standard.entities.PoliceForce)){
+        	if((next instanceof Human) && !(next.getID().equals(me.getID()))){
         		Logger.debug("Testing... HUMAN CLOSE TO BLOCKADE");
         		Human h = (Human) next;
         		Logger.debug("ID AGENT :  " + next.getID());
