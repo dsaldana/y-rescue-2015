@@ -103,11 +103,13 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 	protected Map<RouteCacheKey, List<EntityID>> routeBreadthFirstCache;
 	protected List<Integer> targetBurriednessHist;
 	
-
+<<<<<<< HEAD
+	private final boolean DEBUG = true;
+=======
 	private final boolean DEBUG = false;
 	private StateMachine statusStateMachine;
 	private int stuckCounter;
-
+>>>>>>> d05656d24fb02c1f482464f9415631bd65424425
 	
 	//protected ActionStates.Ambulance states = new ActionStates.Ambulance();
 	
@@ -251,7 +253,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
 
     @Override
     public void registerEvent(MessageManager manager) {
-        manager.registerEvent(new BasicCivilianEvent(this, this, this));
+        manager.registerEvent(new BasicCivilianEvent(this, this));
         manager.registerEvent(new BasicAmbulanceEvent(this, this));
         manager.registerEvent(new BasicFireEvent(this, this));
         manager.registerEvent(new BasicPoliceEvent(this, this));
@@ -640,6 +642,7 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
             // Begin target basic processing
             do {
                 Human victim = (Human) this.world.getEntity(this.target);
+                Logger.debug("Considering victim: " + victim);
                 if (victim.getPosition().getValue() != this.location.getID().getValue()) {
                 	this.stateMachine.setState(ActionStates.Ambulance.GOING_TO_TARGET);
                     return this.moveTarget(currentTime);
@@ -647,16 +650,26 @@ public class YRescueTacticsAmbulance extends BasicTacticsAmbulance {
                 
                 // Threshold to rescue
                 if (victim.getHP() <= 100){ 
+                	Logger.debug("Victim's HP < 100, selecting new");
                 	this.victimSelector.remove(victim.getID());
                 	this.target = this.victimSelector.getNewTarget(currentTime);
                 	continue;
                 }
                 
                 if (victim.getBuriedness() > 0) {
-                	this.stateMachine.setState(ActionStates.Ambulance.RESCUING);
-                    return new ActionRescue(this, this.target);
+                	if(updateWorldData.getChangedEntities().contains(victim)){
+	                	Logger.debug("Victim is buried and I can see it. Will unbury it");
+	                	this.stateMachine.setState(ActionStates.Ambulance.RESCUING);
+	                    return new ActionRescue(this, this.target);
+                	}
+                    else {
+                    	Logger.debug("Victim is buried but I can't see it. Will get a new target");
+                    	this.stateMachine.setState(ActionStates.Ambulance.RESCUING);
+                    	this.target = this.victimSelector.getNewTarget(currentTime);
+                    	continue;
+                    }
                 }
-                
+
                 // In the case of rescue already
                 if (victim instanceof Civilian) {
                 	this.stateMachine.setState(ActionStates.Ambulance.CARRYING_WOUNDED);
