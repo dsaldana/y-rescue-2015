@@ -321,7 +321,7 @@ public class YRescueTacticsFire extends BasicTacticsFire {
             	return this.switchTask();
         	}
         	
-        	Point2D navTgt = BlockadeUtil.calculateNavigationMoveRayTracing(this);
+        	Point2D navTgt = BlockadeUtil.calculateNavigationMove(this);
         	if (navTgt != null){
         		
         		List<EntityID> fooPath = new ArrayList<>();
@@ -331,8 +331,9 @@ public class YRescueTacticsFire extends BasicTacticsFire {
         		Logger.info(String.format("Will attempt stuck-move to %s of %s", navTgt, fooPath));
         		return new ActionMove(this, fooPath, (int)navTgt.getX(), (int)navTgt.getY());
         	}
-        	else {
-        		Logger.info("I have no navigation tgt... will remain stuck");
+        	else{
+        		Logger.info("All attempts to shake while stuck failed... going failsafe");
+        		return this.failsafeThink(currentTime, updateWorldData, manager);
         	}
         	
         	/*
