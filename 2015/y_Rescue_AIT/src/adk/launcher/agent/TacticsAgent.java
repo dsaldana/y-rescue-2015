@@ -29,7 +29,7 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
     protected Action action;						//current action of this agent
     public Map<Integer, Action> commandHistory;	//history of commands
     public int ignoreTime;
-    protected Pair<Integer, Integer> lastPosition;
+    public Pair<Integer, Integer> lastPosition;
     
 
     public TacticsAgent(Tactics t, boolean pre) {
@@ -177,6 +177,10 @@ public abstract class TacticsAgent<E extends StandardEntity> extends Communicati
 				ActionMove action = (ActionMove)cmd;
 				
 				if(PositionUtil.equalsPoint(action.getPosX(), action.getPosY(), tactics.me().getX(), tactics.me().getY(), 500)){
+					Logger.debug(String.format(
+						"move (%d, %d) // myPos (%d, %d)", 
+						action.getPosX(), action.getPosY(), tactics.me().getX(), tactics.me().getY()
+					));
 					Logger.info("I'm right where I wanted to be. Not stuck");
 					return false;
 				}
